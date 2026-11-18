@@ -1,0 +1,40 @@
+# Publica la carpeta sitio/ en Hostinger cada vez que se hace merge a main.
+# Requiere tres secretos del repositorio (Settings → Secrets and variables → Actions):
+#   HOSTINGER_FTP_SERVER    p. ej. ftp.rinovaai.com o la IP que muestra hPanel
+#   HOSTINGER_FTP_USERNAME  usuario FTP de hPanel (Archivos → Cuentas FTP)
+#   HOSTINGER_FTP_PASSWORD  contraseña de esa cuenta FTP
+# Nunca escribas estos valores en el código.
+name: Publicar en Hostinger
+
+on:
+  push:
+    branches: [main]
+    paths: ['sitio/**']
+  workflow_dispatch:
+
+concurrency:
+  group: hostinger-produccion
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: produccion
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Revisar que no haya secretos en el sitio
+        run: |
+          if grep -RInE "service_role|sk_live|BEGIN (RSA|OPENSSH) PRIVATE KEY" sitio/; then
+            echo "Se encontró algo que parece un secreto. Publicación detenida."; exit 1; fi
+
+      - name: Subir por FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.HOSTINGER_FTP_SERVER }}
+          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./sitio/
+          server-dir: ./public_html/
+          dangerous-clean-slate: false

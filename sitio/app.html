@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Estudio · Rinova AI</title>
+<meta name="description" content="Estudio de diseño de Rinova AI: render, cálculo estructural, planos e instalaciones y presupuesto de tu proyecto en un solo lugar.">
+<meta name="theme-color" content="#1c1712">
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/img/favicon-32.png" sizes="32x32">
+<link rel="icon" href="assets/img/logo-mark.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/img/icon-180.png">
+<link rel="manifest" href="manifest-app.webmanifest">
+<link rel="preload" href="assets/fonts/cormorant-garamond.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/rinova.css">
+<style>
+body{background:var(--paper-2)}
+.shell{display:grid;grid-template-columns:248px 1fr;min-height:100vh;min-height:100dvh}
+.shell>div,.studio>div{min-width:0}
+/* Barra lateral */
+.side{background:var(--ink);color:#cbbfa9;padding:20px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh;height:100dvh}
+.side .brand{display:flex;align-items:center;gap:10px;color:var(--paper);text-decoration:none;font-family:var(--serif);font-size:24px;font-weight:600;padding:4px 8px 18px}
+.side .brand img{width:30px;height:30px}
+.side .brand small{font-family:var(--sans);font-size:10px;letter-spacing:.2em;color:var(--gold-2);align-self:flex-start;margin-top:4px}
+.side .grp{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#7f735f;padding:14px 10px 6px}
+.side button.nv{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;color:inherit;padding:10px 12px;border-radius:12px;cursor:pointer;font-size:14px;font-weight:500;text-align:left;transition:background .2s,color .2s}
+.side button.nv svg{width:18px;height:18px;flex:none;opacity:.8}
+.side button.nv:hover{background:#2b241c;color:var(--paper)}
+.side button.nv[aria-current="page"]{background:#332a20;color:var(--paper)}
+.side button.nv[aria-current="page"] svg{color:var(--gold-2);opacity:1}
+.side .count{margin-left:auto;font-size:11px;background:#3a3126;padding:2px 8px;border-radius:99px}
+.side .user{margin-top:auto;display:flex;gap:10px;align-items:center;padding:12px;border-radius:14px;background:#2b241c}
+.side .avatar{width:36px;height:36px;border-radius:50%;background:var(--gold);color:#fff;display:grid;place-items:center;font-weight:700}
+.side .user b{color:var(--paper);display:block;font-size:14px}
+.side .user small{font-size:12px}
+.side a.back{color:#9a8e79;font-size:13px;text-decoration:none;padding:10px 12px}
+.side a.back:hover{color:var(--paper)}
+.topm{display:none}
+@media(max-width:980px){
+  .shell{grid-template-columns:1fr}
+  .side{display:none}
+  .topm{display:flex;align-items:center;gap:10px;background:var(--ink);color:var(--paper);padding:12px 16px;position:sticky;top:0;z-index:40}
+  .topm .brand{display:flex;align-items:center;gap:8px;color:var(--paper);text-decoration:none;font-family:var(--serif);font-size:22px;font-weight:600}
+  .topm .brand img{width:28px;height:28px}
+  .topm select{margin-left:auto;background:#2b241c;color:var(--paper);border:1px solid #3b3227;border-radius:10px;padding:8px 10px}
+}
+
+/* Área principal */
+.main{padding:22px 28px 60px;min-width:0}
+@media(max-width:640px){.main{padding:16px 14px 80px}}
+.bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.bar .title{display:flex;flex-direction:column;min-width:0}
+.bar .title small{color:var(--muted);font-size:12px;letter-spacing:.06em}
+.bar input.pname{font-family:var(--serif);font-size:32px;font-weight:500;border:0;background:transparent;padding:0;min-width:0;width:min(420px,70vw);border-bottom:1px dashed transparent}
+.bar input.pname:hover,.bar input.pname:focus{border-bottom-color:var(--line-2);outline:none}
+.bar .acts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.view{display:none}
+.view.on{display:block}
+
+.studio{display:grid;grid-template-columns:330px 1fr;gap:18px;align-items:start}
+@media(max-width:1180px){.studio{grid-template-columns:1fr}}
+
+/* Panel de parámetros */
+.params{padding:20px;display:grid;gap:18px;position:sticky;top:18px}
+@media(max-width:1180px){.params{position:static}}
+.params h3{font-size:22px}
+.params .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.range{display:grid;gap:6px}
+.range .lb{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--muted)}
+.range .lb output{color:var(--ink);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--gold);height:22px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:3px}
+.seg button{border:0;background:none;padding:8px 4px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.sep{height:1px;background:var(--line)}
+.gen{justify-content:center;width:100%}
+.live{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.live .dot{color:var(--ok);animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.3}}
+
+/* Resultados */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.kpi{padding:16px 18px}
+.kpi>span{font-size:12px;color:var(--muted);font-weight:600}
+.kpi b{display:block;font-family:var(--serif);font-size:30px;font-weight:500;line-height:1.1;margin-top:4px}
+.kpi small{font-size:12px;color:var(--muted)}
+@media(max-width:760px){.kpis{grid-template-columns:1fr 1fr}.kpi b{font-size:24px}}
+.out{padding:0;overflow:hidden}
+.tabs{display:flex;gap:2px;padding:8px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs button{border:0;background:none;padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px;color:var(--muted);cursor:pointer;white-space:nowrap;display:flex;gap:8px;align-items:center}
+.tabs button[aria-selected="true"]{background:var(--paper);color:var(--ink)}
+.tabs .chip{padding:2px 8px;font-size:11px}
+.pane{display:none;padding:20px}
+.pane.on{display:block}
+.render-box{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line)}
+.render-box svg{width:100%;height:auto}
+.render-meta{position:absolute;left:14px;bottom:14px;display:flex;gap:8px;flex-wrap:wrap}
+.render-meta .chip{background:rgba(252,249,242,.9);backdrop-filter:blur(6px)}
+.render-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.render-tools label{display:inline-flex;gap:8px;align-items:center;font-size:14px;font-weight:500}
+.variants{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+.variants button{padding:0;border:2px solid transparent;border-radius:12px;overflow:hidden;cursor:pointer;background:none}
+.variants button[aria-pressed="true"]{border-color:var(--gold)}
+.variants small{display:block;font-size:11px;padding:5px;color:var(--muted);background:var(--card);text-align:left}
+@media(max-width:640px){.variants{grid-template-columns:1fr 1fr}}
+
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t th{text-align:left;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:10px 10px;border-bottom:1px solid var(--line)}
+table.t td{padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.t td.r,table.t th.r{text-align:right;white-space:nowrap}
+#structOut td:nth-child(2){white-space:nowrap}
+#structOut .chip{white-space:nowrap}
+.ubar{height:8px;border-radius:99px;background:var(--paper-2);overflow:hidden;min-width:56px}
+.ubar i{display:block;height:100%;border-radius:99px}
+.tscroll{overflow-x:auto}
+.grid2{display:grid;grid-template-columns:1.1fr 1fr;gap:18px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.panel{border:1px solid var(--line);border-radius:16px;padding:16px;background:#fffdf8}
+.panel h4{margin:0 0 10px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.note{font-size:12px;color:var(--muted);margin-top:12px}
+.layers{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.layers label{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:99px;border:1px solid var(--line);font-size:13px;font-weight:600;cursor:pointer;background:var(--card)}
+.layers input{accent-color:var(--gold)}
+.plan-svg{background:#fbf8f0;border:1px solid var(--line);border-radius:14px;width:100%;height:auto}
+.costbars{display:grid;gap:12px}
+.cb{display:grid;grid-template-columns:150px 1fr 120px;gap:12px;align-items:center;font-size:14px}
+.cb .track{height:12px;border-radius:99px;background:var(--paper-2);overflow:hidden}
+.cb .track i{display:block;height:100%;border-radius:99px;transition:width .6s var(--ease)}
+.cb b{text-align:right;font-variant-numeric:tabular-nums}
+@media(max-width:560px){.cb{grid-template-columns:100px 1fr;}.cb b{grid-column:2;text-align:left}}
+.total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;padding:18px 0 0;margin-top:16px;border-top:1px solid var(--ink)}
+.total b{font-family:var(--serif);font-size:42px;font-weight:500}
+
+/* Generación */
+.gen-overlay{position:fixed;inset:0;z-index:80;background:rgba(28,23,18,.72);backdrop-filter:blur(6px);display:none;place-items:center;padding:20px}
+.gen-overlay.on{display:grid}
+.gen-card{width:min(520px,100%);background:var(--card);border-radius:24px;padding:28px;box-shadow:var(--shadow)}
+.gen-card h3{font-size:28px;margin-bottom:6px}
+.gen-log{list-style:none;padding:0;margin:20px 0;display:grid;gap:12px}
+.gen-log li{display:flex;gap:12px;align-items:flex-start;font-size:14px;opacity:.35;transition:opacity .4s}
+.gen-log li.on{opacity:1}
+.gen-log li .who{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--serif);font-size:16px;background:var(--gold-soft);color:var(--gold)}
+.gen-log li.done .who{background:#eef5ec;color:var(--ok)}
+.gen-log b{display:block}
+.gen-log small{color:var(--muted)}
+.prog{height:6px;border-radius:99px;background:var(--paper-2);overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--gold-2));transition:width .3s linear}
+
+/* Proyectos */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.pcard{overflow:hidden;display:flex;flex-direction:column}
+.pcard .thumb{border-bottom:1px solid var(--line)}
+.pcard .body{padding:16px;display:grid;gap:6px}
+.pcard h3{font-size:22px}
+.pcard .meta{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+.pcard .btn{margin-top:8px;justify-content:center}
+
+/* Presentación */
+.present{position:fixed;inset:0;z-index:90;background:var(--ink);color:var(--paper);display:none;overflow:auto}
+.present.on{display:block}
+.present-in{min-height:100%;display:grid;grid-template-columns:1.5fr 1fr;gap:0}
+.present .pic{display:grid;place-items:center;padding:30px;background:#14110d}
+.present .pic svg{width:100%;height:auto;border-radius:18px}
+.present .info{padding:44px 40px;display:flex;flex-direction:column;gap:20px}
+.present .info h2{font-size:clamp(40px,4.4vw,64px)}
+.present .info .lead{color:#b9ad98}
+.present .figs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.present .figs div{border:1px solid #3b3227;border-radius:16px;padding:16px}
+.present .figs b{display:block;font-family:var(--serif);font-size:30px;font-weight:500}
+.present .figs span{font-size:12px;color:#9a8e79}
+.present .by{display:flex;gap:12px;align-items:center;padding:14px;border-radius:16px;background:#2b241c}
+.present .by .avatar{width:42px;height:42px;border-radius:50%;background:var(--gold);color:#fff;display:grid;place-items:center;font-weight:700}
+.present .close{position:absolute;top:16px;right:16px;background:#2b241c;color:var(--paper);border:0;width:44px;height:44px;border-radius:50%;font-size:22px;cursor:pointer}
+.present .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:auto}
+.present .client{background:transparent;border:0;border-bottom:1px solid #3b3227;color:var(--paper);font-family:var(--serif);font-size:22px;padding:4px 0;width:100%}
+@media(max-width:900px){.present-in{grid-template-columns:1fr}.present .info{padding:28px 22px}}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,30px);opacity:0;background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:12px;font-size:14px;z-index:100;transition:all .35s var(--ease);pointer-events:none;max-width:calc(100% - 32px)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.demo-banner{font-size:12px;color:var(--warn);background:#fbf2e4;border:1px solid #e8d2b4;border-radius:10px;padding:8px 12px;margin-bottom:16px}
+
+@media print{
+  .side,.topm,.bar .acts,.params,.tabs,.demo-banner,.pwa-install{display:none!important}
+  .present.on{position:static}.present .close,.present .acts{display:none}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Saltar al contenido</a>
+<div class="shell">
+  <aside class="side" aria-label="Menú del Estudio">
+    <a class="brand" href="index.html"><img src="assets/img/logo-mark.svg" alt="" width="30" height="30">Rinova<small>AI</small></a>
+    <div class="grp">Trabajo</div>
+    <button class="nv" data-view="studio" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/></svg>Estudio de diseño</button>
+    <button class="nv" data-view="projects"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Mis proyectos<span class="count">6</span></button>
+    <button class="nv" data-present><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>Modo presentación</button>
+    <div class="grp">Entregables</div>
+    <button class="nv" data-tab-jump="render"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>Render</button>
+    <button class="nv" data-tab-jump="estructura"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7h14v14M5 12h14M9.5 7v14M14.5 7v14"/></svg>Estructura</button>
+    <button class="nv" data-tab-jump="planos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Planos e instalaciones</button>
+    <button class="nv" data-tab-jump="costos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6"/></svg>Costos</button>
+    <a class="back" href="distribuidores.html">Portal de distribuidores →</a>
+    <div class="user"><span class="avatar">AT</span><div><b>Ana Torres</b><small>Distribuidora Oro</small></div></div>
+  </aside>
+
+  <div>
+    <div class="topm">
+      <a class="brand" href="index.html"><img src="assets/img/logo-mark.svg" alt="" width="28" height="28">Rinova</a>
+      <label class="sr" for="mNav">Sección</label>
+      <select id="mNav"><option value="studio">Estudio</option><option value="projects">Mis proyectos</option><option value="present">Presentación</option><option value="dist">Distribuidores</option></select>
+    </div>
+
+    <main class="main" id="main">
+      <p class="demo-banner">Maqueta funcional: los cálculos usan fórmulas simplificadas de demostración y no sustituyen la revisión de un perito o DRO.</p>
+
+      <!-- ===== ESTUDIO ===== -->
+      <div class="view on" data-v="studio">
+        <div class="bar">
+          <div class="title"><small>PROYECTO · RV-0142</small><label class="sr" for="pName">Nombre del proyecto</label><input class="pname" id="pName" value="Villa Fiorentina"></div>
+          <span class="live"><span class="dot"></span><span id="liveTxt">Sincronizado</span></span>
+          <div class="acts">
+            <button class="btn btn-ghost btn-sm" id="btnExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Exportar plano</button>
+            <button class="btn btn-ink btn-sm" data-present><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 5v14l11-7z"/></svg>Presentar</button>
+          </div>
+        </div>
+
+        <div class="studio">
+          <form class="card params" id="params" aria-label="Parámetros de diseño">
+            <h3>Parámetros</h3>
+            <div class="row">
+              <div class="field"><label for="pFront">Frente (m)</label><input class="input num" id="pFront" type="number" min="8" max="40" step="0.5" value="18"></div>
+              <div class="field"><label for="pDepth">Fondo (m)</label><input class="input num" id="pDepth" type="number" min="10" max="40" step="0.5" value="22"></div>
+            </div>
+            <div class="range"><div class="lb"><label for="pFloors">Niveles</label><output id="oFloors">3</output></div><input type="range" id="pFloors" min="1" max="6" value="3"></div>
+            <div class="range"><div class="lb"><label for="pBays">Crujías en fachada</label><output id="oBays">7</output></div><input type="range" id="pBays" min="3" max="9" step="1" value="7"></div>
+            <div class="field"><label id="lStyle">Estilo</label>
+              <div class="seg" role="group" aria-labelledby="lStyle" id="segStyle"><button type="button" data-v="renacentista" aria-pressed="true">Clásico</button><button type="button" data-v="mediterraneo" aria-pressed="false">Mediterráneo</button><button type="button" data-v="moderno" aria-pressed="false">Contemporáneo</button></div>
+            </div>
+            <div class="row">
+              <div class="field"><label for="pUse">Uso</label><select class="input" id="pUse"><option value="res">Residencial</option><option value="com">Comercial</option></select></div>
+              <div class="field"><label for="pFinish">Acabados</label><select class="input" id="pFinish"><option value="eco">Económico</option><option value="med">Medio</option><option value="pre" selected>Premium</option></select></div>
+            </div>
+            <div class="field"><label for="pCity">Ubicación</label>
+              <select class="input" id="pCity">
+                <option value="cdmx">Ciudad de México</option><option value="gdl">Guadalajara</option><option value="mty">Monterrey</option><option value="pue">Puebla</option><option value="qro">Querétaro</option><option value="mid">Mérida</option><option value="cun">Cancún</option>
+              </select>
+            </div>
+            <div class="field"><label for="pPalette">Material de fachada</label><select class="input" id="pPalette"><option value="travertino">Travertino</option><option value="marmol">Mármol de Carrara</option><option value="terracota">Terracota</option></select></div>
+            <div class="sep"></div>
+            <div class="range"><div class="lb"><label for="pMonth">Mes del render</label><output id="oMonth">Junio</output></div><input type="range" id="pMonth" min="1" max="12" value="6"></div>
+            <div class="range"><div class="lb"><label for="pHour">Hora del día</label><output id="oHour">17:00</output></div><input type="range" id="pHour" min="7" max="19" step="0.5" value="17"></div>
+            <button class="btn btn-gold gen" type="submit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 5.8L20 10l-5 3.6L16.5 20 12 16.4 7.5 20 9 13.6 4 10l6.1-1.2z"/></svg>Generar con el comité</button>
+          </form>
+
+          <div>
+            <div class="kpis">
+              <div class="card kpi"><span>Área construida</span><b class="num" id="kArea">—</b><small id="kAreaS">—</small></div>
+              <div class="card kpi"><span>Presupuesto</span><b class="num" id="kCost">—</b><small id="kCostS">—</small></div>
+              <div class="card kpi"><span>Estructura</span><b id="kStruct">—</b><small id="kStructS">—</small></div>
+              <div class="card kpi"><span>Eléctrico</span><b class="num" id="kElec">—</b><small id="kElecS">—</small></div>
+            </div>
+
+            <div class="card out">
+              <div class="tabs" role="tablist" aria-label="Entregables">
+                <button role="tab" id="t-render" aria-controls="p-render" aria-selected="true" data-tab="render">Render</button>
+                <button role="tab" id="t-estructura" aria-controls="p-estructura" aria-selected="false" data-tab="estructura">Estructura <span class="chip ok" id="tabStructChip">OK</span></button>
+                <button role="tab" id="t-planos" aria-controls="p-planos" aria-selected="false" data-tab="planos">Planos e instalaciones</button>
+                <button role="tab" id="t-costos" aria-controls="p-costos" aria-selected="false" data-tab="costos">Costos</button>
+              </div>
+
+              <section class="pane on" id="p-render" role="tabpanel" aria-labelledby="t-render">
+                <div class="render-box"><div id="renderOut"></div>
+                  <div class="render-meta"><span class="chip" id="sunChip">Sol 42°</span><span class="chip" id="phiChip">φ 1.618</span></div>
+                </div>
+                <div class="render-tools">
+                  <label><input type="checkbox" id="showPhi"> Mostrar trazo áureo</label>
+                  <label><input type="checkbox" id="lineMode"> Vista de plano</label>
+                </div>
+                <div class="variants" id="variants" aria-label="Variantes del motor generativo"></div>
+              </section>
+
+              <section class="pane" id="p-estructura" role="tabpanel" aria-labelledby="t-estructura">
+                <div class="grid2">
+                  <div class="panel"><h4>Marco en fachada · uso por elemento</h4><div id="frameOut"></div>
+                    <div class="note" style="display:flex;gap:14px;flex-wrap:wrap"><span style="color:var(--ok)">■ &lt; 70 %</span><span style="color:var(--warn)">■ 70–90 %</span><span style="color:var(--bad)">■ &gt; 90 %</span></div></div>
+                  <div class="panel"><h4>Criterios de diseño</h4><table class="t"><tbody id="critOut"></tbody></table></div>
+                </div>
+                <div class="tscroll" style="margin-top:18px"><table class="t"><thead><tr><th>Elemento</th><th>Sección</th><th class="r">Demanda / capacidad</th><th>Uso</th><th>Estado</th></tr></thead><tbody id="structOut"></tbody></table></div>
+                <p class="note">Modelo simplificado de demostración. En producción, el módulo de Elementos Finitos (backend Python) analiza el modelo 3D completo y genera la memoria de cálculo.</p>
+              </section>
+
+              <section class="pane" id="p-planos" role="tabpanel" aria-labelledby="t-planos">
+                <div class="layers" id="layers">
+                  <label><input type="checkbox" data-layer="arq" checked> Arquitectónico</label>
+                  <label><input type="checkbox" data-layer="cot" checked> Cotas</label>
+                  <label><input type="checkbox" data-layer="ele" checked> Eléctrico</label>
+                  <label><input type="checkbox" data-layer="hid" checked> Hidráulico</label>
+                  <label style="margin-left:auto"><span class="sr">Nivel</span><select id="planLevel" style="border:0;background:none;font-weight:600"></select></label>
+                </div>
+                <div id="planOut"></div>
+                <div class="panel" style="margin-top:16px"><h4>Diagrama unifilar eléctrico</h4><div class="tscroll" id="uniOut"></div></div>
+              </section>
+
+              <section class="pane" id="p-costos" role="tabpanel" aria-labelledby="t-costos">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+                  <div><h3 style="font-size:26px">Presupuesto por partidas</h3><p class="note" style="margin:4px 0 0" id="costSub">—</p></div>
+                  <div class="seg" style="grid-template-columns:1fr 1fr;width:160px" role="group" aria-label="Moneda" id="segCur"><button type="button" data-v="MXN" aria-pressed="true">MXN</button><button type="button" data-v="USD" aria-pressed="false">USD</button></div>
+                </div>
+                <div class="costbars" id="costOut"></div>
+                <div class="total"><span>Total estimado <small class="muted" id="costPer"></small></span><b class="num" id="costTotal">—</b></div>
+                <p class="note">Precios unitarios de referencia para la región seleccionada. Tipo de cambio de demostración: 18.50 MXN por USD.</p>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PROYECTOS ===== -->
+      <div class="view" data-v="projects">
+        <div class="bar"><div class="title"><small>BIBLIOTECA</small><h2 style="font-size:34px">Mis proyectos</h2></div><div class="acts"><button class="btn btn-ink btn-sm" data-view-btn="studio">Nuevo proyecto</button></div></div>
+        <div class="pgrid" id="projGrid"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Generación -->
+<div class="gen-overlay" id="genOv" role="dialog" aria-modal="true" aria-labelledby="genTitle">
+  <div class="gen-card">
+    <p class="eyebrow">Comité en sesión</p>
+    <h3 id="genTitle">Generando tu proyecto</h3>
+    <ul class="gen-log" id="genLog">
+      <li><span class="who">I</span><div><b>Arquitecto Principal</b><small>Componiendo fachada y planta con proporción áurea…</small></div></li>
+      <li><span class="who">II</span><div><b>Ingeniero Estructural</b><small>Analizando cargas, sismo y dimensionando elementos…</small></div></li>
+      <li><span class="who">III</span><div><b>AI Engineer</b><small>Render por difusión e iluminación según latitud…</small></div></li>
+      <li><span class="who">✓</span><div><b>Planos y presupuesto</b><small>Vectores por capas y metrajes sincronizados…</small></div></li>
+    </ul>
+    <div class="prog"><i id="genProg"></i></div>
+  </div>
+</div>
+
+<!-- Presentación -->
+<div class="present" id="present" role="dialog" aria-modal="true" aria-label="Modo presentación">
+  <button class="close" id="presentClose" aria-label="Cerrar presentación">×</button>
+  <div class="present-in">
+    <div class="pic" id="presentPic"></div>
+    <div class="info">
+      <p class="eyebrow">Propuesta arquitectónica</p>
+      <h2 id="presentName">Villa Fiorentina</h2>
+      <div><label class="sr" for="clientName">Cliente</label><input class="client" id="clientName" placeholder="Nombre del cliente" value="Familia Ortega"></div>
+      <p class="lead" id="presentLead">—</p>
+      <div class="figs" id="presentFigs"></div>
+      <div class="by"><span class="avatar">AT</span><div><small style="color:#9a8e79">Presentado por</small><b style="display:block">Ana Torres · Distribuidora Oro</b></div></div>
+      <div class="acts">
+        <a class="btn btn-gold" id="waShare" target="_blank" rel="noopener">Compartir por WhatsApp</a>
+        <button class="btn btn-ghost" style="color:var(--paper);border-color:#3b3227" onclick="window.print()">Guardar PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<button class="pwa-install" data-pwa-install-btn hidden>Instalar app <span class="x" data-pwa-dismiss aria-label="Ocultar">×</span></button>
+
+<script src="assets/js/facade.js"></script>
+<script src="assets/js/estudio.js"></script>
+<script src="pwa.js" defer></script>
+</body>
+</html>

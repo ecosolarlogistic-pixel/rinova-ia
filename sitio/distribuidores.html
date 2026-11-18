@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Portal de distribuidores · Rinova AI</title>
+<meta name="description" content="Portal de distribuidores de Rinova AI: comisiones, red, prospectos y kit de presentación.">
+<meta name="theme-color" content="#1c1712">
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/img/favicon-32.png" sizes="32x32">
+<link rel="icon" href="assets/img/logo-mark.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/img/icon-180.png">
+<link rel="manifest" href="manifest-app.webmanifest">
+<link rel="preload" href="assets/fonts/cormorant-garamond.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/rinova.css">
+<style>
+.top{background:var(--ink);color:var(--paper);position:sticky;top:0;z-index:40}
+.top-in{display:flex;align-items:center;gap:22px;height:66px}
+.top .brand{display:flex;align-items:center;gap:10px;color:var(--paper);text-decoration:none;font-family:var(--serif);font-size:24px;font-weight:600}
+.top .brand img{width:30px;height:30px}
+.top .brand small{font-family:var(--sans);font-size:10px;letter-spacing:.2em;color:var(--gold-2);align-self:flex-start;margin-top:4px}
+.top nav{display:flex;gap:4px;margin-left:18px;overflow-x:auto;scrollbar-width:none}
+.top nav a{color:#b9ad98;text-decoration:none;font-size:14px;font-weight:500;padding:8px 12px;border-radius:10px;white-space:nowrap}
+.top nav a:hover,.top nav a.on{color:var(--paper);background:#2b241c}
+.top .me{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:14px}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--gold);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+@media(max-width:900px){.top nav{display:none}.top .me span{display:none}}
+.sub{display:none;background:var(--ink);border-top:1px solid #2b241c;overflow-x:auto;scrollbar-width:none}
+.sub a{color:#b9ad98;text-decoration:none;font-size:13px;padding:10px 12px;white-space:nowrap;display:inline-block}
+@media(max-width:900px){.sub{display:flex}}
+
+main{padding:30px 0 80px}
+.hello{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;margin-bottom:24px}
+.hello h1{font-size:clamp(36px,4.6vw,56px);line-height:1.05}
+.hello p{margin:6px 0 0;color:var(--muted)}
+.rank{padding:18px 20px;min-width:300px}
+.rank .row{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+.rank b{font-family:var(--serif);font-size:26px;font-weight:500;color:var(--ink)}
+.meter{height:10px;border-radius:99px;background:var(--paper-2);overflow:hidden;margin:10px 0 6px}
+.meter i{display:block;height:100%;width:72%;background:linear-gradient(90deg,var(--gold),var(--gold-2));border-radius:99px}
+@media(max-width:760px){.hello{grid-template-columns:1fr}.rank{min-width:0}}
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.kpi{padding:18px 20px}
+.kpi span{font-size:12px;font-weight:600;color:var(--muted)}
+.kpi b{display:block;font-family:var(--serif);font-size:34px;font-weight:500;line-height:1.1;margin:4px 0}
+.kpi small{font-size:12px}
+.up{color:var(--ok)}
+@media(max-width:860px){.kpis{grid-template-columns:1fr 1fr}}
+
+.grid{display:grid;grid-template-columns:1.618fr 1fr;gap:18px;margin-bottom:18px;align-items:start}
+@media(max-width:980px){.grid{grid-template-columns:1fr}}
+.box{padding:22px}
+.box-h{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.box-h h2{font-size:28px}
+.box-h small{color:var(--muted);font-size:13px}
+.chart svg{width:100%;height:auto}
+
+.ref{display:flex;gap:8px;margin:14px 0}
+.ref input{flex:1;min-width:0}
+.share{display:flex;gap:8px;flex-wrap:wrap}
+
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t th{text-align:left;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:10px;border-bottom:1px solid var(--line)}
+table.t td{padding:13px 10px;border-bottom:1px solid var(--line)}
+table.t td.r,table.t th.r{text-align:right}
+.tscroll{overflow-x:auto}
+.who{display:flex;gap:10px;align-items:center}
+.who .avatar{width:32px;height:32px;font-size:12px;background:var(--ink-3)}
+.who small{display:block;color:var(--muted);font-size:12px}
+
+/* Árbol de red */
+.tree{display:grid;gap:18px;justify-items:center;padding:10px 0}
+.node{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;font-size:12px}
+.node .avatar{width:44px;height:44px}
+.node b{font-size:13px}
+.node small{color:var(--muted)}
+.lvl{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;position:relative;padding-top:18px}
+.lvl::before{content:"";position:absolute;top:0;left:15%;right:15%;height:1px;background:var(--line-2)}
+.lvl .node::before{content:"";width:1px;height:18px;background:var(--line-2);margin-top:-18px}
+.lvl.l2 .avatar{width:34px;height:34px;font-size:12px;background:var(--ink-3)}
+.lvl.l1 .avatar{background:var(--lapis)}
+
+.kit{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.kit .card{overflow:hidden}
+.kit .art{height:150px;background:var(--paper);border-bottom:1px solid var(--line);overflow:hidden}
+.kit .art svg{width:100%;height:100%}
+.kit .b{padding:14px 16px;display:grid;gap:8px}
+.kit h3{font-size:21px}
+.kit p{margin:0;font-size:13px;color:var(--muted)}
+@media(max-width:820px){.kit{grid-template-columns:1fr}}
+
+.levels td:first-child{font-family:var(--serif);font-size:20px}
+.levels tr.me{background:var(--gold-soft)}
+.note{font-size:12px;color:var(--muted);margin-top:10px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,30px);opacity:0;background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:12px;font-size:14px;z-index:100;transition:all .35s var(--ease);pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Saltar al contenido</a>
+<header class="top">
+  <div class="wrap top-in">
+    <a class="brand" href="index.html"><img src="assets/img/logo-mark.svg" alt="" width="30" height="30">Rinova<small>AI</small></a>
+    <nav aria-label="Portal"><a class="on" href="#resumen">Resumen</a><a href="#prospectos">Prospectos</a><a href="#red">Mi red</a><a href="#kit">Kit de presentación</a><a href="#plan">Plan de compensación</a></nav>
+    <div class="me"><a class="btn btn-gold btn-sm" href="app.html">Abrir el Estudio</a><span>Ana Torres</span><span class="avatar" aria-hidden="true">AT</span></div>
+  </div>
+  <div class="sub"><a href="#resumen">Resumen</a><a href="#prospectos">Prospectos</a><a href="#red">Mi red</a><a href="#kit">Kit</a><a href="#plan">Compensación</a></div>
+</header>
+
+<main id="main">
+  <div class="wrap">
+    <p class="chip warn" style="margin:0 0 18px"><span class="dot"></span>Maqueta con datos de ejemplo</p>
+    <section class="hello" id="resumen" aria-labelledby="h-hola">
+      <div><p class="eyebrow" id="today">Martes</p><h1 id="h-hola" class="display"><span id="greet">Buenas tardes</span>, Ana.</h1><p>Tienes 3 propuestas esperando respuesta y una cita hoy a las 18:00.</p></div>
+      <div class="card rank"><div class="row"><span>Rango actual</span><span>Siguiente: Platino</span></div><b>Distribuidora Oro</b><div class="meter" role="progressbar" aria-valuenow="72" aria-valuemin="0" aria-valuemax="100" aria-label="Avance a Platino"><i></i></div><div class="row"><span>72 % del volumen</span><span class="num">$128 mil de $178 mil</span></div></div>
+    </section>
+
+    <div class="kpis">
+      <div class="card kpi"><span>Comisión del mes</span><b class="num">$38,420</b><small class="up">▲ 18 % vs. octubre</small></div>
+      <div class="card kpi"><span>Propuestas presentadas</span><b class="num">14</b><small class="muted">5 esta semana</small></div>
+      <div class="card kpi"><span>Cierres</span><b class="num">4</b><small class="muted">29 % de conversión</small></div>
+      <div class="card kpi"><span>Red activa</span><b class="num">23</b><small class="up">▲ 3 nuevos distribuidores</small></div>
+    </div>
+
+    <div class="grid">
+      <section class="card box" aria-labelledby="h-com">
+        <div class="box-h"><h2 id="h-com">Comisiones</h2><small>Últimos 6 meses · directa y de red</small></div>
+        <div class="chart" id="chart"></div>
+      </section>
+      <section class="card box" aria-labelledby="h-ref">
+        <div class="box-h"><h2 id="h-ref">Tu enlace</h2></div>
+        <p class="muted" style="margin:0;font-size:14px">Cada proyecto que se diseña desde tu enlace queda registrado a tu nombre.</p>
+        <div class="ref"><label class="sr" for="refLink">Enlace de referido</label><input class="input" id="refLink" readonly value="https://rinovaai.com/?ref=ana-torres"><button class="btn btn-ink btn-sm" id="copyRef">Copiar</button></div>
+        <div class="share"><a class="btn btn-ghost btn-sm" id="waRef" target="_blank" rel="noopener">WhatsApp</a><a class="btn btn-ghost btn-sm" href="app.html#presentar">Presentar un proyecto</a></div>
+        <div class="sep" style="height:1px;background:var(--line);margin:20px 0"></div>
+        <div class="box-h" style="margin-bottom:8px"><h2 style="font-size:22px">Ranking de la red</h2><small>Noviembre</small></div>
+        <table class="t"><tbody id="rankOut"></tbody></table>
+      </section>
+    </div>
+
+    <section class="card box" id="prospectos" aria-labelledby="h-pros" style="margin-bottom:18px">
+      <div class="box-h"><h2 id="h-pros">Prospectos y propuestas</h2><small>Ordenados por próxima acción</small></div>
+      <div class="tscroll"><table class="t"><thead><tr><th>Cliente</th><th>Proyecto</th><th>Etapa</th><th class="r">Valor</th><th class="r">Tu comisión</th><th></th></tr></thead><tbody id="leadOut"></tbody></table></div>
+    </section>
+
+    <div class="grid">
+      <section class="card box" id="red" aria-labelledby="h-red">
+        <div class="box-h"><h2 id="h-red">Mi red</h2><small>3 directos · 20 en segunda línea</small></div>
+        <div class="tree">
+          <div class="node"><span class="avatar">AT</span><b>Ana Torres</b><small>Oro · tú</small></div>
+          <div class="lvl l1">
+            <div class="node"><span class="avatar">LM</span><b>Luis Medina</b><small>Plata · 8 en red</small></div>
+            <div class="node"><span class="avatar">SR</span><b>Sofía Ríos</b><small>Oro · 9 en red</small></div>
+            <div class="node"><span class="avatar">JC</span><b>Jorge Cano</b><small>Bronce · 3 en red</small></div>
+          </div>
+          <div class="lvl l2">
+            <div class="node"><span class="avatar">MP</span><small>Plata</small></div><div class="node"><span class="avatar">RG</span><small>Bronce</small></div><div class="node"><span class="avatar">DV</span><small>Bronce</small></div><div class="node"><span class="avatar">EL</span><small>Plata</small></div><div class="node"><span class="avatar">+16</span><small>más</small></div>
+          </div>
+        </div>
+      </section>
+      <section class="card box" aria-labelledby="h-agenda">
+        <div class="box-h"><h2 id="h-agenda">Agenda</h2><small>Próximos 3 días</small></div>
+        <table class="t"><tbody>
+          <tr><td><b>Hoy 18:00</b><div class="muted" style="font-size:13px">Presentación Villa Fiorentina</div></td><td class="r"><span class="chip ok">Confirmada</span></td></tr>
+          <tr><td><b>Mañana 11:00</b><div class="muted" style="font-size:13px">Capacitación de red: modo presentación</div></td><td class="r"><span class="chip">Zoom</span></td></tr>
+          <tr><td><b>Jueves 17:30</b><div class="muted" style="font-size:13px">Seguimiento Casa Amalfi</div></td><td class="r"><span class="chip warn">Por confirmar</span></td></tr>
+        </tbody></table>
+      </section>
+    </div>
+
+    <section id="kit" aria-labelledby="h-kit" style="margin:30px 0">
+      <div class="box-h"><h2 id="h-kit" style="font-size:34px">Kit de presentación</h2><small>Material oficial listo para compartir</small></div>
+      <div class="kit" id="kitOut"></div>
+    </section>
+
+    <section class="card box" id="plan" aria-labelledby="h-plan">
+      <div class="box-h"><h2 id="h-plan">Plan de compensación</h2><small>Valores de ejemplo para la maqueta</small></div>
+      <div class="tscroll"><table class="t levels"><thead><tr><th>Rango</th><th>Volumen mensual</th><th class="r">Comisión directa</th><th class="r">Red 1.ª línea</th><th class="r">Red 2.ª línea</th></tr></thead>
+        <tbody>
+          <tr><td>Bronce</td><td>Inicio</td><td class="r">8 %</td><td class="r">—</td><td class="r">—</td></tr>
+          <tr><td>Plata</td><td>$50 mil</td><td class="r">10 %</td><td class="r">3 %</td><td class="r">—</td></tr>
+          <tr class="me"><td>Oro <span class="chip" style="margin-left:6px">Tú</span></td><td>$100 mil</td><td class="r">12 %</td><td class="r">4 %</td><td class="r">2 %</td></tr>
+          <tr><td>Platino</td><td>$178 mil</td><td class="r">14 %</td><td class="r">5 %</td><td class="r">3 %</td></tr>
+          <tr><td>Diamante</td><td>$400 mil</td><td class="r">16 %</td><td class="r">6 %</td><td class="r">4 %</td></tr>
+        </tbody></table></div>
+      <p class="note">Los porcentajes son ilustrativos. El plan definitivo se configura desde el panel interno y se calcula en la base de datos.</p>
+    </section>
+  </div>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<button class="pwa-install" data-pwa-install-btn hidden>Instalar app <span class="x" data-pwa-dismiss aria-label="Ocultar">×</span></button>
+
+<script src="assets/js/facade.js"></script>
+<script>
+(function(){
+  'use strict';
+  var $ = function(s){ return document.querySelector(s); };
+  function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  var d = new Date(), h = d.getHours();
+  $('#greet').textContent = h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
+  $('#today').textContent = d.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+
+  // Gráfica de comisiones (barras apiladas)
+  var M = [['Jun',14.2,4.1],['Jul',17.8,5.0],['Ago',16.1,6.2],['Sep',21.4,7.3],['Oct',24.9,7.6],['Nov',28.1,10.3]];
+  var W=620,H=260,m=34,bw=(W-m*2)/M.length,max=40,o=['<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Comisiones de junio a noviembre" font-family="Manrope,system-ui,sans-serif" font-size="11">'];
+  [0,10,20,30,40].forEach(function(v){ var y=H-m-(v/max)*(H-m*2); o.push('<line x1="'+m+'" x2="'+(W-10)+'" y1="'+y+'" y2="'+y+'" stroke="#ddd2bd" stroke-dasharray="2 4"/><text x="'+(m-8)+'" y="'+(y+4)+'" text-anchor="end" fill="#6b604f">'+v+'k</text>'); });
+  M.forEach(function(r,i){ var x=m+bw*i+bw*.22, w=bw*.56, h1=(r[1]/max)*(H-m*2), h2=(r[2]/max)*(H-m*2), y1=H-m-h1, y2=y1-h2;
+    o.push('<rect x="'+x+'" y="'+y1+'" width="'+w+'" height="'+h1+'" rx="4" fill="#1c1712"><title>'+r[0]+' directa $'+r[1]+' mil</title></rect><rect x="'+x+'" y="'+(y2-2)+'" width="'+w+'" height="'+h2+'" rx="4" fill="#b0823a"><title>'+r[0]+' red $'+r[2]+' mil</title></rect><text x="'+(x+w/2)+'" y="'+(H-m+18)+'" text-anchor="middle" fill="#6b604f">'+r[0]+'</text>'+(i===M.length-1?'<text x="'+(x+w/2)+'" y="'+(y2-10)+'" text-anchor="middle" font-weight="700" fill="#1c1712">$'+(r[1]+r[2]).toFixed(1)+'k</text>':'')); });
+  o.push('<g font-weight="600"><rect x="'+m+'" y="6" width="10" height="10" rx="2" fill="#1c1712"/><text x="'+(m+16)+'" y="15" fill="#1c1712">Directa</text><rect x="'+(m+82)+'" y="6" width="10" height="10" rx="2" fill="#b0823a"/><text x="'+(m+98)+'" y="15" fill="#1c1712">Red</text></g></svg>');
+  $('#chart').innerHTML = o.join('');
+
+  // Ranking
+  $('#rankOut').innerHTML = [['Sofía Ríos','SR','$61.2 mil'],['Ana Torres (tú)','AT','$38.4 mil'],['Luis Medina','LM','$27.9 mil'],['Mariana Paz','MP','$19.0 mil']].map(function(r,i){
+    return '<tr><td><div class="who"><span class="avatar"'+(i===1?' style="background:var(--gold)"':'')+'>'+r[1]+'</span><div><b>'+(i+1)+'. '+esc(r[0])+'</b></div></div></td><td class="r num">'+r[2]+'</td></tr>'; }).join('');
+
+  // Prospectos
+  var L = [['Familia Ortega','Coyoacán, CDMX','Villa Fiorentina','ok','Presentación hoy',4280000],['Grupo Hostal Caribe','Tulum','Hotel Boutique Tulum','warn','Ajustando presupuesto',18900000],['Arq. Daniela Ruiz','Mérida','Casa Amalfi','warn','Esperando respuesta',2350000],['Carlos y Paola','Querétaro','Loft Querétaro','ok','Contrato enviado',3120000],['Inmobiliaria Norte','Monterrey','Palazzo Monterrey','','Primer contacto',27600000]];
+  var fmt = new Intl.NumberFormat('es-MX',{maximumFractionDigits:0});
+  $('#leadOut').innerHTML = L.map(function(r){
+    return '<tr><td><div class="who"><span class="avatar">'+esc(r[0].split(' ').map(function(w){return w[0];}).slice(0,2).join(''))+'</span><div><b>'+esc(r[0])+'</b><small>'+esc(r[1])+'</small></div></div></td><td>'+esc(r[2])+'</td><td><span class="chip '+r[3]+'"><span class="dot"></span>'+esc(r[4])+'</span></td><td class="r num">$'+fmt.format(r[5])+'</td><td class="r num"><b>$'+fmt.format(r[5]*0.012)+'</b></td><td class="r"><a class="btn btn-ghost btn-sm" href="app.html#presentar">Abrir</a></td></tr>'; }).join('');
+
+  // Kit
+  var F = window.RinovaFacade;
+  $('#kitOut').innerHTML = [
+    ['Renders de muestra','Doce fachadas en alta resolución para tus redes.',F.build({floors:3,bays:7,style:'renacentista',mode:'render',phi:false,hour:17.5,width:600,height:300,id:'k1'}),'Descargar'],
+    ['Lámina técnica','Fachada con trazo áureo para explicar el método.',F.build({floors:3,bays:7,style:'renacentista',mode:'line',phi:true,width:600,height:300,id:'k2'}),'Descargar'],
+    ['Guion de presentación','Los 6 pasos para presentar en 10 minutos.',F.build({floors:2,bays:5,style:'mediterraneo',mode:'render',phi:false,hour:9,palette:'terracota',width:600,height:300,id:'k3'}),'Ver guion']
+  ].map(function(k){ return '<article class="card"><div class="art">'+k[2]+'</div><div class="b"><h3>'+k[0]+'</h3><p>'+k[1]+'</p><button class="btn btn-ghost btn-sm" data-kit style="justify-self:start">'+k[3]+'</button></div></article>'; }).join('');
+
+  var tt; function toast(m){ var t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(tt); tt=setTimeout(function(){t.classList.remove('on');},2800); }
+  document.addEventListener('click', function(e){ if(e.target.closest('[data-kit]')) toast('Disponible cuando se conecte el almacenamiento de archivos.'); });
+  $('#copyRef').addEventListener('click', function(){ var v=$('#refLink').value; (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(function(){toast('Enlace copiado');}, function(){ $('#refLink').select(); toast('Selecciona y copia el enlace'); }); });
+  $('#waRef').href = 'https://wa.me/?text=' + encodeURIComponent('Diseña tu proyecto con proporción renacentista y cálculo estructural en minutos: ' + $('#refLink').value);
+
+  // Navegación activa
+  var links = document.querySelectorAll('.top nav a');
+  var io = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ links.forEach(function(a){ a.classList.toggle('on', a.getAttribute('href')==='#'+e.target.id); }); } }); }, {rootMargin:'-40% 0px -55% 0px'});
+  ['resumen','prospectos','red','kit','plan'].forEach(function(id){ var el=document.getElementById(id); if(el) io.observe(el); });
+})();
+</script>
+<script src="pwa.js" defer></script>
+</body>
+</html>
