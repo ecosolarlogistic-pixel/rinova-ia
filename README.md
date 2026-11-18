@@ -1,4 +1,4 @@
-# Rinova AI · plataforma web
+# Rinova IA · plataforma web
 
 Arquitectura renacentista, IA generativa e ingeniería en una sola plataforma.
 Este repositorio contiene la **maqueta funcional premium** de la plataforma: sitio público, Estudio de

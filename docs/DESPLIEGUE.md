@@ -5,7 +5,7 @@ El sitio es estático: solo hay que poner el **contenido** de `sitio/` dentro de
 
 ## A. Automática con GitHub Actions (recomendada)
 
-1. Crea el repositorio en GitHub (por ejemplo `rinova-ai`, privado) y sube este proyecto a `main`.
+1. Crea el repositorio en GitHub (por ejemplo `rinova-ia`, privado) y sube este proyecto a `main`.
 2. En hPanel → **Archivos → Cuentas FTP**, anota servidor, usuario y contraseña (o crea una cuenta FTP
    limitada a la carpeta del dominio).
 3. En GitHub → **Settings → Secrets and variables → Actions**, crea:

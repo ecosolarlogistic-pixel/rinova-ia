@@ -1,6 +1,6 @@
-# Arquitectura de Rinova AI
+# Arquitectura de Rinova IA
 
-Basada en *Rinova AI — Documentación Maestra y Prompt Arquitectónico-IT v1.0.0*.
+Basada en *Rinova IA — Documentación Maestra y Prompt Arquitectónico-IT v1.0.0*.
 
 ## 1. Vista general
 
@@ -23,7 +23,7 @@ Hostinger compartido sirve el frontend. Los módulos de IA necesitan GPU, así q
 ## 2. El comité (prompt maestro)
 
 El orquestador recibe los parámetros del Estudio y ejecuta el prompt de sistema
-`[SISTEMA: RINOVA AI - CORE PROMPT v1.0]` con tres roles que se revisan entre sí:
+`[SISTEMA: RINOVA IA - CORE PROMPT v1.0]` con tres roles que se revisan entre sí:
 
 | Rol | Responsabilidad | Herramienta que llama |
 |---|---|---|

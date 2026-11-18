@@ -1,4 +1,4 @@
-/* Rinova AI — generador paramétrico de fachadas (SVG).
+/* Rinova IA — generador paramétrico de fachadas (SVG).
    Lo usa la landing (modo "line", trazo de plano) y el Estudio (modo "render", con sol y sombras
    según latitud, mes y hora). En producción este lugar lo ocupa el Motor Generativo (difusión);
    aquí sirve como maqueta funcional y vista previa instantánea. */

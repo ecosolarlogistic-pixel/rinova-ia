@@ -1,4 +1,4 @@
--- Rinova AI · esquema inicial (BORRADOR — no aplicado).
+-- Rinova IA · esquema inicial (BORRADOR — no aplicado).
 -- Se aplica solo con el OK del dueño del proyecto, en un proyecto Supabase nuevo.
 -- Principios: RLS en todas las tablas, políticas separadas por operación, nada para anon,
 -- roles externos (distribuidor, cliente) solo leen por funciones security definer.

@@ -1,4 +1,4 @@
-/* Rinova AI — service worker. Cada cambio de este archivo sube VERSION. */
+/* Rinova IA — service worker. Cada cambio de este archivo sube VERSION. */
 const VERSION = 'rinova-v1';
 const PRECACHE = [
   './', 'index.html', 'app.html', 'distribuidores.html', 'offline.html',

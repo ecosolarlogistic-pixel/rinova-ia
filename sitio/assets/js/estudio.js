@@ -1,4 +1,4 @@
-/* Rinova AI — Estudio de diseño (maqueta funcional).
+/* Rinova IA — Estudio de diseño (maqueta funcional).
    Toda la lógica corre en el navegador con fórmulas simplificadas de demostración.
    En producción, compute() se sustituye por llamadas a la API (ver docs/ARQUITECTURA.md):
      POST /api/v1/proyectos/{id}/generar  → render (difusión), FEA, vectores DXF/SVG y metrajes. */
@@ -311,7 +311,7 @@
       o.push('</g>');
     }
     // Cuadro de datos
-    o.push('<g font-size="11" fill="#6b604f"><text x="' + (VW - 20) + '" y="' + (VH - 34) + '" text-anchor="end" font-weight="700" fill="#1c1712">' + esc(p.name.toUpperCase()) + ' · PLANTA ' + (level === 0 ? 'BAJA' : 'NIVEL ' + level) + '</text><text x="' + (VW - 20) + '" y="' + (VH - 18) + '" text-anchor="end">Rinova AI · Lámina ' + (level === 0 ? 'A-02' : 'A-0' + (level + 2)) + ' · Esc. gráfica</text></g>');
+    o.push('<g font-size="11" fill="#6b604f"><text x="' + (VW - 20) + '" y="' + (VH - 34) + '" text-anchor="end" font-weight="700" fill="#1c1712">' + esc(p.name.toUpperCase()) + ' · PLANTA ' + (level === 0 ? 'BAJA' : 'NIVEL ' + level) + '</text><text x="' + (VW - 20) + '" y="' + (VH - 18) + '" text-anchor="end">Rinova IA · Lámina ' + (level === 0 ? 'A-02' : 'A-0' + (level + 2)) + ' · Esc. gráfica</text></g>');
     o.push('</svg>');
     $('#planOut').innerHTML = o.join('');
   }
@@ -482,7 +482,7 @@
   }
   function updateWa(lead, r) {
     var client = $('#clientName').value.trim();
-    var txt = (client ? 'Hola ' + client + ', ' : 'Hola, ') + 'te comparto la propuesta "' + p.name + '": ' + lead + ' Presupuesto estimado ' + money(r.total) + '. Diseñado con Rinova AI.';
+    var txt = (client ? 'Hola ' + client + ', ' : 'Hola, ') + 'te comparto la propuesta "' + p.name + '": ' + lead + ' Presupuesto estimado ' + money(r.total) + '. Diseñado con Rinova IA.';
     $('#waShare').href = 'https://wa.me/?text=' + encodeURIComponent(txt);
   }
   $('#clientName').addEventListener('input', function () { updateWa($('#presentLead').textContent, last || compute()); });
