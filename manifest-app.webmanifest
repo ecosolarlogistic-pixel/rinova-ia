@@ -1,8 +1,8 @@
 {
   "id": "./app.html",
-  "name": "Rinova AI · Estudio",
+  "name": "Rinova IA · Estudio",
   "short_name": "Estudio",
-  "description": "Estudio de diseño y portal de distribuidores de Rinova AI.",
+  "description": "Estudio de diseño y portal de distribuidores de Rinova IA.",
   "lang": "es-MX",
   "start_url": "./app.html?source=pwa",
   "scope": "./",

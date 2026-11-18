@@ -1,4 +1,4 @@
-# Rinova AI — configuración para Hostinger (Apache / LiteSpeed)
+# Rinova IA — configuración para Hostinger (Apache / LiteSpeed)
 Options -Indexes
 DirectoryIndex index.html
 
