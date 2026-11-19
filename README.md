@@ -30,7 +30,7 @@ sitio/                      ← lo único que se publica en public_html
 supabase/migrations/        esquema de datos (borrador, no aplicado)
 docs/ARQUITECTURA.md        módulos, API y cómo encaja el prompt maestro
 docs/DESPLIEGUE.md          GitHub → Hostinger paso a paso
-.github/workflows/          publicación automática por FTP al hacer merge a main
+.github/workflows/          copia sitio/ a la rama produccion (Hostinger la publica sola)
 ```
 
 Sin frameworks ni build: HTML, CSS y JavaScript puro. Se abre con doble clic o con cualquier servidor estático.
@@ -45,8 +45,8 @@ python3 -m http.server 8080
 
 ## Publicar
 
-Ver [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md). Resumen: sube el contenido de `sitio/` a `public_html`
-del dominio, o configura los tres secretos FTP en GitHub y cada merge a `main` se publica solo.
+Publicado en https://www.rinovaia.com. Cada cambio en `sitio/` que llega a `main` se copia a la rama
+`produccion`, y Hostinger la publica sola. Detalles en [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md).
 
 ## Reglas del proyecto
 

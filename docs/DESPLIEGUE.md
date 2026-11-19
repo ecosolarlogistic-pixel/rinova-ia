@@ -3,26 +3,23 @@
 El sitio es estático: solo hay que poner el **contenido** de `sitio/` dentro de `public_html` del dominio
 `rinovaia.com`. Hay tres formas; elige una.
 
-## A. Automática con GitHub Actions (recomendada)
+## A. Automática desde GitHub (configurada y en uso)
 
-1. Crea el repositorio en GitHub (por ejemplo `rinova-ia`, privado) y sube este proyecto a `main`.
-2. En hPanel → **Archivos → Cuentas FTP**, anota servidor, usuario y contraseña (o crea una cuenta FTP
-   limitada a la carpeta del dominio).
-3. En GitHub → **Settings → Secrets and variables → Actions**, crea:
-   - `HOSTINGER_FTP_SERVER`
-   - `HOSTINGER_FTP_USERNAME`
-   - `HOSTINGER_FTP_PASSWORD`
-4. En **Settings → Environments** crea `produccion` y activa *Required reviewers* con tu usuario:
-   así ninguna publicación sale sin tu aprobación.
-5. Revisa `server-dir` en `.github/workflows/deploy-hostinger.yml`:
-   - si la cuenta FTP abre directamente en la carpeta del dominio, usa `./`;
-   - si abre en tu carpeta principal, suele ser `./public_html/` o `./domains/rinovaia.com/public_html/`.
-6. Cada merge a `main` que toque `sitio/` se publica. También puedes lanzarlo a mano desde **Actions →
-   Publicar en Hostinger → Run workflow**.
+Así está publicado hoy https://www.rinovaia.com:
 
-Si tu plan no acepta FTPS, cambia `protocol: ftps` por `protocol: ftp`.
+1. Trabajas en `main` (ramas y PR como siempre).
+2. Cuando un cambio en `sitio/` llega a `main`, el workflow `.github/workflows/publicar.yml` copia
+   el contenido de `sitio/` a la rama **`produccion`** (solo los archivos del sitio, en la raíz).
+3. Hostinger tiene activado el **despliegue automático** de `produccion` en `rinovaia.com`
+   (hPanel → Sitios web → rinovaia.com → GitHub). Al moverse la rama, publica solo.
 
-## B. Git integrado de hPanel
+No hay contraseñas ni secretos de FTP en GitHub. Nunca hagas commits directos en `produccion`:
+se regenera desde `main`.
+
+Para volver a una versión anterior: revierte el commit en `main` (`git revert`) y se publica la
+versión anterior por el mismo camino.
+
+## B. Alternativa: Git integrado de hPanel (manual)
 
 hPanel → **Avanzado → Git**: conecta el repositorio y la rama `main`. Hostinger copia el repositorio
 completo, así que el directorio de destino debe apuntar a la carpeta del dominio y después hay que mover
