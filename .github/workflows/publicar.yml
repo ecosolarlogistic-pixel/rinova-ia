@@ -1,0 +1,35 @@
+# Publica el sitio: cada cambio en sitio/ que llega a main se copia a la rama `produccion`.
+# Hostinger tiene activado el despliegue automático de `produccion` en rinovaia.com,
+# así que al actualizarse esa rama el sitio se publica solo. No hace falta ningún secreto.
+name: Publicar en Hostinger
+
+on:
+  push:
+    branches: [main]
+    paths: ['sitio/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: produccion
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Revisar que no haya secretos en el sitio
+        run: |
+          if grep -RInE "service_role|sk_live|BEGIN (RSA|OPENSSH) PRIVATE KEY" sitio/; then
+            echo "Se encontró algo que parece un secreto. Publicación detenida."; exit 1; fi
+
+      - name: Actualizar la rama produccion con el contenido de sitio/
+        run: |
+          git subtree split --prefix=sitio -b produccion-nueva
+          git push origin produccion-nueva:produccion
