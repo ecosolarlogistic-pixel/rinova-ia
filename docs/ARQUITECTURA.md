@@ -85,6 +85,10 @@ valor del contrato o marcan "contratado". El portal lee por `distributor_summary
 `distributor_network()`. Renders y planos van en buckets privados `renders/` y `planos/` con ruta
 `<project_id>/…`.
 
+Proyecto Supabase: `rinova-ia` (organización Qualifika360, plan gratuito, us-east-1),
+URL `https://evjoqaphylggvojthezj.supabase.co`. Para el navegador se usa la clave publicable
+(`sb_publishable_…`, en el panel de Supabase → Settings → API Keys); la `service_role` solo en el backend.
+
 Pruebas: `supabase/tests/` (se corren contra un Postgres local con `stub_supabase.sql`).
 
 ## 6. Próximos pasos sugeridos
