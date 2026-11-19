@@ -93,7 +93,7 @@ Pruebas: `supabase/tests/` (se corren contra un Postgres local con `stub_supabas
 
 ## 6. Próximos pasos sugeridos
 
-1. Conectar el formulario de la landing a `registrar_prospecto`.
+1. ~~Conectar el formulario de la landing~~ (hecho: `index.html` llama a `registrar_prospecto`; acepta `?ref=codigo`).
 2. Acceso (enlace mágico) para Estudio y portal; guardar proyectos en `projects`.
 3. Primer servicio real: orquestador del prompt maestro + render por difusión.
 4. FEA real y exportación DXF por capas.

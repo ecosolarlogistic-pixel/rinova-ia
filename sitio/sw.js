@@ -1,5 +1,5 @@
 /* Rinova IA — service worker. Cada cambio de este archivo sube VERSION. */
-const VERSION = 'rinova-v1';
+const VERSION = 'rinova-v2';
 const PRECACHE = [
   './', 'index.html', 'app.html', 'distribuidores.html', 'offline.html',
   'manifest.webmanifest', 'manifest-app.webmanifest',
