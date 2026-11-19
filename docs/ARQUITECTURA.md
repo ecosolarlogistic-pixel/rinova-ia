@@ -67,17 +67,29 @@ dibujo ya reciben el objeto de resultados.
 
 ## 5. Datos
 
-Borrador en `supabase/migrations/20261118150000_esquema_inicial.sql`:
-`profiles`, `user_roles`, `projects`, `project_versions`, `leads`, `distributors`, `commissions`,
-`activity_log`. RLS en todas, políticas por operación, ninguna para `anon`; el formulario escribe por la
-RPC `registrar_prospecto` y el distribuidor lee por `distributor_summary()`.
+Migración en `supabase/migrations/20261118150000_esquema_inicial.sql`.
 
-Se aplica solo con el OK del dueño, en un proyecto Supabase nuevo, y después se corren los asesores de
-seguridad.
+| Área | Tablas | Notas |
+|---|---|---|
+| Usuarios | `profiles`, `user_roles` | Perfil y rol `cliente` se crean solos al registrarse. Roles: admin, arquitecto, ingeniero, ventas, distribuidor, cliente |
+| Estudio | `projects`, `project_versions` | Código `RV-1001…`; cada "Generar" es una versión numerada con `params`, `structure`, `electrical`, render y DXF |
+| Presupuestos | `budgets`, `budget_items` | Importe por partida y totales con IVA calculados en la base; solo se editan en borrador |
+| Prospectos | `leads` | La landing escribe por la RPC `registrar_prospecto` (anti-spam, resuelve el código del distribuidor) |
+| Red | `distributors`, `compensation_plans`, `plan_ranks` | Plan configurable con un solo plan activo; precargado con los valores de ejemplo del portal |
+| Comisiones | `commissions` | Se generan solas al marcar un proyecto `contratado` con valor: directa + 2 niveles de red, según el rango de cada quien |
+| Auditoría | `activity_log` | Solo insert y lectura de admin |
+
+Seguridad: RLS en todas las tablas, nada directo para `anon`. Clientes ven sus proyectos, distribuidores
+los que trajeron y sus prospectos, personal interno todo. Solo admin/ventas asignan distribuidor, fijan
+valor del contrato o marcan "contratado". El portal lee por `distributor_summary()` y
+`distributor_network()`. Renders y planos van en buckets privados `renders/` y `planos/` con ruta
+`<project_id>/…`.
+
+Pruebas: `supabase/tests/` (se corren contra un Postgres local con `stub_supabase.sql`).
 
 ## 6. Próximos pasos sugeridos
 
-1. Crear el proyecto Supabase, aplicar la migración y conectar el formulario de la landing.
+1. Conectar el formulario de la landing a `registrar_prospecto`.
 2. Acceso (enlace mágico) para Estudio y portal; guardar proyectos en `projects`.
 3. Primer servicio real: orquestador del prompt maestro + render por difusión.
 4. FEA real y exportación DXF por capas.
