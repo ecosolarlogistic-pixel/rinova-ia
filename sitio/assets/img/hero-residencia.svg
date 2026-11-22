@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 720" role="img" aria-label="Residencia contemporánea al anochecer con trazos técnicos">
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B0F17"/><stop offset=".55" stop-color="#16203A"/><stop offset=".86" stop-color="#2C3550"/><stop offset="1" stop-color="#5A4A3A"/></linearGradient>
+<radialGradient id="glow" cx=".62" cy=".86" r=".6"><stop offset="0" stop-color="#D4AF37" stop-opacity=".28"/><stop offset="1" stop-color="#D4AF37" stop-opacity="0"/></radialGradient>
+<linearGradient id="lit" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBE3A6"/><stop offset=".6" stop-color="#E7B95A"/><stop offset="1" stop-color="#B97E2C"/></linearGradient>
+<linearGradient id="dim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3A4A66"/><stop offset="1" stop-color="#1A2336"/></linearGradient>
+<linearGradient id="slab" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2A3346"/><stop offset=".5" stop-color="#3B465C"/><stop offset="1" stop-color="#232B3B"/></linearGradient>
+<linearGradient id="edge" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#F7F8FB"/><stop offset=".6" stop-color="#C0C6D4"/><stop offset="1" stop-color="#8A93A5"/></linearGradient>
+<linearGradient id="ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#121a2a"/><stop offset="1" stop-color="#0B0F17"/></linearGradient>
+<linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".32"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<mask id="refl"><rect x="0" y="600" width="960" height="120" fill="url(#fade)"/></mask>
+<linearGradient id="au" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#D4AF37" stop-opacity="0"/><stop offset=".25" stop-color="#E6C65C"/><stop offset=".75" stop-color="#D4AF37"/><stop offset="1" stop-color="#D4AF37" stop-opacity="0"/></linearGradient>
+</defs>
+<rect width="960" height="600" fill="url(#sky)"/><rect width="960" height="600" fill="url(#glow)"/>
+<g fill="none" stroke="#C0C6D4" stroke-opacity=".16" stroke-width="1"><path d="M40 70H250l50 -28"/><path d="M40 106H250l50 -28"/><path d="M40 142H250l50 -28"/><path d="M40 178H250l50 -28"/><path d="M40 214H250l50 -28"/><path d="M40 250H250l50 -28"/><path d="M40 286H250l50 -28"/><path d="M40 322H250l50 -28"/><path d="M40 358H250l50 -28"/><path d="M40 394H250l50 -28"/><path d="M40 430H250l50 -28"/><path d="M40 466H250l50 -28"/><path d="M40 502H250l50 -28"/><path d="M40 538H250l50 -28"/><path d="M40 574H250l50 -28"/><path d="M40 70V600"/><path d="M82 70V600"/><path d="M124 70V600"/><path d="M166 70V600"/><path d="M208 70V600"/><path d="M250 70V600"/><path d="M250 70V600M300 42V572M250 70l50-28H90L40 70"/></g>
+<g fill="none" stroke="#C0C6D4" stroke-opacity=".32" stroke-width="1.2"><path d="M846 600V96M862 600V96M846 96h16"/>
+<path d="M846 120l16 -24"/>
+<path d="M846 144l16 -24"/>
+<path d="M846 168l16 -24"/>
+<path d="M846 192l16 -24"/>
+<path d="M846 216l16 -24"/>
+<path d="M846 240l16 -24"/>
+<path d="M846 264l16 -24"/>
+<path d="M846 288l16 -24"/>
+<path d="M846 312l16 -24"/>
+<path d="M846 336l16 -24"/>
+<path d="M846 360l16 -24"/>
+<path d="M846 384l16 -24"/>
+<path d="M846 408l16 -24"/>
+<path d="M846 432l16 -24"/>
+<path d="M846 456l16 -24"/>
+<path d="M846 480l16 -24"/>
+<path d="M846 504l16 -24"/>
+<path d="M846 528l16 -24"/>
+<path d="M846 552l16 -24"/>
+<path d="M846 576l16 -24"/>
+<path d="M600 100H930M600 118H930M846 100l-30-40 46 40M640 100v18M700 100v18M760 100v18M900 100v18M690 118v120"/><rect x="680" y="238" width="20" height="12"/></g>
+<rect y="600" width="960" height="120" fill="url(#ground)"/>
+<g id="bld"><rect x="281.5" y="497.5" width="48.1" height="101" fill="url(#lit)" opacity="0.86"/><rect x="332.6" y="497.5" width="48.1" height="101" fill="url(#lit)" opacity="0.86"/><rect x="383.7" y="497.5" width="48.1" height="101" fill="url(#lit)" opacity="0.86"/><rect x="434.8" y="497.5" width="48.1" height="101" fill="url(#lit)" opacity="0.86"/><rect x="485.9" y="497.5" width="48.1" height="101" fill="url(#lit)" opacity="0.86"/><rect x="537.1" y="497.5" width="48.1" height="101" fill="url(#lit)" opacity="0.86"/><rect x="588.2" y="497.5" width="48.1" height="101" fill="url(#lit)" opacity="0.86"/><rect x="639.3" y="497.5" width="48.1" height="101" fill="url(#lit)" opacity="0.86"/><rect x="690.4" y="497.5" width="48.1" height="101" fill="url(#lit)" opacity="0.86"/><rect x="280" y="496" width="460" height="104" fill="none" stroke="#0B0F17" stroke-width="3"/><rect x="188" y="386" width="520" height="110" fill="url(#slab)"/><rect x="205.5" y="405.5" width="58.0" height="75" fill="url(#lit)" opacity="0.86"/><rect x="266.5" y="405.5" width="58.0" height="75" fill="url(#lit)" opacity="0.86"/><rect x="327.5" y="405.5" width="58.0" height="75" fill="url(#lit)" opacity="0.86"/><rect x="388.5" y="405.5" width="58.0" height="75" fill="url(#lit)" opacity="0.86"/><rect x="449.5" y="405.5" width="58.0" height="75" fill="url(#dim)" opacity="1"/><rect x="510.5" y="405.5" width="58.0" height="75" fill="url(#lit)" opacity="0.86"/><rect x="571.5" y="405.5" width="58.0" height="75" fill="url(#lit)" opacity="0.86"/><rect x="632.5" y="405.5" width="58.0" height="75" fill="url(#dim)" opacity="1"/><rect x="188" y="386" width="520" height="8" fill="url(#edge)" opacity=".85"/><rect x="188" y="490" width="520" height="6" fill="#0d1320"/><rect x="420" y="282" width="460" height="104" fill="url(#slab)"/><rect x="437.5" y="299.5" width="59.5" height="71" fill="url(#dim)" opacity="1"/><rect x="500.0" y="299.5" width="59.5" height="71" fill="url(#lit)" opacity="0.86"/><rect x="562.5" y="299.5" width="59.5" height="71" fill="url(#lit)" opacity="0.86"/><rect x="625.0" y="299.5" width="59.5" height="71" fill="url(#dim)" opacity="1"/><g fill="#C0C6D4" opacity=".75"><rect x="700.0" y="298" width="3.2" height="74"/><rect x="710.5" y="298" width="3.2" height="74"/><rect x="721.0" y="298" width="3.2" height="74"/><rect x="731.5" y="298" width="3.2" height="74"/><rect x="742.0" y="298" width="3.2" height="74"/><rect x="752.5" y="298" width="3.2" height="74"/><rect x="763.0" y="298" width="3.2" height="74"/><rect x="773.5" y="298" width="3.2" height="74"/><rect x="784.0" y="298" width="3.2" height="74"/><rect x="794.5" y="298" width="3.2" height="74"/><rect x="805.0" y="298" width="3.2" height="74"/><rect x="815.5" y="298" width="3.2" height="74"/><rect x="826.0" y="298" width="3.2" height="74"/><rect x="836.5" y="298" width="3.2" height="74"/><rect x="847.0" y="298" width="3.2" height="74"/><rect x="857.5" y="298" width="3.2" height="74"/><rect x="868.0" y="298" width="3.2" height="74"/></g><rect x="696" y="298" width="170" height="74" fill="url(#lit)" opacity=".35"/><rect x="420" y="282" width="460" height="7" fill="url(#edge)" opacity=".9"/><rect x="408" y="276" width="484" height="6" fill="#C0C6D4" opacity=".55"/><rect x="250" y="496" width="10" height="104" fill="#2A3346"/><rect x="760" y="496" width="90" height="104" fill="#1E2738"/><path d="M760 504h90" stroke="#2F3A50" stroke-width="1"/><path d="M760 516h90" stroke="#2F3A50" stroke-width="1"/><path d="M760 528h90" stroke="#2F3A50" stroke-width="1"/><path d="M760 540h90" stroke="#2F3A50" stroke-width="1"/><path d="M760 552h90" stroke="#2F3A50" stroke-width="1"/><path d="M760 564h90" stroke="#2F3A50" stroke-width="1"/><path d="M760 576h90" stroke="#2F3A50" stroke-width="1"/><path d="M760 588h90" stroke="#2F3A50" stroke-width="1"/></g>
+<g mask="url(#refl)"><use href="#bld" transform="matrix(1 0 0 -1 0 1200)"/></g>
+<g fill="#0E1624"><path d="M120 600c-6-60 10-110 34-140 20 34 34 86 22 140z"/><path d="M160 600c2-40 14-70 28-86 14 22 18 56 10 86z"/><path d="M900 600c-4-46 8-82 24-104 16 26 24 66 14 104z"/></g>
+<rect x="0" y="600" width="960" height="1.5" fill="url(#au)"/>
+<g stroke="#D4AF37" stroke-width="1" fill="#D4AF37" font-family="Inter,system-ui,sans-serif" font-size="12" letter-spacing="1"><path d="M188 650H880M188 642v16M880 642v16" /><text x="534" y="642" text-anchor="middle" stroke="none">24.00 m</text><path d="M914 276V600M906 276h16M906 600h16"/><text x="926" y="444" stroke="none" transform="rotate(-90 926 444)" text-anchor="middle">+10.80</text><circle cx="188" cy="386" r="3.5" stroke="none"/><path d="M188 386H120" stroke-dasharray="3 4"/><text x="60" y="382" stroke="none">N+3.60</text><circle cx="420" cy="282" r="3.5" stroke="none"/><path d="M420 282H330" stroke-dasharray="3 4"/><text x="270" y="278" stroke="none">N+7.20</text></g>
+<text x="40" y="700" fill="#C0C6D4" fill-opacity=".55" font-family="Inter,system-ui,sans-serif" font-size="11" letter-spacing="2.4">RINOVAIA · LÁMINA A-01 · FACHADA PRINCIPAL</text>
+</svg>
