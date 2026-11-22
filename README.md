@@ -24,7 +24,7 @@ proyectos, portal de distribuidores y app instalable, lista para publicarse en H
 ```
 sitio/                      ← lo único que se publica en public_html
   index.html  app.html  distribuidores.html  offline.html
-  manifest.webmanifest  manifest-app.webmanifest  sw.js  pwa.js  .htaccess
+  manifest.webmanifest  instalar.html  sw.js  pwa.js  favicon.ico  .htaccess
   assets/css/rinova.css           sistema visual: tokens de color, tipografía, botones y estados del manual
   assets/js/facade.js             generador paramétrico de fachadas (SVG), con anochecer y concreto aparente
   assets/js/estudio.js            lógica del Estudio, proyectos y presentación
@@ -33,6 +33,7 @@ sitio/                      ← lo único que se publica en public_html
   assets/img/                     isotipo (color, claro, blanco, negro, plata), logo circular, iconos, hero y OG
 supabase/migrations/        esquema de datos
 docs/MARCA.md               cómo se aplicó el manual de marca
+docs/APP-INSTALABLE.md      app instalable en PC, Mac, Android, iPhone y iPad (PWA) y siguientes pasos a tiendas
 docs/ARQUITECTURA.md        módulos, API y cómo encaja el prompt maestro
 docs/DESPLIEGUE.md          GitHub → Hostinger paso a paso
 docs/capturas/              capturas de escritorio y móvil

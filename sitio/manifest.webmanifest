@@ -1,16 +1,44 @@
 {
+  "id": "./app.html",
   "name": "RINOVAIA",
   "short_name": "RINOVAIA",
-  "description": "Arquitectura, ingeniería y gestión de proyectos. Diseña. Construye. Administra.",
+  "description": "Arquitectura, ingeniería, control de obra y administración en una sola plataforma. Diseña. Construye. Administra.",
   "lang": "es-MX",
-  "start_url": "./?source=pwa",
+  "dir": "ltr",
+  "start_url": "./app.html?source=pwa",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
   "background_color": "#0B0F17",
   "theme_color": "#0B0F17",
+  "categories": ["business", "productivity"],
+  "prefer_related_applications": false,
+  "launch_handler": { "client_mode": ["navigate-existing", "auto"] },
   "icons": [
-    { "src": "assets/img/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "assets/img/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "assets/img/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "assets/img/app/icon-48.png", "sizes": "48x48", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/app/icon-72.png", "sizes": "72x72", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/app/icon-96.png", "sizes": "96x96", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/app/icon-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/app/icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/app/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/app/icon-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/app/icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/app/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/logo-mark.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "assets/img/app/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/img/app/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Proyectos", "short_name": "Proyectos", "url": "./app.html?source=pwa#proyectos", "icons": [{ "src": "assets/img/app/icon-96.png", "sizes": "96x96" }] },
+    { "name": "Control de obra", "short_name": "Obra", "url": "./app.html?source=pwa#obra", "icons": [{ "src": "assets/img/app/icon-96.png", "sizes": "96x96" }] },
+    { "name": "Portal de distribuidores", "short_name": "Distribuidores", "url": "./distribuidores.html?source=pwa", "icons": [{ "src": "assets/img/app/icon-96.png", "sizes": "96x96" }] },
+    { "name": "Sitio RINOVAIA", "short_name": "Sitio", "url": "./?source=pwa", "icons": [{ "src": "assets/img/app/icon-96.png", "sizes": "96x96" }] }
+  ],
+  "screenshots": [
+    { "src": "assets/img/app/captura-plataforma-ancha.jpg", "sizes": "1280x800", "type": "image/jpeg", "form_factor": "wide", "label": "Estudio de diseño con planos, estructura y costos" },
+    { "src": "assets/img/app/captura-obra-ancha.jpg", "sizes": "1280x800", "type": "image/jpeg", "form_factor": "wide", "label": "Control de obra en tiempo real" },
+    { "src": "assets/img/app/captura-plataforma-movil.jpg", "sizes": "780x1688", "type": "image/jpeg", "form_factor": "narrow", "label": "La plataforma en tu celular" },
+    { "src": "assets/img/app/captura-sitio-movil.jpg", "sizes": "780x1688", "type": "image/jpeg", "form_factor": "narrow", "label": "Diseña. Construye. Administra." }
   ]
 }
