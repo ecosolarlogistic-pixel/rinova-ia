@@ -35,7 +35,7 @@ Jerarquía de la app: H1 28–32 px, H2 20–24 px, H3 16–18 px, texto 14–16
 | `isotipo-claro.svg` | Isotipo grafito/oro | Fondos claros y reportes |
 | `isotipo-blanco.svg`, `isotipo-negro.svg`, `isotipo-plata.svg` | Monocromáticas | Planos, sellos, bordado |
 | `logo-circular.svg` | Circular | Avatar y perfiles sociales |
-| `logo-mark.svg`, `icon-*.png`, `favicon-32.png` | Reducida / app icon | Favicon e icono de la app |
+| `logo-mark.svg`, `app/icon-*.png`, `app/maskable-*.png`, `app/apple-*.png`, `../favicon.ico` | Reducida / app icon | Favicon e íconos de la app instalable (ver `docs/APP-INSTALABLE.md`) |
 
 El logotipo horizontal se compone en HTML (`.logo`): isotipo a la izquierda, nombre y descriptor a la derecha.
 Por debajo de 140 px de ancho se usa solo el isotipo.

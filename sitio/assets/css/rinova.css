@@ -140,8 +140,20 @@ input[type=checkbox],input[type=radio]{accent-color:var(--gold);width:18px;heigh
   background:var(--navy);color:#fff;border:1px solid var(--gold);border-radius:12px;padding:10px 14px;box-shadow:var(--shadow);cursor:pointer;font-weight:600;font-size:14px}
 .pwa-install.show{display:inline-flex}
 .pwa-install .x{margin-left:4px;opacity:.6;background:none;border:0;color:inherit;cursor:pointer;font-size:18px;line-height:1}
-.pwa-sheet{position:fixed;inset:auto 12px 12px 12px;z-index:70;max-width:420px;margin-left:auto;padding:20px;display:none}
-.pwa-sheet.show{display:block}
+.pwa-sheet{position:fixed;inset:auto 12px calc(12px + env(safe-area-inset-bottom)) 12px;z-index:70;max-width:440px;margin-left:auto;padding:20px;display:none;
+  color:var(--graphite);border-top:3px solid var(--gold);box-shadow:0 24px 60px -18px rgba(11,15,23,.55)}
+.pwa-sheet.show{display:block;animation:pwaIn .35s var(--ease)}
+@keyframes pwaIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.pwa-sheet-h{display:flex;gap:12px;align-items:center}
+.pwa-sheet-h img{border-radius:11px}
+.pwa-sheet-h b{display:block;font-family:var(--display);font-size:18px}
+.pwa-sheet-h small{color:var(--muted);font-size:13px}
+.pwa-steps{margin:14px 0 16px;padding-left:22px;color:var(--graphite);font-size:14.5px;line-height:1.5;display:grid;gap:8px}
+.pwa-steps li::marker{color:var(--gold-ink);font-weight:700}
+.pwa-sheet-a{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pwa-steps svg,.ol svg,.alt svg{display:inline-block;vertical-align:-3px}
+.is-app [data-pwa-link]{display:none!important}
+@media (prefers-reduced-motion:reduce){.pwa-sheet.show{animation:none}}
 
 /* Aviso de maqueta */
 .demo-banner{font-size:12.5px;color:var(--warn);background:#FBF4E4;border:1px solid #EAD3A8;border-radius:10px;padding:8px 12px}
