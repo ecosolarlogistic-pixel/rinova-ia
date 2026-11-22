@@ -3,7 +3,8 @@ const VERSION = 'rinovaia-v5';
 const PRECACHE = [
   './', 'index.html', 'app.html', 'distribuidores.html', 'instalar.html', 'offline.html',
   'manifest.webmanifest', 'favicon.ico',
-  'assets/css/rinova.css', 'assets/js/facade.js', 'assets/js/estudio.js', 'assets/js/plataforma.js', 'pwa.js',
+  'assets/css/rinova.css', 'assets/js/facade.js', 'assets/js/proyecto.js', 'assets/js/planos.js', 'assets/js/estudio.js', 'assets/js/croquis.js',
+  'assets/js/plataforma.js', 'pwa.js',
   'assets/fonts/montserrat.woff2', 'assets/fonts/inter.woff2',
   'assets/img/logo-mark.svg', 'assets/img/isotipo.svg', 'assets/img/logo-circular.svg', 'assets/img/hero-residencia.svg',
   'assets/img/app/icon-96.png', 'assets/img/app/icon-192.png', 'assets/img/app/icon-512.png',
