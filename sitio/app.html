@@ -244,6 +244,75 @@ dialog .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin
 .ai-in input:focus{outline:none;border-color:var(--gold)}
 .ai-foot{font-size:11.5px;color:#7E889C;padding:0 18px 14px}
 
+/* Formulario ampliado */
+.params .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.params .row3 label,.params .row label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[hidden]{display:none !important}
+.hint{margin:-10px 0 0;font-size:12px;color:var(--muted)}
+.cq-up{display:grid;gap:8px;padding:14px;border:1px dashed var(--silver);border-radius:12px;background:#FBFCFD}
+.cq-up small{font-size:12px;color:var(--muted);line-height:1.4}
+.cq-cur{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px}
+.cq-cur span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-text{cursor:pointer;font-weight:600;font-size:13px}
+/* Láminas */
+.sheet-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.sheet-pick{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted);flex:1 1 260px;min-width:0}
+.sheet-pick select{flex:1;min-width:0;min-height:42px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;font-weight:600;color:var(--graphite)}
+.sheet-acts{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+.sheet-view{overflow-x:auto}
+.sheet-view svg{min-width:640px}
+@media(max-width:640px){.sheet-acts{margin-left:0;width:100%;display:grid;grid-template-columns:1fr 1.4fr}}
+/* Análisis experto */
+.an-head{display:flex;gap:18px;align-items:center;padding:18px;border-radius:14px;background:var(--navy);color:#fff}
+.an-score{flex:none;width:96px;height:96px;border-radius:50%;display:grid;place-items:center;align-content:center;background:var(--navy-2);border:2px solid var(--gold)}
+.an-score b{font-family:var(--display);font-size:34px;line-height:1;color:var(--gold) !important}
+.an-score small{font-size:11px;color:var(--navy-text)}
+.an-sum p{margin:0}.an-sum .eyebrow{color:var(--gold);margin-bottom:6px}
+.an-sum p:last-child{font-size:15px;line-height:1.55}
+.an-bars .cb{grid-template-columns:150px 1fr 40px}
+.an-recs{margin:0;padding-left:20px;display:grid;gap:8px;font-size:14px}
+.an-sec{margin-top:20px}
+.an-sec h4{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-family:var(--sans);font-weight:700;margin:0 0 10px}
+.an-list{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:8px}
+.an-list li{display:grid;grid-template-columns:24px 1fr;gap:10px;align-items:start;font-size:14px;line-height:1.5;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.an-list .ic{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;background:var(--ok)}
+.an-list .warn .ic{background:var(--warn)}.an-list .bad .ic{background:var(--bad)}
+.ai-box{margin-top:22px;border:1px solid rgba(212,175,55,.5);border-radius:14px;padding:18px;background:linear-gradient(180deg,#FFFDF6,#fff)}
+.ai-box-h{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.ai-box-h h3{font-size:18px}.ai-box-h small{color:var(--muted);font-size:13px}
+.ai-text{font-size:14.5px;line-height:1.6;margin-top:12px}
+.ai-text h5{font-size:15px;margin:14px 0 4px;font-family:var(--display)}
+.ai-text ul{margin:4px 0;padding-left:20px}
+.ai-stale{font-size:13px;color:var(--warn);margin:12px 0 0}
+@media(max-width:640px){.an-head{flex-direction:column;align-items:flex-start}.an-bars .cb{grid-template-columns:1fr 36px}}
+/* Diálogo de croquis */
+dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
+.cq-in{display:flex;flex-direction:column;max-height:calc(100dvh - 24px)}
+.cq-hd{display:flex;justify-content:space-between;gap:12px;padding:20px 22px 14px;border-bottom:1px solid var(--line)}
+.cq-hd .eyebrow{color:var(--gold-ink);margin:0 0 4px}
+.cq-hd small{color:var(--muted);font-size:12.5px;word-break:break-all}
+.cq-x{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:22px;cursor:pointer;flex:none}
+.cq-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;padding:18px 22px;overflow-y:auto}
+.cq-pic{background:var(--mist);border:1px solid var(--line);border-radius:12px;height:min(460px,60dvh);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:8px}
+.cq-pic img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
+.cq-load{color:var(--muted);font-size:14px;text-align:center;padding:20px}
+.cq-form{display:grid;gap:12px;align-content:start}
+.cq-form .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cq-form .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.cq-form #cqStatus{justify-self:start}
+.cq-notes{margin:0;padding-left:18px;font-size:13px;color:var(--muted);display:grid;gap:6px}
+.cq-acts{display:flex;justify-content:flex-end;gap:8px;padding:14px 22px 20px;border-top:1px solid var(--line);flex-wrap:wrap}
+@media(max-width:760px){.cq-grid{grid-template-columns:1fr;padding:14px}.cq-pic{height:240px}.cq-acts .btn{flex:1}}
+/* Impresión del juego de planos */
+#printSheets{display:none}
+@media print{
+  @page{size:landscape;margin:8mm}
+  body.printing-sheets>*:not(#printSheets){display:none !important}
+  body.printing-sheets #printSheets{display:block}
+  #printSheets .sheet{page-break-after:always;break-after:page}
+  #printSheets .sheet:last-child{page-break-after:auto;break-after:auto}
+  #printSheets svg{width:100%;height:auto;max-height:190mm;border:0}
+}
 /* Generación */
 .gen-overlay{position:fixed;inset:0;z-index:80;background:rgba(11,15,23,.78);backdrop-filter:blur(6px);display:none;place-items:center;padding:20px}
 .gen-overlay.on{display:grid}
@@ -348,7 +417,7 @@ dialog .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin
           <div class="title"><small>Proyecto · RV-0142</small><label class="sr" for="pName">Nombre del proyecto</label><input class="pname" id="pName" value="Residencia Lomas"></div>
           <span class="live"><span class="dot"></span><span id="liveTxt">Sincronizado</span></span>
           <div class="acts">
-            <button class="btn btn-ghost btn-sm" id="btnExport"><svg><use href="#i-down"/></svg>Exportar plano</button>
+            <button class="btn btn-ghost btn-sm" id="btnExport" data-export><svg><use href="#i-down"/></svg>Exportar plano</button>
             <button class="btn btn-ink btn-sm" data-present><svg><use href="#i-play"/></svg>Presentar</button>
           </div>
         </div>
@@ -356,29 +425,51 @@ dialog .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin
         <div class="studio">
           <form class="card params" id="params" aria-label="Parámetros del proyecto">
             <h3>Parámetros del proyecto</h3>
+            <div class="cq-up">
+              <label class="btn btn-ink btn-sm" for="upCroquis"><svg><use href="#i-up"/></svg>Subir croquis (foto o PDF)</label>
+              <input type="file" id="upCroquis" accept="image/*,application/pdf,.pdf,.heic" class="sr">
+              <small>RINOVAIA lee el croquis y desarrolla el juego completo de planos.</small>
+              <div class="cq-cur" id="cqCurrent" hidden><span>Croquis: <b id="cqCurName"></b></span><button type="button" class="btn-text" id="cqRemove">Quitar</button></div>
+            </div>
+            <div class="field"><label for="pType">Tipo de inmueble</label>
+              <select class="input" id="pType"><option value="casa">Casa</option><option value="deptos">Departamentos</option><option value="comercial">Centro comercial</option><option value="bodega">Bodega</option></select>
+            </div>
+            <div class="row">
+              <div class="field"><label for="pState">Estado</label><select class="input" id="pState"></select></div>
+              <div class="field"><label for="pCity">Ciudad</label><select class="input" id="pCity"></select></div>
+            </div>
+            <p class="hint" id="locHint"></p>
             <div class="row">
               <div class="field"><label for="pFront">Frente (m)</label><input class="input num" id="pFront" type="number" min="8" max="40" step="0.5" value="18"></div>
               <div class="field"><label for="pDepth">Fondo (m)</label><input class="input num" id="pDepth" type="number" min="10" max="40" step="0.5" value="22"></div>
             </div>
-            <div class="range"><div class="lb"><label for="pFloors">Niveles</label><output id="oFloors">3</output></div><input type="range" id="pFloors" min="1" max="6" value="3"></div>
+            <div class="range"><div class="lb"><label for="pFloors">Número de pisos</label><output id="oFloors">3</output></div><input type="range" id="pFloors" min="1" max="8" value="3"></div>
+            <div class="row3">
+              <div class="field" id="fBeds"><label for="pBeds" id="lBeds">Recámaras</label><input class="input num" id="pBeds" type="number" min="0" max="10" step="1" inputmode="numeric"></div>
+              <div class="field"><label for="pBaths" id="lBaths">Baños</label><input class="input num" id="pBaths" type="number" min="0" max="10" step="1" inputmode="numeric"></div>
+              <div class="field"><label for="pHalf" id="lHalf">Medios baños</label><input class="input num" id="pHalf" type="number" min="0" max="6" step="1" inputmode="numeric"></div>
+            </div>
+            <div class="row">
+              <div class="field"><label for="pParking" title="Cajones de estacionamiento">Estacionamiento</label><input class="input num" id="pParking" type="number" min="0" max="400" step="1" inputmode="numeric"></div>
+              <div class="field" id="fUnits" hidden><label for="pUnits" id="lUnits">Unidades por piso</label><input class="input num" id="pUnits" type="number" min="1" max="24" step="1" inputmode="numeric"></div>
+            </div>
+            <div class="field" id="fLayout"><label for="pLayout">Distribución</label>
+              <select class="input" id="pLayout"><option value="abierto">Concepto abierto</option><option value="tradicional">Tradicional (espacios separados)</option><option value="rec-pb">Con recámara en planta baja</option><option value="planta-libre">Planta libre</option></select>
+            </div>
+            <div class="field"><label for="pFlooring">Pisos (acabado)</label>
+              <select class="input" id="pFlooring"><option value="porcelanato">Porcelanato</option><option value="marmol">Mármol</option><option value="madera">Madera de ingeniería</option><option value="concreto">Concreto pulido</option><option value="vinil">Vinil / SPC</option><option value="epoxico">Epóxico industrial</option></select>
+            </div>
             <div class="range"><div class="lb"><label for="pBays">Crujías en fachada</label><output id="oBays">7</output></div><input type="range" id="pBays" min="3" max="9" step="1" value="7"></div>
             <div class="field"><label id="lStyle">Estilo</label>
               <div class="seg" role="group" aria-labelledby="lStyle" id="segStyle"><button type="button" data-v="moderno" aria-pressed="true">Contemporáneo</button><button type="button" data-v="mediterraneo" aria-pressed="false">Mediterráneo</button><button type="button" data-v="renacentista" aria-pressed="false">Clásico</button></div>
             </div>
-            <div class="row">
-              <div class="field"><label for="pUse">Uso</label><select class="input" id="pUse"><option value="res">Residencial</option><option value="com">Comercial</option></select></div>
-              <div class="field"><label for="pFinish">Acabados</label><select class="input" id="pFinish"><option value="eco">Económico</option><option value="med">Medio</option><option value="pre" selected>Premium</option></select></div>
-            </div>
-            <div class="field"><label for="pCity">Ubicación</label>
-              <select class="input" id="pCity">
-                <option value="cdmx">Ciudad de México</option><option value="gdl">Guadalajara</option><option value="mty">Monterrey</option><option value="pue">Puebla</option><option value="qro">Querétaro</option><option value="mid">Mérida</option><option value="cun">Cancún</option>
-              </select>
-            </div>
+            <div class="field"><label for="pFinish">Acabados</label><select class="input" id="pFinish"><option value="eco">Económico</option><option value="med">Medio</option><option value="pre" selected>Premium</option></select></div>
             <div class="field"><label for="pPalette">Material de fachada</label><select class="input" id="pPalette"><option value="concreto">Concreto aparente</option><option value="marmol">Mármol claro</option><option value="travertino">Travertino</option><option value="terracota">Terracota</option></select></div>
             <div class="sep"></div>
             <div class="range"><div class="lb"><label for="pMonth">Mes de la visualización</label><output id="oMonth">Junio</output></div><input type="range" id="pMonth" min="1" max="12" value="6"></div>
             <div class="range"><div class="lb"><label for="pHour">Hora del día</label><output id="oHour">18:30</output></div><input type="range" id="pHour" min="7" max="20" step="0.5" value="18.5"></div>
             <button class="btn btn-gold gen" type="submit"><svg><use href="#i-ia"/></svg>Guardar cambios y sincronizar</button>
+            <button class="btn btn-ghost gen" type="button" data-expert><svg><use href="#i-eye"/></svg>Análisis experto</button>
           </form>
 
           <div>
@@ -395,6 +486,7 @@ dialog .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin
                 <button role="tab" id="t-estructura" aria-controls="p-estructura" aria-selected="false" data-tab="estructura">Estructuras <span class="chip ok" id="tabStructChip">OK</span></button>
                 <button role="tab" id="t-planos" aria-controls="p-planos" aria-selected="false" data-tab="planos">Planos e instalaciones</button>
                 <button role="tab" id="t-costos" aria-controls="p-costos" aria-selected="false" data-tab="costos">Presupuesto</button>
+                <button role="tab" id="t-analisis" aria-controls="p-analisis" aria-selected="false" data-tab="analisis">Análisis experto <span class="chip ok" id="tabExpertChip">—</span></button>
               </div>
 
               <section class="pane on" id="p-render" role="tabpanel" aria-labelledby="t-render">
@@ -419,14 +511,21 @@ dialog .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin
               </section>
 
               <section class="pane" id="p-planos" role="tabpanel" aria-labelledby="t-planos">
-                <div class="layers" id="layers">
-                  <label><input type="checkbox" data-layer="arq" checked> Arquitectónico</label>
-                  <label><input type="checkbox" data-layer="cot" checked> Cotas</label>
-                  <label><input type="checkbox" data-layer="ele" checked> Eléctrico</label>
-                  <label><input type="checkbox" data-layer="hid" checked> Hidráulico</label>
-                  <label style="margin-left:auto"><span class="sr">Nivel</span><select id="planLevel" style="border:0;background:none;font-weight:600"></select></label>
+                <div class="sheet-bar">
+                  <label class="sheet-pick"><span>Lámina</span><select id="planSheet"></select></label>
+                  <span class="chip" id="sheetCount">—</span>
+                  <div class="sheet-acts">
+                    <button class="btn btn-ghost btn-sm" type="button" data-export><svg><use href="#i-down"/></svg>Lámina SVG</button>
+                    <button class="btn btn-gold btn-sm" type="button" data-print-set><svg><use href="#i-clip"/></svg>Juego completo en PDF</button>
+                  </div>
                 </div>
-                <div id="planOut"></div>
+                <div class="layers" id="layers">
+                  <label class="lay"><input type="checkbox" data-layer="arq" checked> Arquitectónico</label>
+                  <label class="lay"><input type="checkbox" data-layer="cot" checked> Cotas</label>
+                  <label class="lay"><input type="checkbox" data-layer="ele"> Eléctrico</label>
+                  <label class="lay"><input type="checkbox" data-layer="hid"> Hidráulico</label>
+                </div>
+                <div id="planOut" class="sheet-view"></div>
                 <div class="panel" style="margin-top:16px"><h4>Diagrama unifilar eléctrico</h4><div class="tscroll" id="uniOut"></div></div>
                 <div style="margin-top:18px">
                   <div class="box-h"><div><h2 style="font-size:18px">Archivos y versiones</h2><small>Revisiones y entregables del proyecto</small></div>
@@ -446,6 +545,30 @@ dialog .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin
                 <div class="costbars" id="costOut"></div>
                 <div class="total"><span>Total estimado <small class="muted" id="costPer"></small></span><b class="num" id="costTotal">—</b></div>
                 <p class="note">Precios unitarios de referencia para la región seleccionada. Tipo de cambio de demostración: 18.50 MXN por USD.</p>
+              </section>
+
+              <section class="pane" id="p-analisis" role="tabpanel" aria-labelledby="t-analisis">
+                <div class="an-head">
+                  <div class="an-score"><b id="anScore">—</b><small>de 100</small></div>
+                  <div class="an-sum"><p class="eyebrow">Dictamen de arquitecto</p><p id="anSummary">—</p></div>
+                </div>
+                <div class="grid2" style="margin-top:16px">
+                  <div class="panel"><h4>Calificación por área</h4><div class="costbars an-bars" id="anBars"></div></div>
+                  <div class="panel"><h4>Prioridades</h4><ol class="an-recs" id="anRecs"></ol></div>
+                </div>
+                <div id="anOut"></div>
+                <div class="ai-box">
+                  <div class="ai-box-h">
+                    <div><h3>Segunda opinión con RINOVAIA AI</h3><small>Un arquitecto virtual revisa el proyecto completo y redacta un dictamen con recomendaciones.</small></div>
+                    <button class="btn btn-gold btn-sm" type="button" id="btnAI"><svg><use href="#i-ia"/></svg>Pedir dictamen con IA</button>
+                  </div>
+                  <div id="aiOut" hidden>
+                    <p class="ai-stale" id="aiStale" hidden>El proyecto cambió desde este dictamen. Vuelve a pedirlo para actualizarlo.</p>
+                    <div class="ai-text" id="aiBody"></div>
+                    <small class="muted" id="aiMeta"></small>
+                  </div>
+                </div>
+                <p class="note">Revisión preliminar con criterios de práctica profesional y reglamentos de construcción de México. No sustituye el dictamen del Director Responsable de Obra ni el uso de suelo oficial del predio.</p>
               </section>
             </div>
           </div>
@@ -552,6 +675,33 @@ dialog .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin
   </div>
 </div>
 
+<!-- Croquis -->
+<dialog id="dlgCroquis" class="cq-dlg" aria-labelledby="cqTitle">
+  <div class="cq-in">
+    <div class="cq-hd">
+      <div><p class="eyebrow">Croquis a planos</p><h3 id="cqTitle">Lectura del croquis</h3><small id="cqName"></small></div>
+      <button type="button" class="cq-x" id="cqClose" aria-label="Cerrar">×</button>
+    </div>
+    <div class="cq-grid">
+      <div class="cq-pic" id="cqPic"></div>
+      <div class="cq-form">
+        <span class="chip" id="cqStatus"><span class="dot"></span>Leyendo…</span>
+        <div class="field"><label for="cqType">Tipo de inmueble</label><select class="input" id="cqType"><option value="casa">Casa</option><option value="deptos">Departamentos</option><option value="comercial">Centro comercial</option><option value="bodega">Bodega</option></select></div>
+        <div class="row"><div class="field"><label for="cqFront">Frente (m)</label><input class="input num" id="cqFront" type="number" min="8" max="40" step="0.5"></div><div class="field"><label for="cqDepth">Fondo (m)</label><input class="input num" id="cqDepth" type="number" min="10" max="40" step="0.5"></div></div>
+        <div class="row3"><div class="field"><label for="cqFloors">Pisos</label><input class="input num" id="cqFloors" type="number" min="1" max="8"></div><div class="field"><label for="cqBeds">Recámaras</label><input class="input num" id="cqBeds" type="number" min="0" max="10"></div><div class="field"><label for="cqParking">Cajones</label><input class="input num" id="cqParking" type="number" min="0" max="400"></div></div>
+        <div class="row3"><div class="field"><label for="cqBaths">Baños</label><input class="input num" id="cqBaths" type="number" min="0" max="10"></div><div class="field"><label for="cqHalf">Medios baños</label><input class="input num" id="cqHalf" type="number" min="0" max="6"></div><div class="field"><label for="cqUnits">Unid. / piso</label><input class="input num" id="cqUnits" type="number" min="1" max="24"></div></div>
+        <div class="field"><label for="cqLayout">Distribución</label><select class="input" id="cqLayout"><option value="abierto">Concepto abierto</option><option value="tradicional">Tradicional</option><option value="rec-pb">Con recámara en planta baja</option><option value="planta-libre">Planta libre</option></select></div>
+        <ul class="cq-notes" id="cqNotes"></ul>
+      </div>
+    </div>
+    <div class="cq-acts">
+      <button type="button" class="btn btn-ghost" id="cqCancel">Cancelar</button>
+      <button type="button" class="btn btn-gold" id="cqGo" disabled><svg><use href="#i-plano"/></svg>Generar juego de planos</button>
+    </div>
+  </div>
+</dialog>
+<div id="printSheets" aria-hidden="true"></div>
+
 <!-- Presentación -->
 <div class="present" id="present" role="dialog" aria-modal="true" aria-label="Modo presentación">
   <button class="close" id="presentClose" aria-label="Cerrar presentación">×</button>
@@ -576,8 +726,15 @@ dialog .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <button class="pwa-install" data-pwa-install-btn hidden>Instalar app <span class="x" data-pwa-dismiss aria-label="Ocultar">×</span></button>
 
+<script>
+  // RINOVAIA AI: función de Supabase (supabase/functions/rinova-ia). Si no está desplegada, la app usa el análisis por reglas.
+  window.RINOVA_IA = { endpoint: 'https://evjoqaphylggvojthezj.supabase.co/functions/v1/rinova-ia', key: 'sb_publishable_ll_SpxeCPe8VEFVVX1KpMg_s6DfoWkX' };
+</script>
 <script src="assets/js/facade.js"></script>
+<script src="assets/js/proyecto.js"></script>
+<script src="assets/js/planos.js"></script>
 <script src="assets/js/estudio.js"></script>
+<script src="assets/js/croquis.js"></script>
 <script src="assets/js/plataforma.js"></script>
 <script src="pwa.js" defer></script>
 </body>
