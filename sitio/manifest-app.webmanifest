@@ -1,16 +1,17 @@
 {
   "id": "./app.html",
-  "name": "Rinova IA · Estudio",
-  "short_name": "Estudio",
-  "description": "Estudio de diseño y portal de distribuidores de Rinova IA.",
+  "name": "RINOVAIA · Plataforma",
+  "short_name": "RINOVAIA",
+  "description": "Proyectos, planos, estructuras, obra y administración de RINOVAIA.",
   "lang": "es-MX",
   "start_url": "./app.html?source=pwa",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#ece4d3",
-  "theme_color": "#1c1712",
+  "background_color": "#0B0F17",
+  "theme_color": "#0B0F17",
   "shortcuts": [
-    { "name": "Mis proyectos", "url": "./app.html#proyectos" },
+    { "name": "Proyectos", "url": "./app.html#proyectos" },
+    { "name": "Obra", "url": "./app.html#obra" },
     { "name": "Portal de distribuidores", "url": "./distribuidores.html" }
   ],
   "icons": [

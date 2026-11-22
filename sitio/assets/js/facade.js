@@ -1,4 +1,4 @@
-/* Rinova IA — generador paramétrico de fachadas (SVG).
+/* RINOVAIA — generador paramétrico de fachadas (SVG).
    Lo usa la landing (modo "line", trazo de plano) y el Estudio (modo "render", con sol y sombras
    según latitud, mes y hora). En producción este lugar lo ocupa el Motor Generativo (difusión);
    aquí sirve como maqueta funcional y vista previa instantánea. */
@@ -35,7 +35,7 @@
 
   function build(opts) {
     var o = Object.assign({ floors: 3, bays: 7, style: 'renacentista', mode: 'line', phi: true,
-      lat: 19.4, month: 6, hour: 16, width: 900, height: 600, palette: 'travertino', id: 'f' }, opts || {});
+      lat: 19.4, month: 6, hour: 16, width: 900, height: 600, palette: 'concreto', id: 'f' }, opts || {});
     var W = o.width, H = o.height, ground = H - 70;
     var floors = Math.max(1, Math.min(7, o.floors | 0));
     var bays = Math.max(3, Math.min(11, o.bays | 0));
@@ -52,7 +52,8 @@
     var pal = {
       travertino: { wall: '#e9dcc2', wall2: '#d9c7a4', trim: '#f6efe0', roof: '#a5553a', glass: '#41566e', door: '#5a3e2b' },
       marmol: { wall: '#eeeae3', wall2: '#dcd6cb', trim: '#fbfaf7', roof: '#7d7466', glass: '#3c4f63', door: '#4a3d31' },
-      terracota: { wall: '#d9a47c', wall2: '#c48a62', trim: '#f2e2cc', roof: '#9a4a2e', glass: '#3d4d5e', door: '#5c3a24' }
+      terracota: { wall: '#d9a47c', wall2: '#c48a62', trim: '#f2e2cc', roof: '#9a4a2e', glass: '#3d4d5e', door: '#5c3a24' },
+      concreto: { wall: '#d6dae1', wall2: '#b4bbc6', trim: '#eef0f3', roof: '#3a4252', glass: '#2b3a52', door: '#262c36' }
     }[o.palette] || {};
 
     var s = sun(o.lat, o.month, o.hour);
@@ -60,17 +61,19 @@
     var shadowLen = Math.min(1.6, 1 / Math.tan(elev * Math.PI / 180)); // relación sombra/altura
     var shadowDir = s.hourAngle >= 0 ? 1 : -1; // el sol baja por la izquierda en la tarde: sombra a la derecha
     var depth = Math.min(14, 4 + shadowLen * 6);
+    var dusk = !isLine && s.elevation < 3; // anochecer: cielo azul profundo y ventanas encendidas
 
-    var stroke = isLine ? 'var(--f-line,#24436e)' : 'rgba(40,30,20,.55)';
+    var stroke = isLine ? 'var(--f-line,#2F4B7C)' : (dusk ? 'rgba(11,15,23,.7)' : 'rgba(24,32,43,.5)');
     var sw = isLine ? 1.2 : 0.8;
     var out = [];
 
     out.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Fachada ' + o.style + ' de ' + floors + ' niveles y ' + bays + ' crujías">');
     out.push('<defs>' +
-      '<linearGradient id="' + id + 'sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + (elev < 12 ? '#e7b98a' : '#b9cde0') + '"/><stop offset="1" stop-color="' + (elev < 12 ? '#f6e3c6' : '#efe7d6') + '"/></linearGradient>' +
+      '<linearGradient id="' + id + 'sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + (dusk ? '#0B0F17' : elev < 12 ? '#d9a77c' : '#aec3da') + '"/><stop offset=".7" stop-color="' + (dusk ? '#1d2840' : elev < 12 ? '#efcfa6' : '#dfe7f0') + '"/><stop offset="1" stop-color="' + (dusk ? '#4d4552' : elev < 12 ? '#f6e3c6' : '#eef2f6') + '"/></linearGradient>' +
       '<linearGradient id="' + id + 'wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + pal.wall + '"/><stop offset="1" stop-color="' + pal.wall2 + '"/></linearGradient>' +
-      '<linearGradient id="' + id + 'glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fa6bd"/><stop offset=".45" stop-color="' + pal.glass + '"/><stop offset="1" stop-color="#26313d"/></linearGradient>' +
-      '<pattern id="' + id + 'grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="rgba(36,67,110,.08)" stroke-width="1"/></pattern>' +
+      (dusk ? '<linearGradient id="' + id + 'glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBE3A6"/><stop offset=".6" stop-color="#E7B95A"/><stop offset="1" stop-color="#B97E2C"/></linearGradient>'
+        : '<linearGradient id="' + id + 'glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9fb3c9"/><stop offset=".45" stop-color="' + pal.glass + '"/><stop offset="1" stop-color="#1c2533"/></linearGradient>') +
+      '<pattern id="' + id + 'grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="rgba(47,75,124,.08)" stroke-width="1"/></pattern>' +
       '</defs>');
 
     // Fondo
@@ -79,18 +82,18 @@
     } else {
       out.push('<rect width="' + W + '" height="' + ground + '" fill="url(#' + id + 'sky)"/>');
       var sunX = W / 2 - (s.hourAngle / 90) * (W * 0.45), sunY = ground - (elev / 90) * (ground - 40) - 20;
-      out.push('<circle cx="' + r(sunX) + '" cy="' + r(sunY) + '" r="26" fill="#fff4d8" opacity=".9"/><circle cx="' + r(sunX) + '" cy="' + r(sunY) + '" r="60" fill="#fff4d8" opacity=".25"/>');
+      if (!dusk) out.push('<circle cx="' + r(sunX) + '" cy="' + r(sunY) + '" r="26" fill="#fff4d8" opacity=".9"/><circle cx="' + r(sunX) + '" cy="' + r(sunY) + '" r="60" fill="#fff4d8" opacity=".25"/>');
       // colinas lejanas
-      out.push('<path d="M0 ' + (ground - 40) + ' Q ' + W * 0.2 + ' ' + (ground - 95) + ' ' + W * 0.42 + ' ' + (ground - 48) + ' T ' + W + ' ' + (ground - 60) + ' V' + ground + ' H0Z" fill="#9fae8f" opacity=".55"/>');
-      out.push('<rect y="' + ground + '" width="' + W + '" height="' + (H - ground) + '" fill="#cdbf9f"/>');
-      out.push('<rect y="' + ground + '" width="' + W + '" height="6" fill="#b7a987"/>');
+      out.push('<path d="M0 ' + (ground - 40) + ' Q ' + W * 0.2 + ' ' + (ground - 95) + ' ' + W * 0.42 + ' ' + (ground - 48) + ' T ' + W + ' ' + (ground - 60) + ' V' + ground + ' H0Z" fill="' + (dusk ? '#1a2235' : '#9fae8f') + '" opacity=".55"/>');
+      out.push('<rect y="' + ground + '" width="' + W + '" height="' + (H - ground) + '" fill="' + (dusk ? '#121a2a' : '#c9ced6') + '"/>');
+      out.push('<rect y="' + ground + '" width="' + W + '" height="6" fill="' + (dusk ? '#D4AF37' : '#aeb5c1') + '" opacity="' + (dusk ? .5 : 1) + '"/>');
       // sombra proyectada del edificio sobre el suelo
       var shW = (ground - top) * shadowLen * 0.35;
-      out.push('<path d="M' + r(x0) + ' ' + ground + ' H' + r(x0 + BW) + ' L' + r(x0 + BW + shadowDir * shW) + ' ' + r(ground + 24) + ' H' + r(x0 + shadowDir * shW) + ' Z" fill="rgba(60,45,30,.22)"/>');
+      out.push('<path d="M' + r(x0) + ' ' + ground + ' H' + r(x0 + BW) + ' L' + r(x0 + BW + shadowDir * shW) + ' ' + r(ground + 24) + ' H' + r(x0 + shadowDir * shW) + ' Z" fill="' + (dusk ? 'rgba(212,175,55,.08)' : 'rgba(24,32,43,.2)') + '"/>');
       // cipreses
       [x0 - 60, x0 + BW + 40].forEach(function (cx, k) {
         var th = 140 + k * 30;
-        out.push('<path d="M' + r(cx) + ' ' + ground + ' C ' + r(cx - 16) + ' ' + r(ground - th * 0.5) + ' ' + r(cx - 6) + ' ' + r(ground - th) + ' ' + r(cx) + ' ' + r(ground - th - 10) + ' C ' + r(cx + 6) + ' ' + r(ground - th) + ' ' + r(cx + 16) + ' ' + r(ground - th * 0.5) + ' ' + r(cx) + ' ' + ground + 'Z" fill="#3f5a3c"/>');
+        out.push('<path d="M' + r(cx) + ' ' + ground + ' C ' + r(cx - 16) + ' ' + r(ground - th * 0.5) + ' ' + r(cx - 6) + ' ' + r(ground - th) + ' ' + r(cx) + ' ' + r(ground - th - 10) + ' C ' + r(cx + 6) + ' ' + r(ground - th) + ' ' + r(cx + 16) + ' ' + r(ground - th * 0.5) + ' ' + r(cx) + ' ' + ground + 'Z" fill="' + (dusk ? '#0E1624' : '#3f5a3c') + '"/>');
       });
     }
 
@@ -182,14 +185,14 @@
     } else if (o.style === 'mediterraneo') {
       out.push('<path d="M' + r(x0 - 18) + ' ' + r(top - corn) + ' L' + r(x0 + BW * 0.18) + ' ' + r(top - corn - fh * 0.7) + ' H' + r(x0 + BW * 0.82) + ' L' + r(x0 + BW + 18) + ' ' + r(top - corn) + 'Z"' + (isLine ? '' : ' fill="' + pal.roof + '"') + '/>');
     } else {
-      out.push('<rect x="' + r(x0 + BW * 0.62) + '" y="' + r(top - corn - fh * 0.55) + '" width="' + r(BW * 0.3) + '" height="' + r(fh * 0.55) + '"' + (isLine ? '' : ' fill="' + pal.wall2 + '"') + '/>');
+      out.push('<rect x="' + r(x0 + BW * 0.62) + '" y="' + r(top - corn - fh * 0.5) + '" width="' + r(BW * 0.3) + '" height="' + r(fh * 0.5) + '"' + (isLine ? '' : ' fill="' + (o.style === 'moderno' ? '#2A3346' : pal.wall2) + '"') + '/>');
     }
     out.push('</g>');
 
     // Cotas (modo plano)
     if (isLine) {
       var dy = ground + 30;
-      out.push('<g stroke="var(--f-dim,#b0823a)" stroke-width="1" fill="var(--f-dim,#b0823a)" font-family="Manrope,system-ui,sans-serif" font-size="11">' +
+      out.push('<g stroke="var(--f-dim,#B8932A)" stroke-width="1" fill="var(--f-dim,#B8932A)" font-family="Inter,system-ui,sans-serif" font-size="11">' +
         '<line x1="' + r(x0) + '" y1="' + dy + '" x2="' + r(x0 + BW) + '" y2="' + dy + '"/>' +
         '<line x1="' + r(x0) + '" y1="' + (dy - 6) + '" x2="' + r(x0) + '" y2="' + (dy + 6) + '"/><line x1="' + r(x0 + BW) + '" y1="' + (dy - 6) + '" x2="' + r(x0 + BW) + '" y2="' + (dy + 6) + '"/>' +
         '<text x="' + r(W / 2) + '" y="' + (dy - 6) + '" text-anchor="middle" stroke="none">' + (o.frontM ? o.frontM * 0.92 : bays * 2.6).toFixed(2) + ' m</text>' +
@@ -205,7 +208,7 @@
       // ajusta la espiral al alto del edificio
       if (sw2 / PHI > bH) sw2 = bH * PHI;
       sp = spiral(W / 2 - sw2 / 2, ground - sw2 / PHI, sw2);
-      out.push('<g class="f-phi" fill="none" stroke="' + (isLine ? 'var(--f-dim,#b0823a)' : 'rgba(214,178,106,.95)') + '" stroke-width="' + (isLine ? 1 : 1.4) + '">' +
+      out.push('<g class="f-phi" fill="none" stroke="' + (isLine ? 'var(--f-dim,#B8932A)' : 'rgba(212,175,55,.95)') + '" stroke-width="' + (isLine ? 1 : 1.4) + '">' +
         '<g opacity=".45" stroke-dasharray="3 4">' + sp.rects + '</g><path d="' + sp.path + '" class="f-spiral"/></g>');
     }
 

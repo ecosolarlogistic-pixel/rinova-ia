@@ -1,20 +1,23 @@
-# Rinova IA · plataforma web
+# RINOVAIA · plataforma web
 
-Arquitectura renacentista, IA generativa e ingeniería en una sola plataforma.
-Este repositorio contiene la **maqueta funcional premium** de la plataforma: sitio público, Estudio de
-diseño, portal de distribuidores y app instalable, lista para versionarse en GitHub y publicarse en Hostinger.
+**Diseña. Construye. Administra.** Arquitectura, ingeniería, control de obra y administración de proyectos
+en una sola plataforma. Identidad aplicada según el *Manual de Marca RINOVAIA v1.0* (ver [`docs/MARCA.md`](docs/MARCA.md)).
+
+Este repositorio contiene la **versión premium de la maqueta funcional**: sitio público, plataforma de
+proyectos, portal de distribuidores y app instalable, lista para publicarse en Hostinger.
 
 ## Qué hay
 
 | Pantalla | Archivo | Qué hace hoy |
 |---|---|---|
-| Landing pública | `sitio/index.html` | Propuesta de valor, el comité de expertos, los 4 entregables, tecnología, gobernanza, distribuidores, planes, preguntas y formulario de contacto. |
-| Estudio de diseño | `sitio/app.html` | Parámetros del proyecto y resultados que se recalculan al instante: render con sol según latitud, mes y hora; cálculo estructural con % de uso; planta con capas (arquitectónico, cotas, eléctrico, hidráulico) y unifilar; presupuesto por partidas en MXN/USD; modo presentación con envío por WhatsApp; biblioteca de proyectos; exportación del plano en SVG. |
+| Sitio público | `sitio/index.html` | Hero con la promesa de marca, pilares de servicio, módulos de la plataforma, proceso de la idea a la entrega, RINOVAIA AI, roles, distribuidores, planes Básico / Profesional / Empresarial, preguntas y formulario de cotización (guarda prospectos en Supabase). |
+| Plataforma | `sitio/app.html` | **Proyectos** (cartera con etapa, avance y presupuesto), **Estudio de diseño** (parámetros que recalculan visualización, estructura, planos y presupuesto), **Planos** (capas, unifilar, archivos y versiones con «Subir planos»), **Estructuras**, **Obra** (programa de obra, bitácora, «Registrar avance», «Agregar incidencia», «Generar reporte»), **Administración** (presupuesto por partidas MXN/USD), **RINOVAIA AI** (asistente con respuestas a partir de los datos del proyecto) y modo presentación con envío por WhatsApp. |
 | Portal de distribuidores | `sitio/distribuidores.html` | Rango y avance, comisiones, enlace de referido, ranking, prospectos, árbol de red, agenda, kit de presentación y plan de compensación. |
 | App instalable | `sitio/manifest*.webmanifest`, `sitio/sw.js`, `sitio/pwa.js` | Funciona sin conexión para lo ya visitado y muestra el botón "Instalar app". |
 
-> Los cálculos del Estudio son **fórmulas simplificadas de demostración** (están marcadas en pantalla).
-> En producción los sustituyen los módulos de la arquitectura descrita en `docs/ARQUITECTURA.md`.
+> Los cálculos son **fórmulas simplificadas de demostración** (marcadas en pantalla) y RINOVAIA AI es una
+> demostración con reglas. La bitácora, incidencias y archivos se guardan solo en el navegador. En producción
+> los sustituyen los módulos de `docs/ARQUITECTURA.md` y las tablas de Supabase.
 
 ## Estructura
 
@@ -22,14 +25,17 @@ diseño, portal de distribuidores y app instalable, lista para versionarse en Gi
 sitio/                      ← lo único que se publica en public_html
   index.html  app.html  distribuidores.html  offline.html
   manifest.webmanifest  manifest-app.webmanifest  sw.js  pwa.js  .htaccess
-  assets/css/rinova.css           sistema visual (tokens, tipografía, botones)
-  assets/js/facade.js             generador paramétrico de fachadas (SVG)
-  assets/js/estudio.js            lógica del Estudio
-  assets/fonts/*.woff2            Cormorant Garamond y Manrope autoalojadas (+ licencias OFL)
-  assets/img/                     logo, iconos de la app, imagen para compartir (1200×630)
-supabase/migrations/        esquema de datos (borrador, no aplicado)
+  assets/css/rinova.css           sistema visual: tokens de color, tipografía, botones y estados del manual
+  assets/js/facade.js             generador paramétrico de fachadas (SVG), con anochecer y concreto aparente
+  assets/js/estudio.js            lógica del Estudio, proyectos y presentación
+  assets/js/plataforma.js         Obra, archivos de planos y RINOVAIA AI
+  assets/fonts/*.woff2            Montserrat e Inter autoalojadas (+ licencias OFL)
+  assets/img/                     isotipo (color, claro, blanco, negro, plata), logo circular, iconos, hero y OG
+supabase/migrations/        esquema de datos
+docs/MARCA.md               cómo se aplicó el manual de marca
 docs/ARQUITECTURA.md        módulos, API y cómo encaja el prompt maestro
 docs/DESPLIEGUE.md          GitHub → Hostinger paso a paso
+docs/capturas/              capturas de escritorio y móvil
 .github/workflows/          copia sitio/ a la rama produccion (Hostinger la publica sola)
 ```
 

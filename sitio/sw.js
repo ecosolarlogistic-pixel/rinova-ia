@@ -1,11 +1,11 @@
-/* Rinova IA — service worker. Cada cambio de este archivo sube VERSION. */
-const VERSION = 'rinova-v2';
+/* RINOVAIA — service worker. Cada cambio de este archivo sube VERSION. */
+const VERSION = 'rinovaia-v3';
 const PRECACHE = [
   './', 'index.html', 'app.html', 'distribuidores.html', 'offline.html',
   'manifest.webmanifest', 'manifest-app.webmanifest',
-  'assets/css/rinova.css', 'assets/js/facade.js', 'assets/js/estudio.js', 'pwa.js',
-  'assets/fonts/cormorant-garamond.woff2', 'assets/fonts/manrope.woff2',
-  'assets/img/logo-mark.svg', 'assets/img/icon-192.png', 'assets/img/icon-512.png'
+  'assets/css/rinova.css', 'assets/js/facade.js', 'assets/js/estudio.js', 'assets/js/plataforma.js', 'pwa.js',
+  'assets/fonts/montserrat.woff2', 'assets/fonts/inter.woff2',
+  'assets/img/logo-mark.svg', 'assets/img/isotipo.svg', 'assets/img/hero-residencia.svg', 'assets/img/icon-192.png', 'assets/img/icon-512.png'
 ];
 
 self.addEventListener('install', (e) => {

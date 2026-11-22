@@ -1,4 +1,4 @@
-/* Rinova IA — botón "Instalar app".
+/* RINOVAIA — botón "Instalar app".
    Android / PC: evento beforeinstallprompt. iPhone, iPad y Safari en Mac: muestra los pasos.
    No aparece si ya se abre instalada. Se puede ocultar 14 días. Cualquier [data-pwa-install] también instala. */
 (function () {
@@ -29,11 +29,11 @@
       sheet.className = 'card pwa-sheet';
       sheet.setAttribute('role', 'dialog');
       sheet.setAttribute('aria-label', 'Cómo instalar la app');
-      sheet.innerHTML = '<b style="font-family:var(--serif);font-size:22px">Instala Rinova IA</b>' +
+      sheet.innerHTML = '<b style="font-family:var(--display);font-size:18px">Instala RINOVAIA</b>' +
         '<ol style="margin:10px 0 14px;padding-left:20px;color:var(--muted);font-size:14px">' +
         (isIOS ? '<li>Toca el botón <b>Compartir</b> de Safari.</li><li>Elige <b>Agregar a inicio</b>.</li>'
                : '<li>En la barra de menús elige <b>Archivo → Agregar al Dock</b>.</li>') +
-        '<li>Abre Rinova IA desde tu pantalla de inicio.</li></ol>' +
+        '<li>Abre RINOVAIA desde tu pantalla de inicio.</li></ol>' +
         '<button class="btn btn-ink btn-sm" type="button">Entendido</button>';
       sheet.querySelector('button').addEventListener('click', function () { sheet.classList.remove('show'); });
       document.body.appendChild(sheet);

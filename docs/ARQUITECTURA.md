@@ -1,4 +1,8 @@
-# Arquitectura de Rinova IA
+# Arquitectura de RINOVAIA
+
+> Nov 2026: la marca pasó a **RINOVAIA** (Manual de Marca v1.0). La plataforma se organiza en los módulos
+> del manual: Proyectos, Planos, Estructuras, Obra, Administración y RINOVAIA AI. Las secciones de abajo
+> describen el backend previsto; los nombres históricos ("Rinova IA", "comité") se conservan como referencia.
 
 Basada en *Rinova IA — Documentación Maestra y Prompt Arquitectónico-IT v1.0.0*.
 
