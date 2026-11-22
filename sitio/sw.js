@@ -1,5 +1,5 @@
 /* RINOVAIA — service worker. Cada cambio de este archivo sube VERSION. */
-const VERSION = 'rinovaia-v4';
+const VERSION = 'rinovaia-v5';
 const PRECACHE = [
   './', 'index.html', 'app.html', 'distribuidores.html', 'instalar.html', 'offline.html',
   'manifest.webmanifest', 'favicon.ico',

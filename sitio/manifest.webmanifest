@@ -33,7 +33,7 @@
     { "name": "Proyectos", "short_name": "Proyectos", "url": "./app.html?source=pwa#proyectos", "icons": [{ "src": "assets/img/app/icon-96.png", "sizes": "96x96" }] },
     { "name": "Control de obra", "short_name": "Obra", "url": "./app.html?source=pwa#obra", "icons": [{ "src": "assets/img/app/icon-96.png", "sizes": "96x96" }] },
     { "name": "Portal de distribuidores", "short_name": "Distribuidores", "url": "./distribuidores.html?source=pwa", "icons": [{ "src": "assets/img/app/icon-96.png", "sizes": "96x96" }] },
-    { "name": "Sitio RINOVAIA", "short_name": "Sitio", "url": "./?source=pwa", "icons": [{ "src": "assets/img/app/icon-96.png", "sizes": "96x96" }] }
+    { "name": "Sitio RINOVAIA", "short_name": "Sitio", "url": "./?source=app", "icons": [{ "src": "assets/img/app/icon-96.png", "sizes": "96x96" }] }
   ],
   "screenshots": [
     { "src": "assets/img/app/captura-plataforma-ancha.jpg", "sizes": "1280x800", "type": "image/jpeg", "form_factor": "wide", "label": "Estudio de diseño con planos, estructura y costos" },

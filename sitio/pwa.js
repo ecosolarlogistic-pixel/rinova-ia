@@ -155,6 +155,22 @@
   });
   document.addEventListener('click', function (e) { if (e.target.closest('[data-pwa-install]')) { e.preventDefault(); install(); } });
 
+  // App vieja "Rinova IA" (primera versión): arrancaba en ./?source=pwa con otro id, así que el sistema
+  // no le cambia el ícono. Si se abre esa app, se avisa cómo reinstalar la nueva.
+  var oldApp = installed && /[?&]source=pwa\b/.test(location.search) && !/\.html$/.test(location.pathname);
+  try { if (oldApp) sessionStorage.setItem('rinova.oldApp', '1'); oldApp = oldApp || sessionStorage.getItem('rinova.oldApp') === '1'; } catch (e) { }
+  if (oldApp) {
+    var bar = document.createElement('div');
+    bar.className = 'card pwa-sheet show'; bar.setAttribute('role', 'alert');
+    bar.innerHTML = '<div class="pwa-sheet-h"><img src="assets/img/app/icon-96.png" alt="" width="44" height="44">' +
+      '<div><b>Hay una nueva app RINOVAIA</b><small>Esta es la versión anterior</small></div></div>' +
+      '<ol class="pwa-steps"><li>Desinstala esta app (' + (isAndroid || isIOS ? 'mantén presionado su ícono → <b>Desinstalar</b>' : 'menú <b>⋯</b> de esta ventana → <b>Desinstalar</b>') + ').</li>' +
+      '<li>Abre <b>www.rinovaia.com</b> en el navegador y pulsa <b>Instalar app</b>.</li></ol>' +
+      '<div class="pwa-sheet-a"><a class="btn btn-ink btn-sm" href="instalar.html">Ver cómo</a><button class="btn btn-text btn-sm" type="button">Después</button></div>';
+    bar.querySelector('button').addEventListener('click', function () { bar.remove(); try { sessionStorage.removeItem('rinova.oldApp'); } catch (e) { } });
+    document.body.appendChild(bar);
+  }
+
   // Dentro de la app instalada se ocultan los enlaces de "Instalar app".
   if (installed) document.documentElement.classList.add('is-app');
   matchMedia('(display-mode: standalone)').addEventListener && matchMedia('(display-mode: standalone)').addEventListener('change', function (m) {
