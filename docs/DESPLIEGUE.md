@@ -58,3 +58,10 @@ En hPanel → **Dominios → DNS**, `www` debe ser un CNAME a `rinovaia.com` (o 
 - La carpeta `supabase/`, `docs/` y `.github/` no se publican.
 - Los módulos de IA (difusión, FEA) necesitan GPU y van en otro servidor; Hostinger solo sirve el frontend.
 - Ninguna llave privada en `sitio/`: el workflow detiene la publicación si encuentra una.
+
+## Caché de la CDN de Hostinger
+
+La CDN de Hostinger guarda JS, CSS y `sw.js` hasta 30 días por URL, aunque `.htaccess` pida lo contrario.
+Por eso los HTML cargan los recursos con `?v=AAAAMMDD` y `pwa.js` registra `sw.js?v=AAAAMMDD`.
+**Cada vez que cambie un JS o el CSS, sube ese número en todos los HTML, en `pwa.js` y en `V` de `sw.js`.**
+También se puede purgar la caché en hPanel → Sitios web → rinovaia.com → CDN → Purgar caché.
