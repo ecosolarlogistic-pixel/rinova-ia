@@ -9,24 +9,27 @@
   var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
-  var CITIES = {
-    cdmx: { name: 'Ciudad de México', lat: 19.43, zone: 'Alta · suelo blando', c: 0.40, q: 60, f: 1.08, wind: 0.9 },
-    gdl: { name: 'Guadalajara', lat: 20.67, zone: 'Media', c: 0.32, q: 160, f: 1.0, wind: 0.8 },
-    mty: { name: 'Monterrey', lat: 25.69, zone: 'Baja', c: 0.16, q: 200, f: 1.04, wind: 1.0 },
-    pue: { name: 'Puebla', lat: 19.04, zone: 'Alta', c: 0.36, q: 140, f: 0.96, wind: 0.8 },
-    qro: { name: 'Querétaro', lat: 20.59, zone: 'Baja', c: 0.18, q: 180, f: 1.0, wind: 0.8 },
-    mid: { name: 'Mérida', lat: 20.97, zone: 'Muy baja', c: 0.08, q: 220, f: 0.97, wind: 1.2 },
-    cun: { name: 'Cancún', lat: 21.16, zone: 'Muy baja · huracanes', c: 0.08, q: 120, f: 1.12, wind: 1.6 }
-  };
+  var PR = window.RinovaProyecto, PL = window.RinovaPlanos;
+  function locOf(o) { var q = PR.normalizeLoc({ state: o.state, city: o.city }); return PR.loc(q.state, q.city); }
   var STYLE_NAME = { renacentista: 'clásico renacentista', mediterraneo: 'mediterráneo', moderno: 'contemporáneo' };
   var FINISH = { eco: { name: 'Económico', cm: 4.8, unit: 9800 }, med: { name: 'Medio', cm: 5.3, unit: 15200 }, pre: { name: 'Premium', cm: 5.9, unit: 23500 } };
   var MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   var USD = 18.5;
 
-  var DEFAULT = { name: 'Residencia Lomas', front: 18, depth: 22, floors: 3, bays: 7, style: 'moderno', use: 'res', finish: 'pre', city: 'cdmx', palette: 'concreto', month: 6, hour: 18.5, phi: false, line: false, cur: 'MXN' };
+  var DEFAULT = { name: 'Residencia Lomas', front: 18, depth: 22, floors: 3, bays: 7, style: 'moderno', use: 'res', finish: 'pre', state: 'cdmx', city: 'miguel-hidalgo',
+    type: 'casa', beds: 3, baths: 3, halfBaths: 1, parking: 2, layout: 'abierto', flooring: 'porcelanato', units: 4, palette: 'concreto', month: 6, hour: 18.5, phi: false, line: false, cur: 'MXN' };
   var KEY = 'rinova.estudio.v2';
   var p = Object.assign({}, DEFAULT);
   try { var saved = JSON.parse(localStorage.getItem(KEY) || 'null'); if (saved) p = Object.assign(p, saved); } catch (e) { }
+  function normalize(o) {
+    PR.normalizeLoc(o);
+    if (!PR.TIPOS[o.type]) o.type = o.use === 'com' ? 'comercial' : 'casa';
+    o.use = PR.TIPOS[o.type].use;
+    if (!PR.DISTRIBUCION[o.layout]) o.layout = 'abierto';
+    if (!PR.PISOS[o.flooring]) o.flooring = 'porcelanato';
+    return o;
+  }
+  normalize(p);
   function save() { try { localStorage.setItem(KEY, JSON.stringify(p)); } catch (e) { } }
 
   /* ---------- Formatos ---------- */
@@ -45,13 +48,19 @@
 
   /* ---------- Cálculo (demostración) ---------- */
   function compute() {
-    var city = CITIES[p.city], fin = FINISH[p.finish];
+    normalize(p);
+    var city = locOf(p), fin = FINISH[p.finish], T = PR.TIPOS[p.type];
     var W = p.front * 0.92, D = p.depth * 0.82;
+    // El desplante se ajusta al programa: si sobra terreno, el fondo construido se reduce y el resto queda libre.
+    var need = 0, flex = false;
+    PR.program(p).forEach(function (lv) { var a = 0; lv.front.concat(lv.back).forEach(function (x) { if (x.flex) flex = true; else a += x.a; }); need = Math.max(need, a); });
+    if (!flex && need) D = Math.min(D, Math.max(7, need * 1.2 / W));
+    var surf = PL.parkingCapacity(p, { D: D }).surface;
     var footprint = W * D, area = footprint * p.floors;
     var L = W / p.bays;                       // claro en fachada
     var rows = Math.max(2, Math.round(D / 5.5));
     var Ly = D / rows;                         // claro perpendicular
-    var CM = fin.cm, CV = p.use === 'com' ? 3.5 : 1.9;
+    var CM = fin.cm, CV = p.use === 'ind' ? 6.0 : p.use === 'com' ? 3.5 : 1.9;
     var Wu = 1.2 * CM + 1.6 * CV;              // kPa
     var amp = 1 + city.c * 0.6;
 
@@ -111,8 +120,12 @@
       for (var b = 0; b < nc; b++) circ.push({ use: 'Contactos ' + lvl, br: '1P-20A', kw: 1.5 });
       if (p.finish === 'pre') circ.push({ use: 'Aire acondicionado ' + lvl, br: '2P-30A', kw: 2.6 });
       if (p.use === 'com') circ.push({ use: 'Fuerza ' + lvl, br: '2P-30A', kw: 3.0 });
+      if (p.use === 'ind') circ.push({ use: 'Fuerza nave ' + lvl, br: '3P-40A', kw: 6.0 });
+      if (p.type === 'deptos' && i > 0) circ.push({ use: 'Alimentador deptos ' + lvl + ' (' + p.units + ')', br: '2P-40A', kw: 1.8 * p.units });
     }
-    circ.push({ use: p.use === 'com' ? 'Cocineta / servicio' : 'Cocina', br: '1P-20A', kw: 2.4 });
+    if (p.type === 'deptos' && p.floors >= 4) circ.push({ use: 'Elevador', br: '3P-30A', kw: 7.5 });
+    if (p.use === 'ind') circ.push({ use: 'Andenes y niveladores', br: '3P-30A', kw: 1.5 * Math.max(1, p.units) });
+    circ.push({ use: p.use !== 'res' ? 'Cocineta / servicio' : 'Cocina', br: '1P-20A', kw: 2.4 });
     circ.push({ use: 'Lavado y bombeo', br: '1P-20A', kw: 1.8 });
     var kw = circ.reduce(function (s, c) { return s + c.kw; }, 0), kwd = kw * 0.6;
     var tri = kwd > 10;
@@ -123,7 +136,9 @@
     // Costos
     var styleF = { renacentista: 1.12, mediterraneo: 1.05, moderno: 1 }[p.style];
     var heightF = 1 + Math.max(0, p.floors - 3) * 0.03;
-    var unit = fin.unit * styleF * city.f * heightF * (p.use === 'com' ? 1.06 : 1);
+    var typeF = { casa: 1, deptos: 0.97, comercial: 1.06, bodega: 0.6 }[p.type];
+    var floorK = (PR.PISOS[p.flooring] || PR.PISOS.porcelanato).k;
+    var unit = fin.unit * styleF * city.f * heightF * typeF * (1 + floorK * 0.01);
     var total = unit * area;
     var parts = [
       ['Preliminares y cimentación', 11 + (found.name.indexOf('Losa') === 0 ? 3 : 0)],
@@ -131,15 +146,17 @@
       ['Albañilería y muros', 15],
       ['Instalación eléctrica', 7],
       ['Instalación hidrosanitaria', 7],
-      ['Acabados interiores', 19 + (p.finish === 'pre' ? 4 : 0)],
+      ['Acabados interiores y pisos', 19 + (p.finish === 'pre' ? 4 : 0) + floorK],
       ['Fachada y ornamentación', 6 + (p.style === 'renacentista' ? 5 : p.style === 'mediterraneo' ? 2 : 0)],
       ['Honorarios, licencias e IA', 6]
     ];
+    if (p.parking > 0 && p.type !== 'casa') parts.splice(6, 0, ['Estacionamiento y exteriores', 3 + Math.min(6, p.parking / 10)]);
     var sum = parts.reduce(function (s, x) { return s + x[1]; }, 0);
     parts = parts.map(function (x) { return { name: x[0], pct: x[1] / sum, v: total * x[1] / sum }; });
 
     return { city: city, fin: fin, W: W, D: D, L: L, Ly: Ly, rows: rows, footprint: footprint, area: area, Wu: Wu, CV: CV, V: V,
-      elements: elements, worst: worst, beam: beam, col: col, circ: circ, kw: kw, kwd: kwd, tri: tri, main: main, unit: unit, total: total, parts: parts, drift: drift };
+      elements: elements, worst: worst, beam: beam, col: col, circ: circ, kw: kw, kwd: kwd, tri: tri, main: main, unit: unit, total: total, parts: parts, drift: drift,
+      type: T, parkSurface: surf, parkFit: surf + (p.type === 'casa' ? Math.min(p.parking, 3) : p.type === 'deptos' && p.floors > 1 ? Math.floor(W * D * 0.55 / 25) : 0) };
   }
   function pick(list, capFn, dem) {
     for (var i = 0; i < list.length; i++) { var cap = capFn(list[i]); if (dem / cap <= 0.82) return { s: list[i], cap: cap }; }
@@ -208,115 +225,28 @@
     $('#frameOut').innerHTML = out.join('');
   }
 
-  /* ---------- Planos ---------- */
-  function roomsFor(level) {
-    if (p.use === 'com') return level === 0 ? { front: ['Área de venta', 'Exhibición', 'Recepción'], back: ['Sanitarios', 'Escalera', 'Bodega'] } : { front: ['Oficina abierta', 'Sala de juntas', 'Dirección'], back: ['Sanitarios', 'Escalera', 'Archivo'] };
-    if (level === 0) return { front: ['Sala', 'Comedor', 'Cocina'], back: ['Baño visitas', 'Escalera', 'Estudio'] };
-    if (level === p.floors - 1 && p.floors > 2) return { front: ['Recámara principal', 'Terraza', 'Vestidor'], back: ['Baño principal', 'Escalera', 'Biblioteca'] };
-    return { front: ['Recámara 1', 'Estancia familiar', 'Recámara 2'], back: ['Baño', 'Escalera', 'Lavado'] };
+  /* ---------- Planos: juego completo de láminas ---------- */
+  var plans = null, croquis = null;
+  try { croquis = JSON.parse(localStorage.getItem(KEY + '.croquis') || 'null'); } catch (e) { }
+  function layersOn() { var on = {}; $$('#layers input[data-layer]').forEach(function (c) { on[c.dataset.layer] = c.checked; }); return on; }
+  function buildPlans(r) {
+    plans = PL.build(p, r, { croquis: croquis, styleName: STYLE_NAME[p.style], unifilar: function () { return unifilarSvg(r); } });
+    r.planInfo = plans.info;
+    var sel = $('#planSheet'), cur = sel.value;
+    sel.innerHTML = plans.sheets.map(function (s) { return '<option value="' + s.code + '">' + s.code + ' · ' + esc(s.name) + '</option>'; }).join('');
+    var firstPlan = plans.sheets.filter(function (s) { return s.kind === 'plan'; })[0];
+    sel.value = plans.sheets.some(function (s) { return s.code === cur; }) ? cur : firstPlan.code;
+    $('#sheetCount').textContent = plans.sheets.length + ' láminas';
   }
-  function renderPlan(r) {
-    var level = +($('#planLevel').value || 0);
-    var VW = 960, VH = 680, mL = 90, mT = 80;
-    var s = Math.min((VW - mL - 80) / r.W, (VH - mT - 90) / r.D);
-    var W = r.W * s, D = r.D * s, x0 = mL + ((VW - mL - 80) - W) / 2, y0 = mT;
-    var on = {}; $$('#layers input[data-layer]').forEach(function (c) { on[c.dataset.layer] = c.checked; });
-    var rooms = roomsFor(level), o = [];
-    var hFront = D / PHI, hBack = D - hFront, yMid = y0 + hBack;
-    var wf = [PHI, 1, 1 / PHI], wbk = [1 / PHI, 1 / PHI * 0.8, 1];
-    function split(ws) { var t = ws.reduce(function (a, b) { return a + b; }, 0), acc = 0; return ws.map(function (w) { var a = acc; acc += w / t * W; return [x0 + a, w / t * W]; }); }
-    var fr = split(wf), bk = split(wbk);
-    var cells = fr.map(function (c, i) { return { x: c[0], y: yMid, w: c[1], h: hFront, name: rooms.front[i] }; })
-      .concat(bk.map(function (c, i) { return { x: c[0], y: y0, w: c[1], h: hBack, name: rooms.back[i] }; }));
-
-    o.push('<svg class="plan-svg" id="planSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + VW + ' ' + VH + '" font-family="Inter,system-ui,sans-serif">');
-    o.push('<rect width="' + VW + '" height="' + VH + '" fill="#FFFFFF"/>');
-    // Ejes
-    var bx = W / p.bays, i, j;
-    if (on.arq) {
-      o.push('<g stroke="#C0C6D4" stroke-width=".8" stroke-dasharray="8 4 2 4">');
-      for (i = 0; i <= p.bays; i++) o.push('<line x1="' + (x0 + bx * i) + '" y1="' + (y0 - 40) + '" x2="' + (x0 + bx * i) + '" y2="' + (y0 + D + 12) + '"/>');
-      for (j = 0; j <= r.rows; j++) o.push('<line x1="' + (x0 - 40) + '" y1="' + (y0 + D / r.rows * j) + '" x2="' + (x0 + W + 12) + '" y2="' + (y0 + D / r.rows * j) + '"/>');
-      o.push('</g><g font-size="11" font-weight="700" fill="#2F4B7C" text-anchor="middle">');
-      for (i = 0; i <= p.bays; i++) o.push('<circle cx="' + (x0 + bx * i) + '" cy="' + (y0 - 52) + '" r="11" fill="#FFFFFF" stroke="#2F4B7C"/><text x="' + (x0 + bx * i) + '" y="' + (y0 - 48) + '">' + (i + 1) + '</text>');
-      for (j = 0; j <= r.rows; j++) o.push('<circle cx="' + (x0 - 52) + '" cy="' + (y0 + D / r.rows * j) + '" r="11" fill="#FFFFFF" stroke="#2F4B7C"/><text x="' + (x0 - 52) + '" y="' + (y0 + D / r.rows * j + 4) + '">' + String.fromCharCode(65 + j) + '</text>');
-      o.push('</g>');
-      // Columnas
-      o.push('<g fill="#18202B">');
-      for (i = 0; i <= p.bays; i++) for (j = 0; j <= r.rows; j++) o.push('<rect x="' + (x0 + bx * i - 4) + '" y="' + (y0 + D / r.rows * j - 4) + '" width="8" height="8"/>');
-      o.push('</g>');
-      // Muros
-      o.push('<g fill="none" stroke="#18202B" stroke-linecap="square">');
-      o.push('<rect x="' + x0 + '" y="' + y0 + '" width="' + W + '" height="' + D + '" stroke-width="5"/>');
-      o.push('<line x1="' + x0 + '" y1="' + yMid + '" x2="' + (x0 + W) + '" y2="' + yMid + '" stroke-width="3"/>');
-      cells.forEach(function (c, k) { if (k !== 0 && k !== 3) o.push('<line x1="' + c.x + '" y1="' + c.y + '" x2="' + c.x + '" y2="' + (c.y + c.h) + '" stroke-width="3"/>'); });
-      o.push('</g>');
-      // Puertas (vano + abatimiento)
-      var dw = Math.min(0.9 * s, 34);
-      cells.forEach(function (c, k) {
-        var dx = k < 3 ? c.x + c.w * 0.5 - dw / 2 : c.x + c.w * 0.5 - dw / 2, dy = yMid;
-        if (k === 1 && level > 0) return;
-        o.push('<rect x="' + dx + '" y="' + (dy - 3) + '" width="' + dw + '" height="6" fill="#FFFFFF"/>');
-        o.push('<path d="M' + dx + ' ' + dy + ' v' + (k < 3 ? dw : -dw) + ' A' + dw + ' ' + dw + ' 0 0 ' + (k < 3 ? 0 : 1) + ' ' + (dx + dw) + ' ' + dy + '" fill="none" stroke="#5A6475" stroke-width="1"/>');
-      });
-      if (level === 0) { var ex = fr[0][0] + fr[0][1] * 0.5 - dw * 0.7; o.push('<rect x="' + ex + '" y="' + (y0 + D - 3) + '" width="' + dw * 1.4 + '" height="6" fill="#FFFFFF"/><text x="' + (ex + dw * 0.7) + '" y="' + (y0 + D + 22) + '" font-size="11" text-anchor="middle" fill="#5A6475">ACCESO</text>'); }
-      // Ventanas en fachada
-      o.push('<g stroke="#2F4B7C" stroke-width="1.5">');
-      for (i = 0; i < p.bays; i++) { var wx = x0 + bx * i + bx * 0.25; if (level === 0 && Math.abs(wx + bx * 0.25 - (fr[0][0] + fr[0][1] * 0.5)) < bx * 0.6) continue; o.push('<line x1="' + wx + '" y1="' + (y0 + D - 2) + '" x2="' + (wx + bx * 0.5) + '" y2="' + (y0 + D - 2) + '"/><line x1="' + wx + '" y1="' + (y0 + D + 2) + '" x2="' + (wx + bx * 0.5) + '" y2="' + (y0 + D + 2) + '"/>'); }
-      o.push('</g>');
-      // Nombres
-      o.push('<g text-anchor="middle" fill="#18202B">');
-      cells.forEach(function (c) { var m2 = (c.w / s) * (c.h / s); o.push('<text x="' + (c.x + c.w / 2) + '" y="' + (c.y + c.h / 2 - 4) + '" font-size="' + (c.w > 120 ? 14 : 11) + '" font-weight="700">' + esc(c.name) + '</text><text x="' + (c.x + c.w / 2) + '" y="' + (c.y + c.h / 2 + 13) + '" font-size="11" fill="#5A6475">' + nf1.format(m2) + ' m²</text>'); });
-      o.push('</g>');
-      // Escalera
-      var st = cells[4]; o.push('<g stroke="#5A6475" stroke-width="1">'); for (i = 1; i < 10; i++) o.push('<line x1="' + (st.x + 10) + '" y1="' + (st.y + st.h * i / 10) + '" x2="' + (st.x + st.w - 10) + '" y2="' + (st.y + st.h * i / 10) + '"/>'); o.push('</g>');
-    }
-    // Hidráulico
-    if (on.hid) {
-      var kit = p.use === 'com' ? cells[5] : (level === 0 ? cells[2] : cells[5]), bath = cells[3];
-      var tx = x0 + 12, ty = y0 + D - 12;
-      o.push('<g fill="none" stroke-width="2"><path d="M' + tx + ' ' + (y0 + D + 30) + ' V' + ty + ' H' + (bath.x + 18) + ' V' + (bath.y + 26) + '" stroke="#2f6db0"/>');
-      o.push('<path d="M' + (bath.x + 18) + ' ' + (bath.y + bath.h * 0.6) + ' H' + (kit.x + kit.w - 24) + ' V' + (kit.y + 24) + '" stroke="#2f6db0"/>');
-      o.push('<path d="M' + (bath.x + bath.w - 22) + ' ' + (bath.y + 18) + ' H' + (kit.x + kit.w - 34) + ' V' + (kit.y + 34) + '" stroke="#c0492f" stroke-dasharray="6 4"/></g>');
-      o.push('<g fill="#FFFFFF" stroke="#2f6db0" stroke-width="1.5"><ellipse cx="' + (bath.x + 22) + '" cy="' + (bath.y + 30) + '" rx="9" ry="12"/><rect x="' + (bath.x + bath.w - 34) + '" y="' + (bath.y + 10) + '" width="22" height="16" rx="3"/><rect x="' + (kit.x + kit.w - 46) + '" y="' + (kit.y + 14) + '" width="34" height="18" rx="2"/></g>');
-      o.push('<g font-size="10" fill="#2f6db0" font-weight="700"><text x="' + (tx + 6) + '" y="' + (y0 + D + 34) + '">TOMA Ø 19 mm</text><text x="' + (bath.x + bath.w - 26) + '" y="' + (bath.y + 42) + '" fill="#c0492f">CAL.</text></g>');
-    }
-    // Eléctrico
-    if (on.ele) {
-      var tb = { x: x0 + 22, y: yMid + 16 };
-      o.push('<g stroke="#B8932A" fill="none" stroke-width="1.2">');
-      cells.forEach(function (c, k) {
-        var cx = c.x + c.w / 2, cy = c.y + c.h * 0.28;
-        o.push('<path d="M' + cx + ' ' + cy + ' V' + (yMid + (k < 3 ? 10 : -10)) + ' H' + tb.x + '" stroke-dasharray="5 3" opacity=".75"/>');
-      });
-      o.push('</g><g stroke="#B8932A" stroke-width="1.4" fill="#FFFFFF">');
-      cells.forEach(function (c) {
-        var cx = c.x + c.w / 2, cy = c.y + c.h * 0.28;
-        o.push('<circle cx="' + cx + '" cy="' + cy + '" r="7"/><path d="M' + (cx - 5) + ' ' + (cy - 5) + 'l10 10M' + (cx + 5) + ' ' + (cy - 5) + 'l-10 10"/>');
-        [[c.x + 8, c.y + c.h * 0.7], [c.x + c.w - 8, c.y + c.h * 0.7]].forEach(function (pt, q) {
-          o.push('<path d="M' + pt[0] + ' ' + (pt[1] - 6) + ' a6 6 0 0 ' + (q ? 0 : 1) + ' 0 12z"/>');
-        });
-      });
-      o.push('</g><rect x="' + (tb.x - 10) + '" y="' + (tb.y - 8) + '" width="20" height="16" fill="#B8932A"/><text x="' + (tb.x + 16) + '" y="' + (tb.y + 4) + '" font-size="10" font-weight="700" fill="#B8932A">TAB-' + (level === 0 ? 'P' : 'N' + level) + '</text>');
-    }
-    // Cotas
-    if (on.cot) {
-      o.push('<g stroke="#B8932A" fill="#B8932A" font-size="12" font-weight="600" stroke-width="1">');
-      var cy2 = y0 + D + 52;
-      o.push('<line x1="' + x0 + '" y1="' + cy2 + '" x2="' + (x0 + W) + '" y2="' + cy2 + '"/><line x1="' + x0 + '" y1="' + (cy2 - 7) + '" x2="' + x0 + '" y2="' + (cy2 + 7) + '"/><line x1="' + (x0 + W) + '" y1="' + (cy2 - 7) + '" x2="' + (x0 + W) + '" y2="' + (cy2 + 7) + '"/>');
-      o.push('<text x="' + (x0 + W / 2) + '" y="' + (cy2 - 6) + '" text-anchor="middle" stroke="none">' + nf2.format(r.W) + ' m</text>');
-      var cx2 = x0 + W + 40;
-      o.push('<line x1="' + cx2 + '" y1="' + y0 + '" x2="' + cx2 + '" y2="' + (y0 + D) + '"/><line x1="' + (cx2 - 7) + '" y1="' + y0 + '" x2="' + (cx2 + 7) + '" y2="' + y0 + '"/><line x1="' + (cx2 - 7) + '" y1="' + (y0 + D) + '" x2="' + (cx2 + 7) + '" y2="' + (y0 + D) + '"/>');
-      o.push('<text x="' + (cx2 + 8) + '" y="' + (y0 + D / 2) + '" stroke="none" transform="rotate(90 ' + (cx2 + 8) + ' ' + (y0 + D / 2) + ')" text-anchor="middle">' + nf2.format(r.D) + ' m</text>');
-      o.push('<text x="' + (x0 + bx / 2) + '" y="' + (y0 - 70) + '" text-anchor="middle" stroke="none" font-size="11">' + nf2.format(r.L) + ' m</text>');
-      o.push('</g>');
-    }
-    // Cuadro de datos
-    o.push('<g font-size="11" fill="#5A6475"><text x="' + (VW - 20) + '" y="' + (VH - 34) + '" text-anchor="end" font-weight="700" fill="#18202B">' + esc(p.name.toUpperCase()) + ' · PLANTA ' + (level === 0 ? 'BAJA' : 'NIVEL ' + level) + '</text><text x="' + (VW - 20) + '" y="' + (VH - 18) + '" text-anchor="end">RINOVAIA · Lámina ' + (level === 0 ? 'A-02' : 'A-0' + (level + 2)) + ' · Esc. gráfica</text></g>');
-    o.push('</svg>');
-    $('#planOut').innerHTML = o.join('');
+  function currentSheet() { var c = $('#planSheet').value; return plans.sheets.filter(function (s) { return s.code === c; })[0] || plans.sheets[0]; }
+  function renderPlan() {
+    if (!plans) return;
+    var sh = currentSheet(), isPlan = sh.kind === 'plan';
+    $$('#layers .lay').forEach(function (l) { l.hidden = !isPlan; });
+    $('#planOut').innerHTML = sh.render(isPlan ? layersOn() : null);
   }
-  function renderUnifilar(r) {
+  function renderUnifilar(r) { $('#uniOut').innerHTML = unifilarSvg(r); }
+  function unifilarSvg(r) {
     var n = r.circ.length, rowH = 26, H = 90 + n * rowH, W = 680, bus = 230, o = [];
     o.push('<svg viewBox="0 0 ' + W + ' ' + H + '" style="min-width:540px;width:100%" font-family="Inter,system-ui,sans-serif" font-size="12">');
     o.push('<g stroke="#18202B" stroke-width="1.6" fill="none"><path d="M20 50h50"/><circle cx="92" cy="50" r="22"/><path d="M114 50h40"/><rect x="154" y="34" width="56" height="32" rx="4"/><path d="M210 50h' + (bus - 210) + '"/><path d="M' + bus + ' 40V' + (60 + n * rowH) + '" stroke-width="4"/></g>');
@@ -328,7 +258,7 @@
       o.push('<text x="' + (bus + 110) + '" y="' + (y + 4) + '" fill="#18202B"><tspan font-weight="700">C' + (i + 1) + '</tspan>  ' + esc(c.use) + '</text><text x="' + (W - 20) + '" y="' + (y + 4) + '" text-anchor="end" fill="#5A6475">' + c.br + ' · ' + nf1.format(c.kw) + ' kW</text>');
     });
     o.push('</svg>');
-    $('#uniOut').innerHTML = o.join('');
+    return o.join('');
   }
 
   /* ---------- Costos ---------- */
@@ -358,23 +288,38 @@
     $('#kElec').textContent = r.circ.length + ' circuitos';
     $('#kElecS').textContent = (r.tri ? 'Trifásica' : 'Bifásica') + ' · principal ' + r.main + ' A';
     renderFacade(r); renderVariants(r); renderStructure(r);
-    var sel = $('#planLevel'), cur = sel.value;
-    sel.innerHTML = Array.from({ length: p.floors }, function (_, i) { return '<option value="' + i + '">' + (i === 0 ? 'Planta baja' : 'Nivel ' + i) + '</option>'; }).join('');
-    sel.value = cur && +cur < p.floors ? cur : '0';
-    renderPlan(r); renderUnifilar(r); renderCosts(r);
+    buildPlans(r); renderPlan(); renderUnifilar(r); renderCosts(r); renderAnalysis(r);
     save();
     document.dispatchEvent(new CustomEvent('rinova:change', { detail: { p: p, r: r } }));
   }
 
   /* ---------- Formulario ---------- */
+  $('#pState').innerHTML = Object.keys(PR.ESTADOS).sort(function (a, b) { return PR.ESTADOS[a].n.localeCompare(PR.ESTADOS[b].n, 'es'); })
+    .map(function (k) { return '<option value="' + k + '">' + esc(PR.ESTADOS[k].n) + '</option>'; }).join('');
   function syncForm() {
     $('#pName').value = p.name; $('#pFront').value = p.front; $('#pDepth').value = p.depth;
-    $('#pFloors').value = p.floors; $('#pBays').value = p.bays; $('#pUse').value = p.use; $('#pFinish').value = p.finish;
-    $('#pCity').value = p.city; $('#pPalette').value = p.palette; $('#pMonth').value = p.month; $('#pHour').value = p.hour;
+    $('#pFloors').value = p.floors; $('#pBays').value = p.bays; $('#pFinish').value = p.finish;
+    $('#pType').value = p.type; $('#pBeds').value = p.beds; $('#pBaths').value = p.baths; $('#pHalf').value = p.halfBaths;
+    $('#pParking').value = p.parking; $('#pLayout').value = p.layout; $('#pFlooring').value = p.flooring; $('#pUnits').value = p.units;
+    $('#pState').value = p.state; fillCities(); $('#pCity').value = p.city; $('#pPalette').value = p.palette;
+    typeUI(); $('#pMonth').value = p.month; $('#pHour').value = p.hour;
     $('#showPhi').checked = p.phi; $('#lineMode').checked = p.line;
     $$('#segStyle button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.v === p.style); });
     $$('#segCur button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.v === p.cur); });
     outputs();
+  }
+  function fillCities() {
+    var e = PR.ESTADOS[p.state];
+    $('#pCity').innerHTML = e.cities.map(function (c) { return '<option value="' + c.id + '">' + esc(c.n) + '</option>'; }).join('');
+  }
+  function typeUI() {
+    var T = PR.TIPOS[p.type], res = p.type === 'casa' || p.type === 'deptos';
+    $('#fUnits').hidden = !T.unitsLabel; if (T.unitsLabel) { $('#lUnits').textContent = T.unitsLabel; $('#pUnits').max = T.unitsMax; }
+    $('#fBeds').hidden = !res; $('#fLayout').hidden = !res;
+    $('#lBaths').textContent = res ? (p.type === 'deptos' ? 'Baños / depto' : 'Baños') : 'Sanitarios';
+    $('#lHalf').textContent = 'Medios baños';
+    $('#lBeds').textContent = p.type === 'deptos' ? 'Rec. / depto' : 'Recámaras';
+    var locs = PR.loc(p.state, p.city); $('#locHint').textContent = 'Zona sísmica ' + locs.zone.toLowerCase() + ' · suelo ~' + locs.q + ' kPa · lat. ' + locs.lat.toFixed(2) + '°';
   }
   function outputs() {
     $('#oFloors').textContent = p.floors; $('#oBays').textContent = p.bays; $('#oMonth').textContent = MONTHS[p.month - 1];
@@ -393,9 +338,23 @@
     ['#pDepth', 'input', function (e) { p.depth = clamp(e.target.value, 10, 40, 22); }],
     ['#pFloors', 'input', function (e) { p.floors = +e.target.value; }],
     ['#pBays', 'input', function (e) { p.bays = +e.target.value; }],
-    ['#pUse', 'change', function (e) { p.use = e.target.value; }],
+    ['#pType', 'change', function (e) {
+      p.type = e.target.value; p.use = PR.TIPOS[p.type].use;
+      if (p.type === 'bodega') { p.floors = Math.min(p.floors, 2); p.units = Math.min(Math.max(p.units, 2), 12); }
+      if (p.type === 'comercial') p.units = Math.max(p.units, 4);
+      if (p.type === 'deptos') { p.units = Math.min(Math.max(p.units, 2), 8); p.floors = Math.max(p.floors, 3); }
+      syncForm();
+    }],
+    ['#pBeds', 'input', function (e) { p.beds = clamp(e.target.value, 0, 10, 3) | 0; }],
+    ['#pBaths', 'input', function (e) { p.baths = clamp(e.target.value, 0, 10, 2) | 0; }],
+    ['#pHalf', 'input', function (e) { p.halfBaths = clamp(e.target.value, 0, 6, 1) | 0; }],
+    ['#pParking', 'input', function (e) { p.parking = clamp(e.target.value, 0, 400, 2) | 0; }],
+    ['#pUnits', 'input', function (e) { p.units = clamp(e.target.value, 1, 24, 4) | 0; }],
+    ['#pLayout', 'change', function (e) { p.layout = e.target.value; }],
+    ['#pFlooring', 'change', function (e) { p.flooring = e.target.value; }],
+    ['#pState', 'change', function (e) { p.state = e.target.value; fillCities(); p.city = PR.ESTADOS[p.state].cities[0].id; $('#pCity').value = p.city; typeUI(); }],
     ['#pFinish', 'change', function (e) { p.finish = e.target.value; }],
-    ['#pCity', 'change', function (e) { p.city = e.target.value; }],
+    ['#pCity', 'change', function (e) { p.city = e.target.value; typeUI(); }],
     ['#pPalette', 'change', function (e) { p.palette = e.target.value; }],
     ['#pMonth', 'input', function (e) { p.month = +e.target.value; }],
     ['#pHour', 'input', function (e) { p.hour = +e.target.value; }],
@@ -407,11 +366,12 @@
   $('#segStyle').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; p.style = b.dataset.v; syncForm(); changed(); });
   $('#segCur').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; p.cur = b.dataset.v; syncForm(); renderAll(); });
   $('#variants').addEventListener('click', function (e) { var b = e.target.closest('button[data-var]'); if (!b) return; Object.assign(p, VARIANTS[+b.dataset.var].o); syncForm(); renderAll(); });
-  $('#layers').addEventListener('change', function () { renderPlan(last); });
+  $('#layers').addEventListener('change', function () { renderPlan(); });
+  $('#planSheet').addEventListener('change', function () { renderPlan(); });
 
   /* ---------- Generar con el comité ---------- */
-  $('#params').addEventListener('submit', function (e) {
-    e.preventDefault();
+  $('#params').addEventListener('submit', function (e) { e.preventDefault(); generate(); });
+  function generate(msg, after) {
     var ov = $('#genOv'), items = $$('#genLog li'), bar = $('#genProg'), step = 0;
     items.forEach(function (li) { li.className = ''; }); bar.style.width = '0';
     ov.classList.add('on');
@@ -419,9 +379,9 @@
     (function next() {
       if (step > 0) items[step - 1].classList.add('done');
       if (step < items.length) { items[step].classList.add('on'); bar.style.width = ((step + 1) / items.length * 100) + '%'; step++; setTimeout(next, dt); }
-      else { renderAll(); setTimeout(function () { ov.classList.remove('on'); toast('Proyecto actualizado: visualización, estructura, planos y presupuesto sincronizados'); }, 250); }
+      else { renderAll(); setTimeout(function () { ov.classList.remove('on'); toast(msg || 'Proyecto actualizado: visualización, estructura, planos y presupuesto sincronizados'); if (after) after(); }, 250); }
     })();
-  });
+  }
 
   /* ---------- Pestañas ---------- */
   function selectTab(name) {
@@ -466,9 +426,9 @@
     var total = 0, inWork = 0, issues = 0;
     $('#projGrid').innerHTML = SAMPLES.map(function (s, i) {
       var r = projectFigures(s); total += r.total; if (s.stage === 3) inWork++; if (s.st[0] !== 'ok') issues++;
-      return '<article class="card pcard"><div class="thumb">' + F.build({ floors: s.floors, bays: s.bays, style: s.style, mode: 'render', phi: false, lat: CITIES[s.city].lat, palette: s.palette, hour: s.hour, width: 600, height: 340, id: 's' + i }) +
+      return '<article class="card pcard"><div class="thumb">' + F.build({ floors: s.floors, bays: s.bays, style: s.style, mode: 'render', phi: false, lat: locOf(s).lat, palette: s.palette, hour: s.hour, width: 600, height: 340, id: 's' + i }) +
         '<span class="stage">' + STAGES[s.stage] + '</span></div>' +
-        '<div class="body"><div class="meta"><span>' + s.code + ' · ' + esc(CITIES[s.city].name) + '</span><span class="chip ' + s.st[0] + '"><span class="dot"></span>' + esc(s.st[1]) + '</span></div><h3>' + esc(s.name) + '</h3>' +
+        '<div class="body"><div class="meta"><span>' + s.code + ' · ' + esc(locOf(s).short) + '</span><span class="chip ' + s.st[0] + '"><span class="dot"></span>' + esc(s.st[1]) + '</span></div><h3>' + esc(s.name) + '</h3>' +
         '<div class="prog-row"><div class="pbar" role="progressbar" aria-valuenow="' + s.prog + '" aria-valuemin="0" aria-valuemax="100" aria-label="Avance de la etapa"><i style="width:' + s.prog + '%"></i></div><b class="num">' + s.prog + ' %</b></div>' +
         '<div class="meta"><span>' + esc(s.owner) + '</span><span class="num">' + money(r.total, true) + '</span></div>' +
         '<button class="btn btn-ghost btn-sm" data-open="' + i + '">Abrir proyecto</button></div></article>';
@@ -492,7 +452,7 @@
     var r = last || compute();
     $('#presentPic').innerHTML = F.build({ floors: p.floors, bays: p.bays, style: p.style, mode: 'render', phi: false, lat: r.city.lat, month: p.month, hour: p.hour, palette: p.palette, width: 1000, height: 640, id: 'pp' });
     $('#presentName').textContent = p.name;
-    var lead = (p.use === 'com' ? 'Edificio comercial' : 'Residencia') + ' de ' + p.floors + (p.floors === 1 ? ' nivel' : ' niveles') + ' de estilo ' + STYLE_NAME[p.style] + ' en ' + r.city.name + ', con ' + nf0.format(r.area) + ' m² de construcción y estructura revisada por ingeniería.';
+    var lead = ({ casa: 'Residencia', deptos: 'Edificio de departamentos', comercial: 'Centro comercial', bodega: 'Bodega' }[p.type]) + ' de ' + p.floors + (p.floors === 1 ? ' nivel' : ' niveles') + ' de estilo ' + STYLE_NAME[p.style] + ' en ' + r.city.name + ', con ' + nf0.format(r.area) + ' m² de construcción y estructura revisada por ingeniería.';
     $('#presentLead').textContent = lead;
     $('#presentFigs').innerHTML = [[nf0.format(r.area) + ' m²', 'Construcción'], [money(r.total, true), 'Presupuesto estimado'], [r.circ.length + ' circuitos', 'Instalación eléctrica'], [stateOf(r.worst) === 'bad' ? 'Revisar' : 'Aprobada', 'Estructura']]
       .map(function (f) { return '<div><b>' + esc(f[0]) + '</b><span>' + f[1] + '</span></div>'; }).join('');
@@ -511,14 +471,82 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePresent(); });
 
   /* ---------- Exportar ---------- */
-  $('#btnExport').addEventListener('click', function () {
-    var svg = $('#planSvg'); if (!svg) return;
+  function fileSlug() { return p.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+  function exportSheet() {
+    var svg = $('#planOut svg'); if (!svg) return;
     var blob = new Blob(['<?xml version="1.0" encoding="UTF-8"?>\n' + svg.outerHTML], { type: 'image/svg+xml' });
     var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-    a.download = 'rinova-' + p.name.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-planta-' + ($('#planLevel').value || 0) + '.svg';
+    a.download = 'rinova-' + fileSlug() + '-' + currentSheet().code.toLowerCase() + '.svg';
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
-    toast('Plano exportado en SVG. La exportación DXF por capas llega con el backend.');
+    toast('Lámina ' + currentSheet().code + ' exportada en SVG.');
+  }
+  $$('[data-export]').forEach(function (b) { b.addEventListener('click', function () { if (!$('#p-planos').classList.contains('on')) { selectTab('planos'); } exportSheet(); }); });
+  // Juego completo: una lámina por página, listo para "Guardar como PDF"
+  function printSet() {
+    if (!plans) return;
+    var box = $('#printSheets');
+    box.innerHTML = plans.sheets.map(function (sh) { return '<div class="sheet">' + sh.render(sh.kind === 'plan' ? { arq: true, cot: true } : null) + '</div>'; }).join('');
+    document.body.classList.add('printing-sheets');
+    var done = function () { document.body.classList.remove('printing-sheets'); box.innerHTML = ''; window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done);
+    setTimeout(function () { window.print(); setTimeout(done, 1500); }, 60);
+  }
+  $$('[data-print-set]').forEach(function (b) { b.addEventListener('click', printSet); });
+
+  /* ---------- Análisis experto ---------- */
+  var aiRes = null, aiSig = '';
+  function sig() { return JSON.stringify([p.type, p.state, p.city, p.front, p.depth, p.floors, p.beds, p.baths, p.halfBaths, p.parking, p.layout, p.flooring, p.units, p.finish, p.style, p.bays]); }
+  var ST_ICON = { ok: '✓', warn: '!', bad: '×' };
+  function md(t) {
+    var html = [], list = false;
+    esc(t).split(/\n/).forEach(function (ln) {
+      var l = ln.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+      if (/^\s*[-•*]\s+/.test(ln)) { if (!list) { html.push('<ul>'); list = true; } html.push('<li>' + l.replace(/^\s*[-•*]\s+/, '') + '</li>'); return; }
+      if (list) { html.push('</ul>'); list = false; }
+      if (/^#{1,4}\s/.test(ln)) html.push('<h5>' + l.replace(/^#+\s/, '') + '</h5>');
+      else if (ln.trim()) html.push('<p>' + l + '</p>');
+    });
+    if (list) html.push('</ul>');
+    return html.join('');
+  }
+  function renderAnalysis(r) {
+    var A = r.analysis = PR.analyze(p, r, r.planInfo, { nf0: nf0, nf1: nf1, money: money });
+    var st = A.score >= 80 ? 'ok' : A.score >= 62 ? 'warn' : 'bad';
+    $('#tabExpertChip').className = 'chip ' + st; $('#tabExpertChip').textContent = A.score;
+    $('#anScore').textContent = A.score; $('#anScore').style.color = { ok: 'var(--ok)', warn: 'var(--warn)', bad: 'var(--bad)' }[st];
+    $('#anSummary').textContent = A.summary;
+    var lbl = { programa: 'Programa', normativa: 'Normativa', clima: 'Clima y orientación', estructura: 'Estructura', costo: 'Costo' };
+    $('#anBars').innerHTML = Object.keys(A.scores).map(function (k) { var v = Math.max(0, Math.min(100, Math.round(A.scores[k]))); return '<div class="cb"><span>' + lbl[k] + '</span><div class="track"><i style="width:' + v + '%;background:' + (v >= 80 ? 'var(--ok)' : v >= 62 ? 'var(--gold)' : 'var(--bad)') + '"></i></div><b>' + v + '</b></div>'; }).join('');
+    $('#anRecs').innerHTML = A.recs.length ? A.recs.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') : '<li>Sin pendientes críticos en esta etapa.</li>';
+    $('#anOut').innerHTML = A.sections.map(function (sc) {
+      var h = '<div class="an-sec"><h4>' + esc(sc.title) + '</h4><ul class="an-list">' + sc.items.map(function (x) { return '<li class="' + x.st + '"><span class="ic">' + ST_ICON[x.st] + '</span><span>' + esc(x.t) + '</span></li>'; }).join('') + '</ul>';
+      if (sc.table) h += '<div class="tscroll"><table class="t"><thead><tr>' + sc.table.head.map(function (x, i) { return '<th' + (i && i < 3 ? ' class="r"' : '') + '>' + x + '</th>'; }).join('') + '</tr></thead><tbody>' +
+        sc.table.rows.map(function (rw) { return '<tr><td>' + esc(rw[0]) + '</td><td class="r num">' + rw[1] + '</td><td class="r num">' + rw[2] + '</td><td><span class="chip ' + rw[3] + '"><span class="dot"></span>' + STATE_TXT[rw[3]] + '</span></td></tr>'; }).join('') + '</tbody></table></div>';
+      return h + '</div>';
+    }).join('');
+    var box = $('#aiOut');
+    if (aiRes) { box.hidden = false; $('#aiStale').hidden = aiSig === sig(); $('#aiBody').innerHTML = md(aiRes.texto || ''); $('#aiMeta').textContent = aiRes.meta || ''; }
+  }
+  function aiSummary(r) {
+    return { proyecto: { nombre: p.name, tipo: PR.TIPOS[p.type].n, estado: r.city.stateName, ciudad: r.city.short, latitud: r.city.lat, frente_m: p.front, fondo_m: p.depth, niveles: p.floors,
+      recamaras: p.beds, banos: p.baths, medios_banos: p.halfBaths, estacionamiento: p.parking, unidades_por_piso: p.units, distribucion: PR.DISTRIBUCION[p.layout], pisos: PR.PISOS[p.flooring].n, acabados: r.fin.name, estilo: STYLE_NAME[p.style] },
+      resultados: { area_construida_m2: Math.round(r.area), desplante_m2: Math.round(r.footprint), costo_total_mxn: Math.round(r.total), costo_m2_mxn: Math.round(r.unit), zona_sismica: r.city.zone, coef_sismico: r.city.c, suelo_kpa: r.city.q,
+        estructura: r.elements.map(function (e) { return e.name + ' ' + e.sec + ' uso ' + Math.round(e.u * 100) + '%'; }), espacios: r.planInfo },
+      revision_por_reglas: { calificacion: r.analysis.score, hallazgos: r.analysis.sections.map(function (sc) { return { area: sc.title, puntos: sc.items.map(function (x) { return x.st + ': ' + x.t; }) }; }) } };
+  }
+  $('#btnAI').addEventListener('click', function () {
+    var r = last || compute(), b = $('#btnAI');
+    if (!window.RinovaIA) return;
+    b.disabled = true; b.dataset.t = b.dataset.t || b.innerHTML; b.textContent = 'Analizando con RINOVAIA AI…';
+    window.RinovaIA.analyze(aiSummary(r)).then(function (res) {
+      aiRes = res; aiSig = sig(); renderAnalysis(r);
+      $('#aiOut').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }).catch(function (err) {
+      $('#aiOut').hidden = false; $('#aiStale').hidden = true; $('#aiMeta').textContent = '';
+      $('#aiBody').innerHTML = '<p class="muted">' + esc(err && err.message ? err.message : 'No fue posible conectar con RINOVAIA AI.') + '</p>';
+    }).then(function () { b.disabled = false; b.innerHTML = b.dataset.t; });
   });
+  $$('[data-expert]').forEach(function (b) { b.addEventListener('click', function () { selectTab('analisis'); $('.out').scrollIntoView({ behavior: 'smooth', block: 'start' }); }); });
 
   var tt;
   function toast(msg) { var t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(tt); tt = setTimeout(function () { t.classList.remove('on'); }, 3200); }
@@ -528,7 +556,13 @@
     project: function () { return p; }, result: function () { return last || compute(); },
     simulate: function (o) { var q = p; p = Object.assign({}, p, o); var r = compute(); p = q; return r; },
     money: money, pct: pct, esc: esc, toast: toast, stateOf: stateOf, showView: showView, selectTab: selectTab,
-    cities: CITIES, styleName: STYLE_NAME, nf0: nf0, nf1: nf1
+    cities: PR.ESTADOS, styleName: STYLE_NAME, nf0: nf0, nf1: nf1,
+    // Para el módulo de croquis
+    apply: function (o) { Object.assign(p, o); normalize(p); syncForm(); },
+    generate: generate, sheets: function () { return plans; },
+    setCroquis: function (c) { croquis = c; try { if (c) localStorage.setItem(KEY + '.croquis', JSON.stringify(c)); else localStorage.removeItem(KEY + '.croquis'); } catch (e) { } },
+    getCroquis: function () { return croquis; },
+    showSheet: function (code) { $('#planSheet').value = code; renderPlan(); }
   };
 
   syncForm(); renderAll();
