@@ -248,5 +248,6 @@
   document.addEventListener('rinova:change', function () { renderObra(); renderFiles(); });
   renderObra(); renderFiles();
   if (location.hash === '#obra') E.showView('obra');
+  if (location.hash === '#proyectos') E.showView('projects');
   if (location.hash === '#ai') openAI();
 })();
