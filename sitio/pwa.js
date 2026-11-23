@@ -10,7 +10,7 @@
 (function () {
   'use strict';
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    navigator.serviceWorker.register('sw.js?v=20261123').catch(function () { });
+    navigator.serviceWorker.register('sw.js?v=20261124').catch(function () { });
   }
 
   var ua = navigator.userAgent;

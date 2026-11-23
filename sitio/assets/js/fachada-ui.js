@@ -166,5 +166,22 @@
     if (view === 'r3d' && ctl) { clearTimeout(t3); t3 = setTimeout(function () { updateChip(); ctl.update(specNow(), { hora: fx().hora, lat: res().city.lat, month: proj().month }); }, 180); }
   });
   try { var last = sessionStorage.getItem('rinova.pv'); if (last && last !== 'laminas') showPv(last); } catch (e) { }
+  /* ---------- Encabezado fijo y accesos rápidos ---------- */
+  var bar = $('#studioBar'), topm = $('.topm'), rootS = document.documentElement.style;
+  function measure() {
+    var off = topm && getComputedStyle(topm).display !== 'none' ? topm.offsetHeight : 0;
+    rootS.setProperty('--top-off', off + 'px');
+    if (bar) { rootS.setProperty('--bar-h', bar.offsetHeight + 'px'); bar.classList.toggle('stuck', window.scrollY > 4 && bar.getBoundingClientRect().top <= off + 0.5); }
+  }
+  window.addEventListener('scroll', measure, { passive: true });
+  window.addEventListener('resize', measure);
+  if (window.ResizeObserver && bar) new ResizeObserver(measure).observe(bar);
+  measure();
+  $$('[data-pv-jump]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      E.showView('studio'); E.selectTab('planos'); showPv(b.dataset.pvJump);
+      setTimeout(function () { $('#pvTabs').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30);
+    });
+  });
   window.RinovaFachadaUI = { show: showPv };
 })();
