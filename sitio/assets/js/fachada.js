@@ -150,7 +150,8 @@
       p: p, fx: fx, E: E, W: W, D: D, H: H, bays: bays, bw: bw, levels: levels, parapet: parapet, roof: E.roof,
       ops: ops, accent: accent, cant: cant, celosia: celosia, volado: volado, pergola: pergola,
       M: MATERIALES[fx.material], A: MATERIALES[fx.acento], C: CANCEL[fx.cancel], base: fx.opts.basamento ? MATERIALES.piedra : null,
-      lot: { W: p.front, D: p.depth, setback: Math.max(1.5, (p.depth - D) * 0.7) }
+      yard: global.RinovaProyecto && global.RinovaProyecto.siteYard ? global.RinovaProyecto.siteYard(p, r) : null,
+      lot: { W: p.front, D: p.depth, setback: (function () { var y = global.RinovaProyecto && global.RinovaProyecto.siteYard && global.RinovaProyecto.siteYard(p, r); return y ? Math.max(1, y.front) : Math.max(1.5, (p.depth - D) * 0.7); })() }
     };
   }
   function winFor(E, b, bw, lvl, h, inAcc, fx, balc) {

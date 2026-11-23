@@ -271,6 +271,28 @@
         });
         tree(-LW / 2 + 1.4, lotZF - 1.4, 1); tree(LW / 2 - 1.2, lotZ0 + 2, 1.2); tree(-LW / 2 + 1.6, lotZ0 + 2.2, 0.9);
       } else tree(LW / 2 - 1.2, lotZ0 + 2, 1);
+      // ---- Jardín posterior (alberca, palapa, asador, fuente, espejo de agua…)
+      if (s.yard) {
+        var mWater = M({ color: night ? 0x1d5f80 : 0x3E9BC2, roughness: 0.08, metalness: 0.15, emissive: night ? 0x0a3550 : 0x000000 });
+        var mStone = M({ color: night ? 0x6b665d : 0xD9C9AE, roughness: 0.7 }), mWood = M({ color: night ? 0x5a4630 : 0xA87B52, roughness: 0.75 });
+        var mThatch = M({ color: night ? 0x6a5230 : 0xB48A4A, roughness: 1 }), mIron = M({ color: 0x222326, roughness: 0.5, metalness: 0.5 });
+        s.yard.items.forEach(function (it) {
+          if (it.out) return;
+          var w = it.w, d = it.d, cx = -lot.W / 2 + it.x + w / 2, cz = ZF - D - it.y - d / 2, r = Math.min(w, d) / 2, k = it.k;
+          if (k === 'alberca' || k === 'chapoteadero') { box(mStone, w + 1.2, 0.1, d + 1.2, cx, 0.05, cz); box(mWater, w, 0.04, d, cx, 0.1, cz); }
+          else if (k === 'espejo') { box(mStone, w + 0.3, 0.32, d + 0.3, cx, 0.16, cz); box(mWater, w, 0.04, d, cx, 0.33, cz); }
+          else if (k === 'jacuzziExt') { box(mWood, w, 0.6, d, cx, 0.3, cz); var jw = new T.Mesh(track(new T.CylinderGeometry(r * 0.8, r * 0.8, 0.04, 28)), mWater); jw.position.set(cx, 0.61, cz); root.add(jw); }
+          else if (k === 'palapa') {
+            [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (q) { box(mWood, 0.2, 2.6, 0.2, cx + q[0] * (w / 2 - 0.3), 1.3, cz + q[1] * (d / 2 - 0.3)); });
+            var rf = new T.Mesh(track(new T.ConeGeometry(Math.max(w, d) * 0.62, 1.6, 12)), mThatch); rf.position.set(cx, 3.4, cz); rf.castShadow = true; root.add(rf);
+          } else if (k === 'asador') { box(mStone, w, 0.9, d, cx, 0.45, cz); box(mIron, 0.8, 0.25, 0.5, cx - w / 4, 1.02, cz); box(mStone, 0.4, 1.6, 0.4, cx + w / 2 - 0.3, 1.7, cz - d / 2 + 0.25); }
+          else if (k === 'fuente') { var fb = new T.Mesh(track(new T.CylinderGeometry(r, r, 0.45, 28)), mStone); fb.position.set(cx, 0.225, cz); fb.castShadow = true; root.add(fb); var fw = new T.Mesh(track(new T.CylinderGeometry(r * 0.88, r * 0.88, 0.03, 28)), mWater); fw.position.set(cx, 0.46, cz); root.add(fw); box(mStone, 0.25, 1.1, 0.25, cx, 0.9, cz); }
+          else if (k === 'fogatero') { var fo = new T.Mesh(track(new T.CylinderGeometry(r * 0.5, r * 0.55, 0.4, 20)), mStone); fo.position.set(cx, 0.2, cz); root.add(fo); }
+          else if (k === 'pergola') { [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (q) { box(mWood, 0.15, 2.6, 0.15, cx + q[0] * (w / 2 - 0.1), 1.3, cz + q[1] * (d / 2 - 0.1)); }); for (var px = -w / 2; px <= w / 2 + 0.01; px += 0.45) box(mWood, 0.06, 0.18, d + 0.4, cx + px, 2.69, cz); }
+          else if (k === 'juegos') { box(mWood, w, 0.04, d, cx, 0.02, cz); box(mIron, 0.1, 2.2, 0.1, cx - w / 3, 1.1, cz); box(mIron, 0.1, 2.2, 0.1, cx + w / 3, 1.1, cz); box(mIron, w * 0.7, 0.1, 0.1, cx, 2.2, cz); }
+          else if (k === 'huerto') { for (var hz = -d / 2 + 0.4; hz < d / 2; hz += 0.9) { box(mWood, w, 0.35, 0.6, cx, 0.175, cz + hz); box(mLeaf[0], w - 0.1, 0.12, 0.5, cx, 0.4, cz + hz); } }
+        });
+      }
       flush();
 
       // ---- Luz
