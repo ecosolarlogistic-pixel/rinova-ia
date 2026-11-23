@@ -28,6 +28,9 @@ sitio/                      ← lo único que se publica en public_html
   assets/css/rinova.css           sistema visual: tokens de color, tipografía, botones y estados del manual
   assets/js/facade.js             generador paramétrico de fachadas (SVG), con anochecer y concreto aparente
   assets/js/estudio.js            lógica del Estudio, proyectos y presentación
+  assets/js/fachada.js            mejora de fachada: estilos, materiales, elementos, alzado a color y costo
+  assets/js/render3d.js           render 3D con giro 360°, captura e video (three.js en assets/js/vendor, MIT)
+  assets/js/fachada-ui.js         vistas Mejorar fachada y Render 3D dentro de Planos
   assets/js/plataforma.js         Obra, archivos de planos y RINOVAIA AI
   assets/fonts/*.woff2            Montserrat e Inter autoalojadas (+ licencias OFL)
   assets/img/                     isotipo (color, claro, blanco, negro, plata), logo circular, iconos, hero y OG
