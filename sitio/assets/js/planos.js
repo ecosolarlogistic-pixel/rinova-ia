@@ -136,7 +136,7 @@
     });
     o.push('</g>');
     // Mobiliario
-    if (on.arq) o.push(furniture(lv.cells, X, Y, s, p));
+    if (on.arq) o.push(furniture(lv.cells, X, Y, s, p, r));
     // Muros interiores
     o.push('<g fill="none" stroke="' + (faint ? '#9AA3B2' : INK) + '" stroke-linecap="square">');
     lv.cells.forEach(function (c) {
@@ -214,7 +214,8 @@
       o.push(g);
     });
   }
-  function furniture(cells, X, Y, s, p) {
+  function furniture(cells, X, Y, s, p, r) {
+    var evLeft = r && r.energy ? r.energy.chargers : 0;
     var o = ['<g fill="none" stroke="#7D8696" stroke-width="1">'];
     function all(c) { return c.sub ? c.sub : [c]; }
     cells.forEach(function (c0) {
@@ -242,6 +243,10 @@
           var cap = Math.min(cars, nfit * Math.min(rowsC, 2));
           for (var q = 0; q < cap; q++) { var ci = q % nfit, cr = Math.floor(q / nfit), cxp = x + ci * cw + cw * 0.12, cyp = cr === 0 ? y + h - ch + 0.3 * s : y + 0.3 * s; o.push('<rect x="' + f(cxp) + '" y="' + f(cyp) + '" width="' + f(cw * 0.76) + '" height="' + f(ch * 0.88) + '" rx="' + f(cw * 0.2) + '"/><line x1="' + f(cxp) + '" y1="' + f(cyp + ch * 0.3) + '" x2="' + f(cxp + cw * 0.76) + '" y2="' + f(cyp + ch * 0.3) + '"/>'); }
           c.drawnCars = cap;
+          // cargadores para autos eléctricos en el muro del fondo de la cochera
+          for (var ev = 0; ev < Math.min(evLeft, cap); ev++) { var ex = x + (ev % nfit) * cw + cw * 0.5, ey = y + 4; o.push('<g stroke="' + GOLD + '" stroke-width="1.3"><rect x="' + f(ex - 7) + '" y="' + f(ey) + '" width="14" height="9" fill="#FFF8E1"/><path d="M' + f(ex + 1) + ' ' + f(ey + 1.5) + 'l-3 3.5h3l-2 3" fill="none"/></g>'); }
+          if (evLeft) o.push('<text x="' + f(x + w / 2) + '" y="' + f(y + 22) + '" font-size="8" font-weight="700" text-anchor="middle" fill="' + GOLD + '" stroke="none">CARGADOR EV</text>');
+          evLeft = 0;
         } else if (c.k === 'circ' && c.n.indexOf('Escalera') === 0) {
           var stW = Math.min(w, 2.6 * s); o.push('<rect x="' + f(x + 4) + '" y="' + f(y + 4) + '" width="' + f(stW - 8) + '" height="' + f(h - 8) + '"/>');
           for (var st = 1; st < 14; st++) o.push('<line x1="' + f(x + 4) + '" y1="' + f(y + 4 + (h - 8) * st / 14) + '" x2="' + f(x + stW - 4) + '" y2="' + f(y + 4 + (h - 8) * st / 14) + '"/>');
@@ -346,6 +351,7 @@
     o.push('<g stroke="' + INK + '" stroke-width=".5" opacity=".35">');
     for (var h = -r.D * s; h < r.W * s; h += 10) o.push('<line x1="' + f(Math.max(bx, bx + h)) + '" y1="' + f(by + (h < 0 ? -h : 0)) + '" x2="' + f(Math.min(bx + r.W * s, bx + h + r.D * s)) + '" y2="' + f(by + Math.min(r.D * s, r.W * s - h)) + '"/>');
     o.push('</g>');
+    if (r.energy && r.energy.layout) o.push(pvSvg(r.energy.layout, function (m) { return f(bx + m * s); }, function (m) { return f(by + m * s); }, s, 0.55));
     o.push('<text x="' + f(bx + r.W * s / 2) + '" y="' + f(by + r.D * s / 2) + '" text-anchor="middle" font-size="14" font-weight="800" fill="' + INK + '">' + esc(PR.TIPOS[p.type].n.toUpperCase()) + '</text>');
     o.push('<text x="' + f(bx + r.W * s / 2) + '" y="' + f(by + r.D * s / 2 + 18) + '" text-anchor="middle" font-size="11" fill="' + MUTED + '">' + p.floors + (p.floors === 1 ? ' nivel' : ' niveles') + ' · desplante ' + n1(r.footprint) + ' m²</text>');
     if (yard) o.push(gardenSvg(yard, function (m) { return f(x0 + m * s); }, function (m) { return f(by - m * s); }, s));
@@ -371,6 +377,46 @@
     return o.join('');
   }
 
+  // Módulos fotovoltaicos en planta (azotea)
+  function pvSvg(list, X, Y, s, op) {
+    var o = ['<g opacity="' + (op || 1) + '">'];
+    list.forEach(function (q) {
+      var x = +X(q.x), y = +Y(q.y), w = q.w * s, h = q.h * s;
+      o.push('<rect x="' + f(x) + '" y="' + f(y) + '" width="' + f(w) + '" height="' + f(h) + '" fill="#1F3A66" stroke="#9FB4D6" stroke-width=".6"/>');
+      if (h > 14) for (var k = 1; k < 3; k++) o.push('<line x1="' + f(x) + '" y1="' + f(y + h * k / 3) + '" x2="' + f(x + w) + '" y2="' + f(y + h * k / 3) + '" stroke="#6F8BB8" stroke-width=".4"/>');
+    });
+    o.push('</g>');
+    return o.join('');
+  }
+  // Lámina FV-01: azotea con el arreglo fotovoltaico, equipos y cuadro del sistema
+  function energySheet(ctx) {
+    var p = ctx.p, r = ctx.r, en = r.energy, o = [];
+    var areaW = VW - 470, areaH = VH - TB - 150, s = Math.min(areaW / r.W, areaH / r.D), W = r.W * s, D = r.D * s, x0 = 90 + (areaW - W) / 2, y0 = 70 + (areaH - D) / 2;
+    o.push('<rect x="' + f(x0) + '" y="' + f(y0) + '" width="' + f(W) + '" height="' + f(D) + '" fill="#F4F5F7" stroke="' + INK + '" stroke-width="4"/>');
+    o.push('<rect x="' + f(x0 + 0.25 * s) + '" y="' + f(y0 + 0.25 * s) + '" width="' + f(W - 0.5 * s) + '" height="' + f(D - 0.5 * s) + '" fill="none" stroke="' + MUTED + '" stroke-dasharray="6 4"/>');
+    if (en.layout) o.push(pvSvg(en.layout, function (m) { return f(x0 + m * s); }, function (m) { return f(y0 + m * s); }, s));
+    if (p.fx && p.fx.on && p.fx.opts && p.fx.opts.pergola) o.push('<rect x="' + f(x0 + r.W * 0.06 * s) + '" y="' + f(y0 + (r.D - 0.4 - r.D * 0.55) * s) + '" width="' + f(r.W * 0.56 * s) + '" height="' + f(r.D * 0.55 * s) + '" fill="none" stroke="' + GOLD + '" stroke-dasharray="5 3"/><text x="' + f(x0 + r.W * 0.34 * s) + '" y="' + f(y0 + (r.D - 0.4 - r.D * 0.27) * s) + '" font-size="11" font-weight="700" text-anchor="middle" fill="' + GOLD + '">PÉRGOLA / TERRAZA</text>');
+    o.push('<text x="' + f(x0 + W / 2) + '" y="' + f(y0 + D + 40) + '" font-size="11" font-weight="700" letter-spacing="3" text-anchor="middle" fill="' + MUTED + '">— C A L L E —</text>');
+    o.push('<g stroke="' + GOLD + '" fill="' + GOLD + '" font-size="11.5" font-weight="600"><line x1="' + f(x0) + '" y1="' + f(y0 + D + 18) + '" x2="' + f(x0 + W) + '" y2="' + f(y0 + D + 18) + '"/><text x="' + f(x0 + W / 2) + '" y="' + f(y0 + D + 14) + '" text-anchor="middle" stroke="none">' + n2(r.W) + ' m</text></g>');
+    // cuadro del sistema
+    var rows = [];
+    if (en.kwp) rows.push(['Potencia', n2(en.kwp) + ' kWp'], ['Módulos', en.panels + ' × ' + PR.FV.panelW + ' W'], ['Inversor', en.inversorKw + ' kW'], ['Generación', Math.round(en.gen).toLocaleString('es-MX') + ' kWh/mes'], ['Consumo est.', Math.round(en.mensual).toLocaleString('es-MX') + ' kWh/mes'], ['Horas sol pico', n1(en.hsp) + ' h']);
+    if (en.kwh) rows.push(['Baterías LFP', en.kwh + ' kWh'], ['Inv. híbrido', en.hibridoKw + ' kW'], ['Autonomía', n1(en.autonomia) + ' días']);
+    rows.push(['Esquema', PR.BATERIA[en.opts.battery] === PR.BATERIA.aislado ? 'Aislado (sin CFE)' : en.kwh ? 'Interconectado + respaldo' : en.kwp ? 'Interconectado a CFE' : '—']);
+    if (en.chargers) rows.push(['Cargadores EV', en.chargers + ' × ' + en.chargerKw + ' kW']);
+    var bx = VW - 330, by = 70;
+    o.push('<g font-size="11"><rect x="' + bx + '" y="' + by + '" width="300" height="' + (34 + rows.length * 22) + '" fill="#FBFCFD" stroke="' + SILVER + '"/><text x="' + (bx + 12) + '" y="' + (by + 20) + '" font-size="9.5" letter-spacing="1.2" font-weight="700" fill="' + MUTED + '">SISTEMA FOTOVOLTAICO Y MOVILIDAD</text>');
+    rows.forEach(function (rw, k) { o.push('<text x="' + (bx + 12) + '" y="' + (by + 44 + k * 22) + '" fill="' + MUTED + '">' + esc(rw[0]) + '</text><text x="' + (bx + 288) + '" y="' + (by + 44 + k * 22) + '" text-anchor="end" font-weight="700" fill="' + INK + '">' + esc(rw[1]) + '</text>'); });
+    o.push('</g>');
+    // diagrama simple
+    var dy = by + 60 + rows.length * 22, items = [];
+    if (en.kwp) items.push('Arreglo FV'); items.push(en.kwh ? 'Inversor híbrido' : 'Inversor'); if (en.kwh) items.push('Baterías'); items.push('Tablero'); if (en.opts.battery !== 'aislado') items.push('Medidor CFE');
+    o.push('<g font-size="10" font-weight="700" text-anchor="middle">');
+    items.forEach(function (t, k) { var yy = dy + k * 44; o.push('<rect x="' + (bx + 70) + '" y="' + yy + '" width="160" height="28" rx="6" fill="#fff" stroke="' + TECH + '"/><text x="' + (bx + 150) + '" y="' + (yy + 18) + '" fill="' + TECH + '">' + esc(t) + '</text>'); if (k) o.push('<line x1="' + (bx + 150) + '" y1="' + (yy - 16) + '" x2="' + (bx + 150) + '" y2="' + yy + '" stroke="' + TECH + '" stroke-width="1.5"/>'); });
+    o.push('</g>');
+    o.push(north(VW - 60, VH - TB - 60), scaleBar(s));
+    return o.join('');
+  }
   // Elementos del jardín en planta. X(m) desde el lindero izquierdo; Y(m) desde el muro posterior de la casa hacia el fondo.
   function gardenSvg(yard, X, Y, s) {
     var o = ['<g font-size="9" text-anchor="middle">'];
@@ -513,6 +559,7 @@
       sheets.push({ code: c1, name: 'Eléctrica · ' + lvName(i), kind: 'inst', level: i, render: function () { return frame(planSheet(ctx, i, { ele: true, cot: false }), meta(c1, 'Instalación eléctrica · ' + lvName(i), 'Alumbrado y contactos')); } });
       sheets.push({ code: c2, name: 'Hidrosanitaria · ' + lvName(i), kind: 'inst', level: i, render: function () { return frame(planSheet(ctx, i, { hid: true, cot: false }), meta(c2, 'Instalación hidrosanitaria · ' + lvName(i), 'Agua fría y drenaje')); } });
     });
+    if (r.energy) sheets.push({ code: 'FV-01', name: 'Azotea · sistema solar', kind: 'fv', render: function () { return frame(energySheet(ctx), meta('FV-01', 'Azotea y sistema fotovoltaico', r.energy.kwp ? n2(r.energy.kwp) + ' kWp · ' + r.energy.panels + ' módulos' : 'Movilidad eléctrica y respaldo')); } });
     if (opts.unifilar) sheets.push({ code: 'IE-U', name: 'Diagrama unifilar', kind: 'uni', render: function () { return frame('<g transform="translate(60 40)">' + opts.unifilar().replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '') + '</g>', meta('IE-U', 'Diagrama unifilar', 'Tablero general')); } });
     var info = levels.map(function (lv) { return lv.cells.map(function (c) { return { n: c.n, k: c.k, m2: c.m2, unit: !!c.unit, id: c.id }; }); });
     return { sheets: sheets, levels: levels, info: info };

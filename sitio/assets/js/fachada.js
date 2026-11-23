@@ -150,6 +150,7 @@
       p: p, fx: fx, E: E, W: W, D: D, H: H, bays: bays, bw: bw, levels: levels, parapet: parapet, roof: E.roof,
       ops: ops, accent: accent, cant: cant, celosia: celosia, volado: volado, pergola: pergola,
       M: MATERIALES[fx.material], A: MATERIALES[fx.acento], C: CANCEL[fx.cancel], base: fx.opts.basamento ? MATERIALES.piedra : null,
+      pv: r.energy && r.energy.layout && r.energy.layout.length ? r.energy.layout : null,
       yard: global.RinovaProyecto && global.RinovaProyecto.siteYard ? global.RinovaProyecto.siteYard(p, r) : null,
       lot: { W: p.front, D: p.depth, setback: (function () { var y = global.RinovaProyecto && global.RinovaProyecto.siteYard && global.RinovaProyecto.siteYard(p, r); return y ? Math.max(1, y.front) : Math.max(1.5, (p.depth - D) * 0.7); })() }
     };
@@ -234,6 +235,14 @@
       var ov = 0.55, rh = roofH;
       o.push('<path d="M' + X(-ov) + ' ' + Y(top) + ' L' + X(s.W * 0.22) + ' ' + Y(top + rh) + ' H' + X(s.W * 0.78) + ' L' + X(s.W + ov) + ' ' + Y(top) + 'Z" fill="url(#' + id + 'pT)" stroke="#5E2E1D" stroke-width="1"/>');
       o.push('<rect x="' + X(-ov) + '" y="' + Y(top) + '" width="' + L(s.W + 2 * ov) + '" height="' + L(0.22) + '" fill="#6B3422"/>');
+    }
+    if (s.pv) { // paneles solares en azotea, visibles sobre el pretil
+      var pv0 = Math.min.apply(null, s.pv.map(function (q) { return q.x; })), pv1 = Math.max.apply(null, s.pv.map(function (q) { return q.x + q.w; }));
+      var pvb = s.roof === 'plano' ? top + s.parapet - 0.25 : top + 0.35, pvh = s.roof === 'plano' ? 0.55 : 0.5;
+      o.push('<g><rect x="' + X(pv0) + '" y="' + Y(pvb + pvh) + '" width="' + L(pv1 - pv0) + '" height="' + L(pvh) + '" fill="' + (night ? '#132238' : '#22416F') + '" stroke="#9FB4D6" stroke-width=".8"/>');
+      for (var pxx = pv0 + 1.16; pxx < pv1 - 0.1; pxx += 1.16) o.push('<line x1="' + X(pxx) + '" y1="' + Y(pvb + pvh) + '" x2="' + X(pxx) + '" y2="' + Y(pvb) + '" stroke="#7F98C2" stroke-width=".7"/>');
+      o.push('</g>');
+      marks.push({ x: X((pv0 + pv1) / 2), y: Y(pvb + pvh) - 12, t: 'Paneles solares' });
     }
     if (s.pergola) {
       var pg = s.pergola, ptop = top + s.parapet + pg.h - 0.2;
