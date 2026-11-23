@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Catálogo de obra · RINOVAIA</title>
+<meta name="description" content="Catálogo de conceptos de obra con análisis de precios unitarios y presupuestos por obra.">
+<meta name="theme-color" content="#0B0F17">
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/img/logo-mark.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="assets/css/rinova.css?v=20261125">
+<style>
+  body{background:var(--paper)}
+  .top{background:var(--navy);color:#fff;border-bottom:1px solid var(--navy-line);position:sticky;top:0;z-index:30}
+  .top .in{width:var(--wrap);margin-inline:auto;display:flex;align-items:center;gap:16px;min-height:68px}
+  .top .sp{flex:1}
+  .top .who{font-size:13px;color:var(--navy-text);text-align:right;line-height:1.3}
+  .top .who b{color:#fff;display:block;font-weight:600}
+  .top a.back{color:var(--gold);font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap}
+  @media(max-width:640px){.top .who{display:none}.top .in{gap:10px}.tools .input,.tools select.input{flex:1 1 100%;min-width:0}}
+  .hero{width:var(--wrap);margin:28px auto 18px;display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap}
+  .hero h1{font-size:clamp(26px,3vw,36px);line-height:1.1}
+  .hero p{margin:6px 0 0;color:var(--muted);max-width:70ch;font-size:15px}
+  .tabs{width:var(--wrap);margin:0 auto;display:flex;gap:6px;border-bottom:1px solid var(--line);overflow-x:auto}
+  .tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:12px 14px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;min-height:44px}
+  .tabs button[aria-selected=true]{color:var(--graphite);border-color:var(--gold)}
+  main{width:var(--wrap);margin:20px auto 80px}
+  .tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .tools .input{width:auto;min-width:200px;flex:1 1 220px}
+  .tools select.input{flex:0 1 240px}
+  .tools .gap{flex:1}
+  .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+  .kpi{padding:14px 16px}
+  .kpi small{display:block;font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+  .kpi b{font-family:var(--display);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+  @media(max-width:760px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .tbl-wrap{overflow:auto;border-radius:var(--r);background:#fff;border:1px solid var(--line);box-shadow:var(--shadow)}
+  table.t{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.t th{position:sticky;top:0;background:var(--navy);color:#fff;text-align:left;font-weight:600;font-size:12px;letter-spacing:.03em;padding:10px 10px;white-space:nowrap;z-index:1}
+  table.t td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  table.t td.k{font-weight:600;white-space:nowrap;color:var(--tech)}
+  table.t tr.grp td{background:var(--gold-soft);font-weight:700;color:var(--graphite);font-family:var(--display);font-size:13px;letter-spacing:.02em}
+  table.t tr.sub td{background:var(--paper-2);font-weight:700}
+  table.t tbody tr.row{cursor:pointer}
+  table.t tbody tr.row:hover td{background:#FAFBFC}
+  table.t .desc{min-width:280px;max-width:560px}
+  table.t input.cell{width:110px;min-height:36px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;text-align:right;font-variant-numeric:tabular-nums;background:#fff}
+  table.t input.cell:focus{border-color:var(--gold);outline:none;box-shadow:0 0 0 3px var(--gold-glow)}
+  table.t input.cell[readonly]{background:transparent;border-color:transparent}
+  .muted{color:var(--muted)}
+  .empty{padding:40px 20px;text-align:center;color:var(--muted)}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--tech-soft);color:var(--tech);letter-spacing:.02em}
+  .pill.mo{background:#ECF6F0;color:var(--ok)}.pill.eq{background:#FBF4E4;color:var(--warn)}
+  /* Panel lateral y diálogos */
+  .shade{position:fixed;inset:0;background:rgba(11,15,23,.45);z-index:40;display:none}
+  .shade.on{display:block}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:min(720px,100%);background:#fff;z-index:41;transform:translateX(100%);transition:transform .3s var(--ease);display:flex;flex-direction:column;box-shadow:-20px 0 60px -30px rgba(11,15,23,.6)}
+  .drawer.on{transform:none}
+  .drawer header{padding:20px 22px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:flex-start}
+  .drawer header h2{font-size:20px;line-height:1.3}
+  .drawer .body{padding:18px 22px;overflow:auto;flex:1}
+  .drawer footer{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+  .x{background:none;border:1px solid var(--line);border-radius:10px;width:40px;height:40px;cursor:pointer;font-size:20px;line-height:1;flex:none;margin-left:auto}
+  .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  @media(max-width:600px){.grid2,.grid3{grid-template-columns:1fr}}
+  .apu-tot{display:grid;grid-template-columns:1fr auto;gap:4px 16px;margin-top:14px;font-size:14px;max-width:360px;margin-left:auto}
+  .apu-tot b{text-align:right;font-variant-numeric:tabular-nums}
+  .apu-tot .pu{font-family:var(--display);font-size:18px;border-top:2px solid var(--gold);padding-top:6px}
+  .sec-h{display:flex;align-items:center;gap:10px;margin:18px 0 10px}
+  .sec-h h3{font-size:15px}
+  .bud-head{padding:18px;margin-bottom:14px}
+  .bud-head .grid3{margin-top:12px}
+  .status-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .list{display:grid;gap:10px}
+  .list .card{padding:14px 16px;display:flex;gap:12px;align-items:center;cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
+  .list .card:hover{border-color:var(--gold)}
+  .list .card b{font-family:var(--display);font-weight:600}
+  .list .card .sp{flex:1}
+  .totbox{margin-top:14px;padding:16px 18px;display:grid;gap:6px;max-width:420px;margin-left:auto}
+  .totbox div{display:flex;justify-content:space-between;gap:16px;font-variant-numeric:tabular-nums}
+  .totbox .big{font-family:var(--display);font-size:20px;font-weight:600;border-top:2px solid var(--gold);padding-top:8px}
+  .letra{font-size:12.5px;color:var(--muted);text-align:right;margin-top:6px}
+  .pick-list{max-height:52vh;overflow:auto;border:1px solid var(--line);border-radius:12px}
+  .pick-list label{display:flex;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13.5px;align-items:flex-start}
+  .pick-list label:hover{background:#FAFBFC}
+  .pick-list .k{font-weight:700;color:var(--tech);white-space:nowrap}
+  .pick-list .pu{margin-left:auto;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--muted)}
+  .pick-list .g{padding:8px 12px;background:var(--gold-soft);font-weight:700;font-size:12.5px;position:sticky;top:0}
+  .gate{width:var(--wrap);margin:60px auto;text-align:center;padding:40px 20px}
+  [hidden]{display:none!important}
+  /* Documento para PDF (solo impresión) */
+  #doc{display:none}
+  @media print{
+    @page{size:letter;margin:14mm 12mm 16mm}
+    @page{@bottom-right{content:"Página " counter(page) " de " counter(pages);font:9px Inter,Arial,sans-serif;color:#5A6475}}
+    body{background:#fff}
+    body>*:not(#doc){display:none!important}
+    #doc{display:block;font-size:10px;color:#18202B}
+    #doc.landscape{}
+  }
+  .pd-head{display:flex;align-items:center;gap:14px;border-bottom:2px solid #D4AF37;padding-bottom:10px;margin-bottom:12px}
+  .pd-head img{width:46px}
+  .pd-head .bn{font-family:var(--display);font-weight:600;letter-spacing:.3em;font-size:16px}
+  .pd-head .bn small{display:block;letter-spacing:.14em;font-size:7.5px;color:#5A6475;font-family:var(--sans);font-weight:500;margin-top:3px}
+  .pd-head .tt{margin-left:auto;text-align:right}
+  .pd-head .tt b{font-family:var(--display);font-size:15px;letter-spacing:.06em;display:block}
+  .pd-head .tt span{font-size:9.5px;color:#5A6475}
+  .pd-data{display:grid;grid-template-columns:1fr 1fr;gap:2px 24px;margin-bottom:12px;font-size:10px}
+  .pd-data div{display:flex;gap:6px}.pd-data dt{color:#5A6475;min-width:90px}.pd-data dd{margin:0;font-weight:600}
+  table.pd{width:100%;border-collapse:collapse;font-size:9.2px}
+  table.pd thead{display:table-header-group}
+  table.pd th{background:#0B0F17;color:#fff;font-weight:600;text-align:left;padding:5px 5px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  table.pd td{padding:4px 5px;border-bottom:.5px solid #DDE2EA;vertical-align:top}
+  table.pd tr{break-inside:avoid}
+  table.pd .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  table.pd .k{white-space:nowrap;font-weight:600}
+  table.pd tr.g td{background:#F7EFD3;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  table.pd tr.s td{background:#E9EDF2;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pd-sum{display:grid;grid-template-columns:1fr 260px;gap:18px;margin-top:12px;break-inside:avoid}
+  .pd-sum table{width:100%;border-collapse:collapse;font-size:9.5px}
+  .pd-sum td{padding:3px 5px;border-bottom:.5px solid #DDE2EA}
+  .pd-sum .n{text-align:right;font-variant-numeric:tabular-nums}
+  .pd-sum .tot td{font-weight:700;font-size:11px;border-top:1.5px solid #D4AF37;border-bottom:0}
+  .pd-letra{margin-top:6px;font-size:9.5px;font-weight:600}
+  .pd-notes{margin-top:12px;font-size:8.8px;color:#5A6475;break-inside:avoid}
+  .pd-sign{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:46px;font-size:9px;text-align:center;break-inside:avoid}
+  .pd-sign div{border-top:.8px solid #18202B;padding-top:5px}
+  .pd-apu{break-inside:avoid;margin-top:14px;border:.5px solid #DDE2EA;border-radius:6px;padding:8px}
+  .pd-apu h4{font-size:10px;margin:0 0 6px;font-family:var(--display)}
+  .pd-break{break-before:page}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Saltar al contenido</a>
+<header class="top">
+  <div class="in">
+    <a class="logo on-dark compact" href="interno.html" aria-label="RINOVAIA, portal interno"><img src="assets/img/isotipo-plata.svg" alt=""><span class="wm"><b>RINOVAIA</b><small>Arquitectura · Ingeniería</small></span></a>
+    <span class="sp"></span>
+    <div class="who" id="who"></div>
+    <a class="back" href="interno.html">← Portal interno</a>
+  </div>
+</header>
+
+<div id="gate" class="gate card" hidden>
+  <h2 style="font-size:22px">Sin acceso al catálogo</h2>
+  <p class="muted">El catálogo de obra es para el personal interno. Pide a un administrador que te asigne un rol de arquitectura, ingeniería, supervisión, ventas o administración.</p>
+  <a class="btn btn-ink" href="interno.html">Volver al portal</a>
+</div>
+
+<div id="app" hidden>
+  <section class="hero">
+    <div>
+      <span class="eyebrow">Control de costos</span>
+      <h1>Catálogo de obra</h1>
+      <p id="vig">Conceptos con análisis de precio unitario, reutilizables en cada obra. Precios en MXN, sin IVA.</p>
+    </div>
+  </section>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="conceptos" aria-selected="true">Catálogo de conceptos</button>
+    <button role="tab" data-tab="insumos" aria-selected="false">Insumos y precios</button>
+    <button role="tab" data-tab="presupuestos" aria-selected="false">Presupuestos por obra</button>
+  </nav>
+
+  <main id="main">
+    <!-- Conceptos -->
+    <section data-panel="conceptos">
+      <div class="kpis" id="kpiCat"></div>
+      <div class="tools">
+        <input class="input" id="qC" type="search" placeholder="Buscar por clave o descripción" aria-label="Buscar concepto">
+        <select class="input" id="fPartida" aria-label="Filtrar por partida"></select>
+        <span class="gap"></span>
+        <button class="btn btn-ghost btn-sm" id="xlsCat">Excel</button>
+        <button class="btn btn-ghost btn-sm" id="pdfCat">PDF</button>
+        <button class="btn btn-gold btn-sm" id="newC" data-edit>+ Nuevo concepto</button>
+      </div>
+      <div class="tbl-wrap"><table class="t" id="tC">
+        <thead><tr><th>Clave</th><th>Descripción</th><th>Unidad</th><th class="n">Material</th><th class="n">Mano de obra</th><th class="n">Equipo</th><th class="n">Costo directo</th><th class="n">P.U.</th></tr></thead>
+        <tbody></tbody></table></div>
+      <p class="muted" style="font-size:12.5px;margin-top:10px" id="factNote"></p>
+    </section>
+
+    <!-- Insumos -->
+    <section data-panel="insumos" hidden>
+      <div class="tools">
+        <input class="input" id="qI" type="search" placeholder="Buscar insumo" aria-label="Buscar insumo">
+        <select class="input" id="fTipo" aria-label="Filtrar por tipo">
+          <option value="">Todos los tipos</option><option value="material">Materiales</option><option value="mano_obra">Mano de obra</option><option value="equipo">Equipo y herramienta</option>
+        </select>
+        <span class="gap"></span>
+        <button class="btn btn-ghost btn-sm" id="xlsIns">Excel</button>
+        <button class="btn btn-gold btn-sm" id="newI" data-edit>+ Nuevo insumo</button>
+      </div>
+      <p class="muted" style="font-size:13px;margin:-4px 0 12px" data-edit>Al cambiar el costo de un insumo, todos los conceptos que lo usan se recalculan solos. Los presupuestos ya armados conservan su precio hasta que pulses «Actualizar precios».</p>
+      <div class="tbl-wrap"><table class="t" id="tI">
+        <thead><tr><th>Clave</th><th>Tipo</th><th>Descripción</th><th>Unidad</th><th class="n">Costo (MXN)</th><th class="n">Usado en</th></tr></thead>
+        <tbody></tbody></table></div>
+    </section>
+
+    <!-- Presupuestos -->
+    <section data-panel="presupuestos" hidden>
+      <div id="budList">
+        <div class="tools">
+          <select class="input" id="fProj" aria-label="Proyecto u obra"></select>
+          <span class="gap"></span>
+          <button class="btn btn-gold btn-sm" id="newB">+ Nuevo presupuesto</button>
+        </div>
+        <div class="list" id="bList"></div>
+      </div>
+      <div id="budDetail" hidden>
+        <div class="tools">
+          <button class="btn btn-text btn-sm" id="bBack">← Presupuestos</button>
+          <span class="gap"></span>
+          <button class="btn btn-ghost btn-sm" id="bRefresh" data-draft>Actualizar precios</button>
+          <button class="btn btn-ghost btn-sm" id="bXls">Excel</button>
+          <button class="btn btn-ghost btn-sm" id="bPdf">PDF</button>
+          <button class="btn btn-gold btn-sm" id="bAdd" data-draft>+ Agregar conceptos</button>
+        </div>
+        <div class="card bud-head" id="bHead"></div>
+        <div class="tbl-wrap"><table class="t" id="tB">
+          <thead><tr><th>Clave</th><th>Descripción</th><th>Unidad</th><th class="n">Cantidad</th><th class="n">P.U.</th><th class="n">Importe</th><th></th></tr></thead>
+          <tbody></tbody></table></div>
+        <div class="card totbox" id="bTot"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="shade" id="shade"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dTitle">
+  <header><div><span class="eyebrow" id="dEyebrow"></span><h2 id="dTitle"></h2></div><button class="x" id="dClose" aria-label="Cerrar">×</button></header>
+  <div class="body" id="dBody"></div>
+  <footer id="dFoot"></footer>
+</aside>
+
+<div id="doc"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="assets/js/vendor/supabase-2.58.0.min.js?v=20261125"></script>
+<script src="assets/js/sesion.js?v=20261125"></script>
+<script src="assets/js/xlsx-lite.js?v=20261125"></script>
+<script src="assets/js/catalogo.js?v=20261125"></script>
+</body>
+</html>
