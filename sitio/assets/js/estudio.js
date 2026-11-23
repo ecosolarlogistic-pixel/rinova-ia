@@ -30,6 +30,7 @@
     if (!o.rooms || typeof o.rooms !== 'object' || Array.isArray(o.rooms)) o.rooms = {};
     if (!Array.isArray(o.extra)) o.extra = [];
     if (!Array.isArray(o.garden)) o.garden = [];
+    o.energy = PR.energyOpts(o);
     return o;
   }
   normalize(p);
@@ -135,6 +136,8 @@
     circ.push({ use: 'Lavado y bombeo', br: '1P-20A', kw: 1.8 });
     var amen = PR.amenities(p, city.f);
     amen.circ.forEach(function (c) { circ.push(c); });
+    var energy = PR.energy(p, { W: W, D: D, area: area, footprint: footprint, city: city });
+    if (energy) energy.circ.forEach(function (c) { circ.push(c); });
     var kw = circ.reduce(function (s, c) { return s + c.kw; }, 0), kwd = kw * 0.6;
     var tri = kwd > 10;
     var I = kwd * 1000 / (tri ? 220 * 1.732 * 0.9 : 220 * 0.9);
@@ -162,15 +165,13 @@
     var sum = parts.reduce(function (s, x) { return s + x[1]; }, 0);
     parts = parts.map(function (x) { return { name: x[0], pct: x[1] / sum, v: total * x[1] / sum }; });
     // Amenidades y equipamiento (alberca, palapa, tina, jacuzzi…) se suman al presupuesto
-    if (amen.total > 0) {
-      total += amen.total;
-      parts.push({ name: 'Amenidades y equipamiento', v: amen.total, items: amen.list });
-      parts.forEach(function (x) { x.pct = x.v / total; });
-    }
+    if (amen.total > 0) { total += amen.total; parts.push({ name: 'Amenidades y equipamiento', v: amen.total, items: amen.list }); }
+    if (energy && energy.total > 0) { total += energy.total; parts.push({ name: 'Energía solar y movilidad eléctrica', v: energy.total, items: energy.items }); }
+    parts.forEach(function (x) { x.pct = x.v / total; });
 
     return { city: city, fin: fin, W: W, D: D, L: L, Ly: Ly, rows: rows, footprint: footprint, area: area, Wu: Wu, CV: CV, V: V,
       elements: elements, worst: worst, beam: beam, col: col, circ: circ, kw: kw, kwd: kwd, tri: tri, main: main, unit: unit, total: total, parts: parts, drift: drift,
-      type: T, parkSurface: surf, amen: amen, yard: PR.siteYard(p, { W: W, D: D }), parkFit: surf + (p.type === 'casa' ? Math.min(p.parking, 3) : p.type === 'deptos' && p.floors > 1 ? Math.floor(W * D * 0.55 / 25) : 0) };
+      type: T, parkSurface: surf, amen: amen, energy: energy, yard: PR.siteYard(p, { W: W, D: D }), parkFit: surf + (p.type === 'casa' ? Math.min(p.parking, 3) : p.type === 'deptos' && p.floors > 1 ? Math.floor(W * D * 0.55 / 25) : 0) };
   }
   function pick(list, capFn, dem) {
     for (var i = 0; i < list.length; i++) { var cap = capFn(list[i]); if (dem / cap <= 0.82) return { s: list[i], cap: cap }; }
@@ -303,6 +304,20 @@
       return '<div class="cb"><span>' + esc(x.name) + '</span><div class="track"><i style="width:' + (x.pct / max * 100) + '%;background:' + COLORS[i % COLORS.length] + '"></i></div><b>' + money(x.v) + '</b></div>';
     }).join('');
     $('#costTotal').textContent = money(r.total);
+    var ec = $('#energyCard'), en = r.energy;
+    ec.hidden = !en;
+    if (en) {
+      var figs = [];
+      if (en.kwp) figs.push([nf1.format(en.kwp) + ' kWp', en.panels + ' paneles de ' + PR.FV.panelW + ' W'], [nf0.format(en.gen) + ' kWh', 'Generación al mes · consumo ' + nf0.format(en.mensual)]);
+      if (en.retorno) figs.push([money(en.ahorroMes * 12, true), 'Ahorro al año · retorno ' + nf1.format(en.retorno) + ' años']);
+      if (en.co2) figs.push([nf1.format(en.co2) + ' t', 'CO₂ evitado al año']);
+      if (en.kwh) figs.push([en.kwh + ' kWh', 'Baterías · ' + nf1.format(en.autonomia) + ' días de autonomía']);
+      if (en.chargers) figs.push([en.chargers + ' × ' + en.chargerKw + ' kW', 'Cargadores para autos eléctricos']);
+      ec.innerHTML = '<h4><span>Energía solar y movilidad eléctrica</span><b class="num">' + money(en.total) + '</b></h4>' +
+        '<div class="en-figs">' + figs.slice(0, 8).map(function (x) { return '<div><b class="num">' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span></div>'; }).join('') + '</div>' +
+        '<ul class="en-list">' + en.items.map(function (x) { return '<li><span>' + esc(x.n) + '</span><b class="num">' + money(x.v) + '</b></li>'; }).join('') + '</ul>' +
+        '<p class="note">Horas solares pico en ' + esc(r.city.short) + ': ' + nf1.format(en.hsp) + ' h/día · rendimiento del sistema 78 % · tarifa de referencia $' + nf1.format(en.tarifa) + ' por kWh. ' + (en.kwp && !en.fits ? 'La azotea admite ' + en.roofMax + ' módulos; el sistema se limitó a ese número. ' : '') + 'Dimensionamiento preliminar: el proyecto ejecutivo lo valida un instalador certificado con los recibos de CFE.</p>';
+    }
     $('#costPer').textContent = '· ' + money(r.unit) + ' por m²';
     $('#costSub').textContent = nf0.format(r.area) + ' m² · acabados ' + r.fin.name.toLowerCase() + ' · ' + r.city.name;
   }
@@ -321,6 +336,7 @@
     var chip = $('#tabStructChip'); chip.className = 'chip ' + st; chip.textContent = st === 'bad' ? 'Revisar' : 'OK';
     $('#kElec').textContent = r.circ.length + ' circuitos';
     $('#kElecS').textContent = (r.tri ? 'Trifásica' : 'Bifásica') + ' · principal ' + r.main + ' A';
+    energyHint(r);
     renderFacade(r); renderVariants(r); renderStructure(r);
     buildPlans(r); renderPlan(); renderUnifilar(r); renderCosts(r); renderAnalysis(r);
     save();
@@ -336,7 +352,7 @@
     $('#pType').value = p.type; $('#pBeds').value = p.beds; $('#pBaths').value = p.baths; $('#pHalf').value = p.halfBaths;
     $('#pParking').value = p.parking; $('#pLayout').value = p.layout; $('#pFlooring').value = p.flooring; $('#pUnits').value = p.units;
     $('#pState').value = p.state; fillCities(); $('#pCity').value = p.city; $('#pPalette').value = p.palette;
-    typeUI(); $('#pMonth').value = p.month; $('#pHour').value = p.hour;
+    typeUI(); energyUI(); $('#pMonth').value = p.month; $('#pHour').value = p.hour;
     $('#showPhi').checked = p.phi; $('#lineMode').checked = p.line;
     $$('#segStyle button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.v === p.style); });
     $$('#segCur button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.v === p.cur); });
@@ -354,6 +370,24 @@
     $('#lHalf').textContent = 'Medios baños';
     $('#lBeds').textContent = p.type === 'deptos' ? 'Rec. / depto' : 'Recámaras';
     var locs = PR.loc(p.state, p.city); $('#locHint').textContent = 'Zona sísmica ' + locs.zone.toLowerCase() + ' · suelo ~' + locs.q + ' kPa · lat. ' + locs.lat.toFixed(2) + '°';
+  }
+  function energyUI() {
+    var e = PR.energyOpts(p);
+    $('#pSolar').checked = e.solar; $('#pCover').value = String(e.cover); $('#pBattery').value = e.battery; $('#pChargers').value = e.chargers;
+    $('#pChargers').max = Math.max(0, p.parking | 0);
+    $('#fCover').hidden = !(e.solar || e.battery === 'aislado');
+  }
+  function energyHint(r) {
+    var el = $('#energyHint'); if (!el) return;
+    var en = r.energy;
+    if (!en) { el.textContent = 'Agrega paneles, baterías o cargadores para dimensionar el sistema y sumarlo al presupuesto.'; return; }
+    var t = [];
+    if (en.kwp) t.push(nf1.format(en.kwp) + ' kWp · ' + en.panels + ' paneles · ' + nf0.format(en.gen) + ' kWh/mes (' + Math.round(Math.min(9.99, en.cobertura) * 100) + ' % del consumo)' + (en.fits ? '' : ' · la azotea admite ' + en.roofMax));
+    if (en.kwh) t.push(en.kwh + ' kWh de baterías');
+    if (en.chargers) t.push(en.chargers + ' cargador(es) de ' + en.chargerKw + ' kW');
+    if (en.opts.chargers > en.chargers) t.push('máximo un cargador por cajón');
+    t.push(money(en.total));
+    el.textContent = t.join(' · ');
   }
   function outputs() {
     $('#oFloors').textContent = p.floors; $('#oBays').textContent = p.bays; $('#oMonth').textContent = MONTHS[p.month - 1];
@@ -382,9 +416,13 @@
     ['#pBeds', 'input', function (e) { p.beds = clamp(e.target.value, 0, 10, 3) | 0; }],
     ['#pBaths', 'input', function (e) { p.baths = clamp(e.target.value, 0, 10, 2) | 0; }],
     ['#pHalf', 'input', function (e) { p.halfBaths = clamp(e.target.value, 0, 6, 1) | 0; }],
-    ['#pParking', 'input', function (e) { p.parking = clamp(e.target.value, 0, 400, 2) | 0; }],
+    ['#pParking', 'input', function (e) { p.parking = clamp(e.target.value, 0, 400, 2) | 0; energyUI(); }],
     ['#pUnits', 'input', function (e) { p.units = clamp(e.target.value, 1, 24, 4) | 0; }],
     ['#pLayout', 'change', function (e) { p.layout = e.target.value; }],
+    ['#pSolar', 'change', function (e) { p.energy = Object.assign({}, p.energy, { solar: e.target.checked }); energyUI(); }],
+    ['#pCover', 'change', function (e) { p.energy = Object.assign({}, p.energy, { cover: +e.target.value }); }],
+    ['#pBattery', 'change', function (e) { p.energy = Object.assign({}, p.energy, { battery: e.target.value }); energyUI(); }],
+    ['#pChargers', 'input', function (e) { p.energy = Object.assign({}, p.energy, { chargers: clamp(e.target.value, 0, 40, 0) | 0 }); }],
     ['#pFlooring', 'change', function (e) { p.flooring = e.target.value; }],
     ['#pState', 'change', function (e) { p.state = e.target.value; fillCities(); p.city = PR.ESTADOS[p.state].cities[0].id; $('#pCity').value = p.city; typeUI(); }],
     ['#pFinish', 'change', function (e) { p.finish = e.target.value; }],
@@ -531,7 +569,7 @@
 
   /* ---------- Análisis experto ---------- */
   var aiRes = null, aiSig = '';
-  function sig() { return JSON.stringify([p.type, p.state, p.city, p.front, p.depth, p.floors, p.beds, p.baths, p.halfBaths, p.parking, p.layout, p.flooring, p.units, p.finish, p.style, p.bays, p.rooms, p.extra, p.garden]); }
+  function sig() { return JSON.stringify([p.energy, p.type, p.state, p.city, p.front, p.depth, p.floors, p.beds, p.baths, p.halfBaths, p.parking, p.layout, p.flooring, p.units, p.finish, p.style, p.bays, p.rooms, p.extra, p.garden]); }
   var ST_ICON = { ok: '✓', warn: '!', bad: '×' };
   function md(t) {
     var html = [], list = false;
