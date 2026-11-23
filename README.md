@@ -14,6 +14,7 @@ proyectos, portal de distribuidores y app instalable, lista para publicarse en H
 | Plataforma | `sitio/app.html` | **Proyectos** (cartera con etapa, avance y presupuesto), **Estudio de diseño** (parámetros que recalculan visualización, estructura, planos y presupuesto), **Planos** (capas, unifilar, archivos y versiones con «Subir planos»), **Estructuras**, **Obra** (programa de obra, bitácora, «Registrar avance», «Agregar incidencia», «Generar reporte»), **Administración** (presupuesto por partidas MXN/USD), **RINOVAIA AI** (asistente con respuestas a partir de los datos del proyecto) y modo presentación con envío por WhatsApp. |
 | Portal de distribuidores | `sitio/distribuidores.html` | Rango y avance, comisiones, enlace de referido, ranking, prospectos, árbol de red, agenda, kit de presentación y plan de compensación. |
 | Acceso y portal interno | `sitio/acceso.html`, `sitio/interno.html` | Alta e inicio de sesión con Supabase; portal con roles (Admin ve todo), tablero de resumen, calendario de obras por etapa, prospectos, usuarios @rinovaia.com, chatbot del sitio y asistente interno. Ver [`docs/PORTAL.md`](docs/PORTAL.md). |
+| Catálogo de obra | `sitio/catalogo.html` | Solo personal interno (portal). **Catálogo de conceptos** por partida con análisis de precio unitario (materiales, mano de obra, equipo), **insumos** con precio editable que recalcula todos los conceptos, y **presupuestos por obra** armados desde el catálogo con factores de indirectos, financiamiento, utilidad e IVA. Exporta a PDF (presupuesto, resumen, explosión de insumos, APU y firmas) y Excel con fórmulas. Ver [`docs/CATALOGO.md`](docs/CATALOGO.md). |
 | App instalable | `sitio/manifest*.webmanifest`, `sitio/sw.js`, `sitio/pwa.js` | Funciona sin conexión para lo ya visitado y muestra el botón "Instalar app". |
 
 > Los cálculos son **fórmulas simplificadas de demostración** (marcadas en pantalla) y RINOVAIA AI es una
@@ -34,6 +35,8 @@ sitio/                      ← lo único que se publica en public_html
   assets/js/fachada-ui.js         vistas Mejorar fachada y Render 3D dentro de Planos
   assets/js/recorrido.js          recorrido virtual del interior por planta: muros, puertas, ventanas, escalera y mobiliario PBR
   assets/js/recorrido-ui.js       vista Recorrido virtual dentro de Planos (planta, espacios, hora, recorrido guiado, foto)
+  assets/js/catalogo.js           catálogo de conceptos, insumos, presupuestos por obra y exportación PDF
+  assets/js/xlsx-lite.js          generador de Excel (.xlsx) sin dependencias
   assets/js/plataforma.js         Obra, archivos de planos y RINOVAIA AI
   assets/fonts/*.woff2            Montserrat e Inter autoalojadas (+ licencias OFL)
   assets/img/                     isotipo (color, claro, blanco, negro, plata), logo circular, iconos, hero y OG
