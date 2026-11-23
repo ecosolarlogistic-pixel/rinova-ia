@@ -363,6 +363,9 @@
     var yd = r.yard;
     if (yd) pItems.push(yd.fits ? it('ok', 'Jardín: ' + yd.items.map(function (g) { return g.n.toLowerCase(); }).join(', ') + ' caben en el patio posterior de ' + nf1.format(yd.rear) + ' m de fondo.')
       : it('warn', 'Los elementos del jardín necesitan unos ' + nf1.format(yd.need) + ' m de patio posterior y solo quedan ' + nf1.format(yd.rear) + ' m. Reduce la alberca, quita elementos o compacta la casa.'));
+    var en = r.energy;
+    if (en && en.kwp) pItems.push(it(en.fits ? 'ok' : 'warn', 'Sistema solar de ' + nf1.format(en.kwp) + ' kWp (' + en.panels + ' módulos) que genera ~' + nf0.format(en.gen) + ' kWh/mes, ' + nf0.format(Math.min(999, en.cobertura * 100)) + ' % del consumo estimado de ' + nf0.format(en.mensual) + ' kWh/mes.' + (en.fits ? '' : ' En la azotea caben ' + en.roofMax + ' módulos de los ' + en.panelsWanted + ' necesarios' + (p.fx && p.fx.on && p.fx.opts && p.fx.opts.pergola ? '; quitar la pérgola de la fachada libera azotea para más paneles.' : '.')) + (en.retorno ? ' Retorno de la inversión en ~' + nf1.format(en.retorno) + ' años.' : '')));
+    if (en && en.opts.battery === 'aislado') pItems.push(it(en.cobertura >= 1.15 ? 'ok' : 'warn', 'Sistema aislado: ' + en.kwh + ' kWh de baterías dan ~' + nf1.format(en.autonomia) + ' días de autonomía.' + (en.cobertura < 1.15 ? ' Para operar sin CFE conviene generar al menos 115 % del consumo.' : '')));
     if (probs) pItems.push(it(probs > 2 ? 'bad' : 'warn', probs + ' espacio(s) quedan por debajo del área mínima de referencia con el terreno y los niveles actuales.'));
     else if (rows.length) pItems.push(it('ok', 'Todos los espacios habitables cumplen las áreas mínimas de referencia.'));
     scores.push(100 - probs * 9 - pItems.filter(function (x) { return x.st === 'warn'; }).length * 6);
@@ -420,9 +423,87 @@
     return out;
   }
 
+  /* ---------- Energía: paneles solares, baterías y cargadores para autos eléctricos ----------
+     p.energy = { solar: bool, cover: 0.5–1.3 (fracción del consumo), battery: 'no'|'respaldo'|'aislado', chargers: n }
+     Precios de referencia instalados (MXN, nov 2026, centro de México) alineados con la partida 14 del catálogo de obra. */
+  var FV = { panelW: 550, panelL: 2.28, panelA: 1.13, pr: 0.78, kwp: 16500, hibrido: 6000, kwh: 9800, cargador: 26000, cargadorKw: 7.2, tramite: 8000, co2: 0.438,
+    tarifa: { res: 3.2, com: 4.3, ind: 3.7 } };
+  var BATERIA = { no: 'Sin baterías', respaldo: 'Respaldo (interconectado a CFE)', aislado: 'Sistema aislado (sin CFE)' };
+  function hsp(lat) { return lat >= 28 ? 6.2 : lat >= 24 ? 5.9 : lat >= 20 ? 5.5 : 5.1; } // horas solares pico promedio
+  function energyOpts(p) { var e = p.energy && typeof p.energy === 'object' ? p.energy : {}; return { solar: !!e.solar, cover: Math.max(0.3, Math.min(1.5, +e.cover || 1)), battery: BATERIA[e.battery] ? e.battery : 'no', chargers: Math.max(0, Math.min(40, e.chargers | 0)) }; }
+  // Consumo mensual estimado (kWh) del inmueble terminado
+  function consumo(p, r, chargers) {
+    var a = r.area || 0, m;
+    if (p.type === 'casa') m = 140 + a * 1.6;
+    else if (p.type === 'deptos') m = Math.max(1, p.units) * Math.max(1, p.floors - 1) * 210 + 350;
+    else if (p.type === 'comercial') m = a * 5.5;
+    else m = a * 2.2;
+    if (r.city && r.city.lat < 23 && p.finish === 'pre') m *= 1.2; // clima cálido con aire acondicionado
+    gardenItems(p).forEach(function (g) { if (g.k === 'alberca') m += 270; else if (g.k === 'chapoteadero') m += 90; else if (g.k === 'jacuzziExt') m += 150; else if (g.k === 'fuente' || g.k === 'espejo') m += 45; });
+    return m + chargers * 230; // ~1,300 km/mes por auto eléctrico
+  }
+  // Acomodo de módulos en la azotea (coordenadas de planta: x a lo ancho del frente, y desde el muro posterior)
+  // Acomodo en azotea: prueba módulos verticales y horizontales y se queda con el que más cabe
+  // (la pérgola de la fachada mejorada ocupa el frente de la azotea).
+  function pvGrid(W, D, n, pw, ph, pitch, av) {
+    var out = [], m = 0.8, colW = pw + 0.03;
+    for (var y = m; y + ph <= D - m + 1e-6 && out.length < n; y += pitch) {
+      for (var x = m; x + pw <= W - m + 1e-6 && out.length < n; x += colW) {
+        if (av && x + pw > av.x0 && x < av.x1 && y + ph > av.y0) continue;
+        out.push({ x: x, y: y, w: pw, h: ph });
+      }
+    }
+    return out;
+  }
+  function pvLayout(p, W, D, n) {
+    var av = p.fx && p.fx.on && p.fx.opts && p.fx.opts.pergola ? { x0: W * 0.06, x1: W * 0.62, y0: D - 0.4 - D * 0.55, y1: D } : null;
+    var a = pvGrid(W, D, 9999, FV.panelA, FV.panelL, 2.6, av), b = pvGrid(W, D, 9999, FV.panelL, FV.panelA, 1.6, av);
+    return (b.length > a.length ? b : a).slice(0, n);
+  }
+  function roofCapacity(p, W, D) { return pvLayout(p, W, D, 9999).length; }
+  function energy(p, r) {
+    var e = energyOpts(p); if (!e.solar && !e.chargers && e.battery === 'no') return null;
+    var f = r.city ? r.city.f : 1, lat = r.city ? r.city.lat : 20, H = hsp(lat), use = TIPOS[p.type] ? TIPOS[p.type].use : 'res';
+    var chargers = Math.min(e.chargers, Math.max(0, p.parking | 0)), mes = consumo(p, r, chargers), off = e.battery === 'aislado';
+    var o = { opts: e, hsp: H, mensual: mes, chargers: chargers, chargerKw: FV.cargadorKw, items: [], circ: [], total: 0 };
+    var cap = roofCapacity(p, r.W, r.D);
+    if (e.solar || off) {
+      var need = mes * (off ? Math.max(1.25, e.cover) : e.cover) / (H * 30 * FV.pr), want = Math.max(2, Math.ceil(need * 1000 / FV.panelW));
+      o.panelsWanted = want; o.roofMax = cap; o.panels = Math.min(want, cap); o.fits = want <= cap;
+      o.kwp = o.panels * FV.panelW / 1000; o.gen = o.kwp * H * 30 * FV.pr; o.cobertura = o.gen / mes;
+      o.layout = pvLayout(p, r.W, r.D, o.panels);
+      o.inversorKw = Math.max(3, Math.ceil(o.kwp * (off ? 1 : 0.9)));
+      o.items.push({ n: 'Sistema fotovoltaico ' + nf(o.kwp) + ' kWp (' + o.panels + ' módulos de ' + FV.panelW + ' W)', v: o.kwp * FV.kwp * f });
+      if (!off) o.items.push({ n: 'Interconexión con CFE y medidor bidireccional', v: FV.tramite * f });
+      o.circ.push({ use: 'Inversor FV ' + o.inversorKw + ' kW', br: o.inversorKw > 7 ? '2P-50A' : '2P-40A', kw: 0 });
+    }
+    if (e.battery !== 'no') {
+      var daily = mes / 30;
+      o.kwh = off ? Math.ceil(daily * 1.5 / 0.9 / 5) * 5 : Math.max(5, Math.min(30, Math.ceil(daily * 0.35 / 5) * 5));
+      o.autonomia = o.kwh * 0.9 / daily; // días con el consumo promedio
+      o.hibridoKw = Math.max(5, Math.ceil(off ? (o.kwp || 5) * 1.1 : 5));
+      o.items.push({ n: 'Baterías de litio LFP ' + o.kwh + ' kWh', v: o.kwh * FV.kwh * f });
+      o.items.push({ n: 'Inversor híbrido ' + o.hibridoKw + ' kW' + (off ? ' para sistema aislado' : ' con respaldo'), v: o.hibridoKw * FV.hibrido * f });
+    }
+    if (chargers) {
+      o.items.push({ n: chargers + ' cargador(es) para auto eléctrico nivel 2 de ' + FV.cargadorKw + ' kW', v: chargers * FV.cargador * f });
+      for (var i = 0; i < chargers; i++) o.circ.push({ use: 'Cargador de auto eléctrico ' + (i + 1), br: '2P-40A', kw: FV.cargadorKw * (i ? 0.5 : 1) });
+    }
+    o.total = o.items.reduce(function (s, x) { return s + x.v; }, 0);
+    var tar = FV.tarifa[use] || FV.tarifa.res;
+    o.ahorroMes = (o.gen ? Math.min(o.gen, mes) : 0) * tar + (off ? 250 : 0); // aislado: sin cargo fijo ni contrato
+    var fvCost = o.items.filter(function (x) { return (off ? /fotovoltaico|Baterías|híbrido/ : /fotovoltaico|Interconexión/).test(x.n); }).reduce(function (s, x) { return s + x.v; }, 0);
+    o.retorno = o.ahorroMes > 0 ? fvCost / (o.ahorroMes * 12) : null;
+    o.co2 = (o.gen || 0) * 12 * FV.co2 / 1000; // t/año
+    o.tarifa = tar;
+    return o;
+  }
+  function nf(v) { return (Math.round(v * 100) / 100).toLocaleString('es-MX', { maximumFractionDigits: 2 }); }
+
   window.RinovaProyecto = {
     ESTADOS: ESTADOS, TIPOS: TIPOS, DISTRIBUCION: DISTRIBUCION, PISOS: PISOS,
     loc: loc, normalizeLoc: normalizeLoc, program: program, EQUIPO: EQUIPO, JARDIN: JARDIN, ESPACIOS: ESPACIOS, ETIQUETAS: ETIQUETAS,
+    FV: FV, BATERIA: BATERIA, energy: energy, energyOpts: energyOpts, pvLayout: pvLayout,
     useOf: useOf, kindOfRoom: kindOfRoom, deptoRooms: deptoRooms, gardenItems: gardenItems, siteYard: siteYard, gardenNeed: gardenNeed, amenities: amenities, analyze: analyze, parkingRequired: parkingRequired, deptoArea: deptoArea, minFor: minFor
   };
 })();

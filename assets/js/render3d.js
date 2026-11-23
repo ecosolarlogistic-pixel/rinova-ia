@@ -271,6 +271,16 @@
         });
         tree(-LW / 2 + 1.4, lotZF - 1.4, 1); tree(LW / 2 - 1.2, lotZ0 + 2, 1.2); tree(-LW / 2 + 1.6, lotZ0 + 2.2, 0.9);
       } else tree(LW / 2 - 1.2, lotZ0 + 2, 1);
+      // ---- Paneles solares en azotea (mismo acomodo que la lámina FV-01)
+      if (s.pv) {
+        var mPV = M({ color: night ? 0x15284a : 0x2E5A96, roughness: 0.18, metalness: 0.35, emissive: night ? 0x050c18 : 0x0a1a33 }), mRack = M({ color: 0xB9BEC6, roughness: 0.5, metalness: 0.6 });
+        var pvY = Math.max(H + 0.6, bodyTop + 0.1), tilt = 0.17;
+        s.pv.forEach(function (q) {
+          var cx = X0 + q.x + q.w / 2, cz = ZF - D + q.y + q.h / 2;
+          var pm = new T.Mesh(track(new T.BoxGeometry(q.w, 0.04, q.h)), mPV); pm.position.set(cx, pvY + 0.2, cz); pm.rotation.x = tilt; pm.castShadow = true; root.add(pm);
+          box(mRack, 0.05, pvY - H + 0.2, 0.05, cx, (pvY + H) / 2, cz + q.h / 2 - 0.1);
+        });
+      }
       // ---- Jardín posterior (alberca, palapa, asador, fuente, espejo de agua…)
       if (s.yard) {
         var mWater = M({ color: night ? 0x1d5f80 : 0x3E9BC2, roughness: 0.08, metalness: 0.15, emissive: night ? 0x0a3550 : 0x000000 });
