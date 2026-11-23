@@ -35,8 +35,12 @@
     if (sm) sm.textContent = p ? 'Proyecto · ' + p.code : 'Proyecto nuevo · sin guardar';
     if (p) history.replaceState(null, '', 'app.html?p=' + p.id); else if (params.get('p')) history.replaceState(null, '', 'app.html');
   }
-  function markDirty() { dirty = true; var b = $('#btnSave'); if (b) b.classList.add('pending'); var t = $('#liveTxt'); if (t) t.textContent = 'Cambios sin guardar'; }
-  function markClean() { dirty = false; var b = $('#btnSave'); if (b) b.classList.remove('pending'); var t = $('#liveTxt'); if (t) t.textContent = 'Guardado en tu cuenta'; }
+  var autoTmr = null;
+  function markDirty() {
+    dirty = true;
+    // Guardado automático para proyectos que ya existen en la cuenta (los nuevos se guardan la primera vez con «Guardar»)
+    clearTimeout(autoTmr); if (current) autoTmr = setTimeout(function () { if (dirty && current) save({ auto: true }); }, 20000); var b = $('#btnSave'); if (b) b.classList.add('pending'); var t = $('#liveTxt'); if (t) t.textContent = 'Cambios sin guardar'; }
+  function markClean() { dirty = false; clearTimeout(autoTmr); var b = $('#btnSave'); if (b) b.classList.remove('pending'); var t = $('#liveTxt'); if (t) t.textContent = 'Guardado en tu cuenta'; }
 
   function addSaveButton() {
     var acts = $('#studioBar .acts'); if (!acts || $('#btnSave')) return;
@@ -68,27 +72,69 @@
     };
   }
 
-  var saving = false;
-  function save() {
-    if (saving || !me) return;
-    saving = true;
+  var saving = null;
+  function save(opt) {
+    opt = opt && opt.auto != null ? opt : {};
+    if (!me) return Promise.resolve(false);
+    if (saving) return saving;
     var b = $('#btnSave'); if (b) b.disabled = true;
     var row = snapshot();
     var q = current ? db.from('projects').update(row).eq('id', current.id).select('id,code,name').single()
       : db.from('projects').insert(row).select('id,code,name').single();
-    q.then(function (r) {
+    saving = q.then(function (r) {
       if (r.error) throw r.error;
-      setCode(r.data); markClean(); toast('Proyecto guardado · ' + r.data.code); loadList();
+      setCode(r.data); markClean(); toast(opt.auto ? 'Guardado automático · ' + r.data.code : 'Proyecto guardado · ' + r.data.code); loadList();
+      return true;
     }).catch(function (e) {
       toast(/row-level|permission/i.test(e.message) ? 'No tienes permiso para guardar este proyecto.' : 'No se pudo guardar: ' + e.message);
-    }).then(function () { saving = false; if (b) b.disabled = false; });
+      return false;
+    }).then(function (ok) { saving = null; if (b) b.disabled = false; return ok; });
+    return saving;
   }
+
+  /* ---------- Salir con cambios sin guardar: diálogo propio en lugar del aviso genérico del navegador ---------- */
+  var dlg = null;
+  function leaveDialog() {
+    if (dlg) return dlg;
+    dlg = document.createElement('dialog'); dlg.id = 'dlgLeave'; dlg.style.width = 'min(600px,calc(100% - 32px))'; dlg.setAttribute('aria-labelledby', 'dlgLeaveT');
+    dlg.innerHTML = '<form method="dialog"><h3 id="dlgLeaveT">¿Guardar los cambios del proyecto?</h3>' +
+      '<p class="muted" id="dlgLeaveP" style="margin:0">Hiciste cambios que aún no están guardados en tu cuenta.</p>' +
+      '<div class="acts"><button class="btn btn-ghost" value="cancel">Cancelar</button><button class="btn btn-ink" value="discard">Salir sin guardar</button><button class="btn btn-gold" value="save">Guardar y salir</button></div></form>';
+    document.body.appendChild(dlg);
+    return dlg;
+  }
+  // go(): lo que se hace al salir. Sin cambios pendientes se ejecuta de inmediato.
+  function leave(go, what) {
+    if (!dirty || !me) { go(); return; }
+    var d = leaveDialog();
+    d.querySelector('#dlgLeaveP').textContent = 'Hiciste cambios en «' + (E.project().name || 'el proyecto') + '» que aún no están guardados' + (what ? ' antes de ' + what : '') + '.';
+    d.returnValue = '';
+    d.onclose = function () {
+      var v = d.returnValue;
+      if (v === 'discard') { dirty = false; go(); }
+      else if (v === 'save') save().then(function (ok) { if (ok) go(); });
+    };
+    d.showModal();
+    setTimeout(function () { var g = d.querySelector('[value="save"]'); if (g) g.focus(); }, 30);
+  }
+  // Enlaces internos (Portal interno, Mi portal, distribuidores, inicio…)
+  document.addEventListener('click', function (e) {
+    if (!dirty || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var a = e.target.closest('a[href]'); if (!a || a.target === '_blank' || a.hasAttribute('download')) return;
+    var href = a.getAttribute('href'); if (!href || href.charAt(0) === '#' || /^(mailto|tel|javascript):/i.test(href)) return;
+    var url; try { url = new URL(a.href, location.href); } catch (err) { return; }
+    if (url.origin !== location.origin) return;
+    e.preventDefault();
+    leave(function () { location.href = url.href; }, 'salir');
+  });
 
   function openProject(id) {
     db.from('projects').select('id,code,name,data').eq('id', id).maybeSingle().then(function (r) {
       if (r.error || !r.data) { toast('No encontré ese proyecto o no tienes acceso.'); setCode(null); return; }
       var d = r.data.data || {};
       d.name = r.data.name;
+      // proyectos anteriores no traen espacios ni jardín: que no hereden los del proyecto abierto antes
+      d.rooms = d.rooms || {}; d.extra = d.extra || []; d.garden = d.garden || [];
       E.apply(d); E.refresh(); E.showView('studio');
       setCode(r.data); markClean(); toast('Abriste ' + r.data.name);
     });
@@ -112,7 +158,8 @@
         var d = p.data || {}, st = PST[p.status] || ['gold', p.status];
         total += +p.budget_total || 0; if (p.stage === 'obra') work++; if (p.status === 'en_revision') rev++;
         var pic = '';
-        try { pic = F.build({ floors: d.floors || 2, bays: d.bays || 5, style: d.style || 'moderno', mode: 'render', phi: false, lat: 19.4, palette: d.palette || 'concreto', hour: d.hour || 17, width: 600, height: 340, id: 'c' + i }); } catch (e) { }
+        try { var FXP = window.RinovaFachada; if (FXP && d.fx && d.fx.on) { var q = Object.assign({}, E.project(), d); pic = FXP.svg(q, E.simulate(d), d.fx, { id: 'c' + i, marks: false }).svg; } } catch (e) { pic = ''; }
+        if (!pic) try { pic = F.build({ floors: d.floors || 2, bays: d.bays || 5, style: d.style || 'moderno', mode: 'render', phi: false, lat: 19.4, palette: d.palette || 'concreto', hour: d.hour || 17, width: 600, height: 340, id: 'c' + i }); } catch (e) { }
         return '<article class="card pcard"><div class="thumb">' + pic + '<span class="stage">' + esc(STAGE[p.stage] || 'Diseño') + '</span></div><div class="body"><div class="meta"><span>' + esc(p.code) + ' · ' + esc(p.city) + '</span><span class="chip ' + st[0] + '"><span class="dot"></span>' + esc(st[1]) + '</span></div><h3>' + esc(p.name) + '</h3>' +
           '<div class="meta"><span>Actualizado ' + new Date(p.updated_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) + '</span><span class="num">' + (p.budget_total ? E.money(+p.budget_total, true) : '—') + '</span></div>' +
           '<button class="btn btn-ghost btn-sm" data-cloud="' + p.id + '">Abrir proyecto</button></div></article>';
@@ -123,11 +170,11 @@
   }
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-cloud]');
-    if (b) { e.stopPropagation(); if (dirty && !confirm('Tienes cambios sin guardar. ¿Abrir otro proyecto de todos modos?')) return; openProject(b.dataset.cloud); return; }
-    if (e.target.closest('[data-cloud-new]')) { location.href = 'app.html#nuevo'; location.reload(); }
+    if (b) { e.stopPropagation(); var id = b.dataset.cloud; leave(function () { openProject(id); }, 'abrir otro proyecto'); return; }
+    if (e.target.closest('[data-cloud-new]')) leave(function () { dirty = false; location.href = 'app.html#nuevo'; location.reload(); }, 'crear un proyecto nuevo');
   }, true);
   // El Estudio vuelve a pintar sus ejemplos al cambiar de moneda: se repinta la cartera real
   var seg = $('#segCur'); if (seg) seg.addEventListener('click', function () { setTimeout(renderList, 20); });
 
-  window.RinovaNube = { save: save, open: openProject, current: function () { return current; } };
+  window.RinovaNube = { save: save, leave: function (url) { leave(function () { location.href = url; }, 'salir'); }, open: openProject, current: function () { return current; } };
 })();
