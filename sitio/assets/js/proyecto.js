@@ -99,17 +99,130 @@
      Cada espacio: { n: nombre, a: área objetivo m², k: clase (soc, rec, bano, serv, coch, circ, com, alm, ofi, depto) } */
   function R(n, a, k, extra) { var o = { n: n, a: a, k: k }; if (extra) for (var x in extra) o[x] = extra[x]; return o; }
 
-  function deptoRooms(beds, baths, half, layout) {
+  function deptoRooms(beds, baths, half, layout, p) {
     var rooms = [];
-    if (layout === 'tradicional') { rooms.push(R('Sala', 16, 'soc'), R('Comedor', 10, 'soc'), R('Cocina', 8, 'serv')); }
-    else rooms.push(R('Estancia · comedor · cocina', 30 + beds * 2, 'soc'));
-    for (var i = 0; i < beds; i++) rooms.push(R(i === 0 ? 'Rec. principal' : 'Recámara ' + (i + 1), i === 0 ? 14 : 10.5, 'rec'));
-    for (i = 0; i < baths; i++) rooms.push(R(i === 0 && beds > 1 ? 'Baño principal' : 'Baño', 5, 'bano'));
-    for (i = 0; i < half; i++) rooms.push(R('Medio baño', 2.6, 'bano'));
-    rooms.push(R('Lavado', 3.5, 'serv'));
+    if (layout === 'tradicional') { rooms.push(R('Sala', 16, 'soc', { id: 'd-sala' }), R('Comedor', 10, 'soc', { id: 'd-comedor' }), R('Cocina', 8, 'serv', { id: 'd-cocina' })); }
+    else rooms.push(R('Estancia · comedor · cocina', 30 + beds * 2, 'soc', { id: 'd-estancia' }));
+    for (var i = 0; i < beds; i++) rooms.push(R(i === 0 ? 'Rec. principal' : 'Recámara ' + (i + 1), i === 0 ? 14 : 10.5, 'rec', { id: 'd-rec-' + (i + 1) }));
+    for (i = 0; i < baths; i++) rooms.push(R(i === 0 && beds > 1 ? 'Baño principal' : 'Baño', 5, 'bano', { id: 'd-bano-' + (i + 1) }));
+    for (i = 0; i < half; i++) rooms.push(R('Medio baño', 2.6, 'bano', { id: 'd-medio-' + (i + 1) }));
+    rooms.push(R('Lavado', 3.5, 'serv', { id: 'd-lavado' }));
+    if (p) rooms.forEach(function (r) { applyRoom(r, p); });
     return rooms;
   }
-  function deptoArea(p) { return deptoRooms(p.beds, p.baths, p.halfBaths, p.layout).reduce(function (s, r) { return s + r.a; }, 0) * 1.12; }
+  function deptoArea(p) { return deptoRooms(p.beds, p.baths, p.halfBaths, p.layout, p).reduce(function (s, r) { return s + r.a; }, 0) * 1.12; }
+
+  /* ---------- Configuración por espacio (p.rooms), espacios agregados (p.extra) y jardín (p.garden) ----------
+     p.rooms[id] = { a: m², n: nombre / etiqueta, x: [equipamiento] }  ·  p.extra = [{ id, n, a, k, lvl }]  ·  p.garden = [{ k, w, d }] */
+  var EQUIPO = {
+    tina: { n: 'Tina', a: 2.2, k: ['rec', 'bano'], cost: 28000 },
+    jacuzzi: { n: 'Jacuzzi', a: 4, k: ['rec', 'bano'], cost: 78000, kw: 3, wet: true },
+    regadera: { n: 'Regadera doble', a: 1, k: ['bano'], cost: 14000 },
+    lavabo2: { n: 'Doble lavabo', a: 1, k: ['bano'], cost: 12000 },
+    vestidor: { n: 'Clóset vestidor', a: 4, k: ['rec'], cost: 32000 },
+    escritorio: { n: 'Escritorio', a: 2, k: ['rec', 'soc'], cost: 9000 },
+    estar: { n: 'Sala de estar', a: 5, k: ['rec'], cost: 18000 },
+    chimenea: { n: 'Chimenea', a: 1, k: ['rec', 'soc'], cost: 45000 },
+    bar: { n: 'Bar', a: 3, k: ['soc'], cost: 35000 },
+    cava: { n: 'Cava', a: 2, k: ['soc'], cost: 40000 },
+    isla: { n: 'Isla', a: 3, k: ['cocina'], cost: 38000 },
+    desayunador: { n: 'Desayunador', a: 3, k: ['cocina'], cost: 16000 }
+  };
+  EQUIPO.tina.wet = true;
+  var JARDIN = {
+    alberca: { n: 'Alberca', w: 8, d: 4, perM2: 9500, kw: 1.5, edit: true },
+    chapoteadero: { n: 'Chapoteadero', w: 3, d: 2.5, perM2: 7500, kw: 0.5, edit: true },
+    jacuzziExt: { n: 'Jacuzzi exterior', w: 2.4, d: 2.4, cost: 95000, kw: 3 },
+    palapa: { n: 'Palapa', w: 4, d: 4, perM2: 4500, edit: true },
+    asador: { n: 'Asador', w: 3, d: 1.2, cost: 45000, edit: true },
+    fuente: { n: 'Fuente', w: 2, d: 2, cost: 35000, kw: 0.4 },
+    espejo: { n: 'Espejo de agua', w: 5, d: 1.5, perM2: 6000, kw: 0.4, edit: true },
+    fogatero: { n: 'Fogatero', w: 2.4, d: 2.4, cost: 18000 },
+    pergola: { n: 'Pérgola', w: 4, d: 3, perM2: 3800, edit: true },
+    juegos: { n: 'Área de juegos', w: 4, d: 4, cost: 40000, edit: true },
+    huerto: { n: 'Huerto', w: 3, d: 2, perM2: 1500, edit: true }
+  };
+  var ESPACIOS = { // espacios que se pueden agregar
+    estudio: { n: 'Estudio', a: 10, k: 'soc' }, tv: { n: 'Cuarto de TV', a: 14, k: 'soc' }, gimnasio: { n: 'Gimnasio', a: 16, k: 'soc' },
+    juegos: { n: 'Cuarto de juegos', a: 14, k: 'soc' }, cine: { n: 'Sala de cine', a: 20, k: 'soc' }, biblioteca: { n: 'Biblioteca', a: 12, k: 'soc' },
+    visitas: { n: 'Recámara de visitas', a: 12, k: 'rec' }, servicio: { n: 'Cuarto de servicio', a: 9, k: 'rec' },
+    bano: { n: 'Baño adicional', a: 4.5, k: 'bano' }, lavanderia: { n: 'Lavandería', a: 6, k: 'serv' }, bodega: { n: 'Bodega', a: 5, k: 'serv' },
+    terraza: { n: 'Terraza', a: 14, k: 'ext' }
+  };
+  var ETIQUETAS = {
+    rec: ['Recámara principal', 'Recámara de hijo', 'Recámara de hija', 'Recámara de hijos', 'Recámara de bebé', 'Recámara de visitas', 'Recámara de servicio', 'Estudio', 'Cuarto de TV', 'Cuarto de juegos', 'Gimnasio'],
+    bano: ['Baño principal', 'Baño de hijos', 'Baño de visitas', 'Baño compartido', 'Medio baño'],
+    soc: ['Sala', 'Comedor', 'Sala · comedor', 'Estancia familiar', 'Estudio', 'Cuarto de TV', 'Cuarto de juegos', 'Gimnasio', 'Biblioteca', 'Sala de cine', 'Terraza techada']
+  };
+  // Uso que se deduce del nombre (para el mobiliario de planos y recorrido)
+  function useOf(n, k) {
+    n = String(n || '').toLowerCase();
+    if (/principal/.test(n)) return 'principal';
+    if (/estudio|oficina|biblioteca/.test(n)) return 'estudio';
+    if (/gimnasio|gym/.test(n)) return 'gimnasio';
+    if (/juegos/.test(n)) return 'juegos';
+    if (/\btv\b|televisi|cine/.test(n)) return 'tv';
+    if (/beb[eé]/.test(n)) return 'bebe';
+    if (/hij[oa]s?|niñ/.test(n)) return 'hijos';
+    if (/visita/.test(n)) return 'visitas';
+    if (/servicio/.test(n) && k === 'rec') return 'servicio';
+    return '';
+  }
+  function kindOfRoom(r) { return r.k === 'serv' && /Cocina/.test(r.n) ? 'cocina' : r.k; }
+  function applyRoom(r, p) {
+    var o = r.id && p.rooms && p.rooms[r.id];
+    r.base = r.a;
+    if (o) {
+      if (o.a > 0) r.a = Math.max(1, Math.min(120, +o.a));
+      if (o.n) r.n = String(o.n).slice(0, 40);
+      if (o.x && o.x.length) r.fx = o.x.filter(function (x) { return EQUIPO[x]; });
+    }
+    r.use = useOf(r.n, r.k);
+    return r;
+  }
+  function gardenItems(p) {
+    if (p.type !== 'casa' || !Array.isArray(p.garden)) return [];
+    return p.garden.filter(function (g) { return g && JARDIN[g.k]; }).map(function (g, i) {
+      var J = JARDIN[g.k];
+      return { i: i, k: g.k, n: J.n, w: Math.max(0.8, Math.min(30, +g.w || J.w)), d: Math.max(0.8, Math.min(30, +g.d || J.d)) };
+    });
+  }
+  // Acomoda los elementos del jardín en filas dentro del patio posterior (ancho del terreno con 0.6 m de margen)
+  function packGarden(items, yardW) {
+    var GAP = 0.8, rows = [], row = null, y = 1.2, out = [];
+    items.forEach(function (it) {
+      var w = it.w, d = it.d;
+      if (w > yardW && d <= yardW) { var t = w; w = d; d = t; }
+      if (!row || row.x + w > yardW + 1e-6) { if (row) y += row.d + GAP; row = { y: y, x: 0, d: 0, items: [] }; rows.push(row); }
+      var o = Object.assign({}, it, { w: w, d: d, x: row.x, y: row.y });
+      row.items.push(o); row.x += w + GAP; row.d = Math.max(row.d, d); out.push(o);
+    });
+    rows.forEach(function (r) { var used = r.x - GAP, off = Math.max(0, (yardW - used) / 2); r.items.forEach(function (o) { o.x += off; o.y += (r.d - o.d) / 2; }); });
+    var need = rows.length ? rows[rows.length - 1].y + rows[rows.length - 1].d + 0.8 : 0;
+    return { items: out, need: need };
+  }
+  // Patio posterior: dónde queda la casa en el terreno y dónde va cada elemento del jardín.
+  // x se mide desde el lindero izquierdo; y desde el muro posterior de la casa hacia el fondo del terreno.
+  function siteYard(p, r) {
+    var items = gardenItems(p), free = Math.max(0, p.depth - r.D);
+    if (!items.length) return null;
+    var yardW = Math.max(2, p.front - 1.2), pk = packGarden(items, yardW);
+    var front = Math.max(Math.min(3, free * 0.35), free - pk.need - 0.4), rear = free - front;
+    pk.items.forEach(function (o) { o.x += 0.6; o.out = o.y + o.d > rear - 0.3 + 1e-6; });
+    return { items: pk.items, need: pk.need, front: front, rear: rear, fits: pk.need <= rear + 1e-6 };
+  }
+  function gardenNeed(p) { var it = gardenItems(p); return it.length ? packGarden(it, Math.max(2, p.front - 1.2)).need : 0; }
+  // Costo y carga eléctrica de equipamiento y amenidades
+  function amenities(p, f) {
+    var list = [], kw = [];
+    gardenItems(p).forEach(function (g) {
+      var J = JARDIN[g.k], c = J.perM2 ? J.perM2 * g.w * g.d : J.cost;
+      list.push({ n: J.n, v: c * f }); if (J.kw) kw.push({ use: (g.k === 'alberca' || g.k === 'chapoteadero' ? 'Bomba y filtro · ' : 'Bomba · ') + J.n, br: J.kw >= 3 ? '2P-30A' : '2P-20A', kw: J.kw });
+    });
+    program(p).forEach(function (lv) { lv.front.concat(lv.back).forEach(function (r) { (r.fx || []).forEach(function (x) { var Q = EQUIPO[x]; list.push({ n: Q.n + ' · ' + r.n, v: Q.cost * f }); if (Q.kw) kw.push({ use: Q.n + ' · ' + r.n, br: '2P-30A', kw: Q.kw }); }); }); });
+    if (p.type === 'deptos') deptoRooms(p.beds, p.baths, p.halfBaths, p.layout, p).forEach(function (r) { (r.fx || []).forEach(function (x) { list.push({ n: EQUIPO[x].n + ' · ' + r.n + ' (por depto)', v: EQUIPO[x].cost * f * Math.max(1, p.units) * Math.max(1, p.floors - 1) }); }); });
+    return { list: list, total: list.reduce(function (s, x) { return s + x.v; }, 0), circ: kw };
+  }
 
   function program(p) {
     var F = Math.max(1, p.floors), lv = [], i, t = p.type || 'casa';
@@ -123,35 +236,42 @@
       var bathsPB = F === 1 ? baths : (bedsPB ? 1 : 0);
       var halfPB = Math.min(half, 1), halfUp = half - halfPB;
       var pb = lv[0];
-      if (park > 0) pb.front.push(R('Cochera', Math.min(park, 3) * 15, 'coch', { cars: Math.min(park, 3) }));
-      if (p.layout === 'abierto' || p.layout === 'planta-libre') pb.front.push(R('Sala · comedor', 34, 'soc'), R('Cocina abierta', 14, 'serv'));
-      else pb.front.push(R('Sala', 22, 'soc'), R('Comedor', 15, 'soc'));
-      if (!(p.layout === 'abierto' || p.layout === 'planta-libre')) pb.back.push(R('Cocina', 13, 'serv'));
-      if (stair) pb.back.push(R('Escalera', 9, 'circ'));
-      for (i = 0; i < halfPB; i++) pb.back.push(R('Medio baño', 3, 'bano'));
-      for (i = 0; i < bedsPB; i++) pb.back.push(R(F === 1 && i === 0 ? 'Recámara principal' : 'Recámara ' + (i + 1), F === 1 && i === 0 ? 16 : 12, 'rec'));
-      for (i = 0; i < bathsPB; i++) pb.back.push(R(F === 1 && i === 0 ? 'Baño principal' : 'Baño ' + (i + 1), i === 0 && F === 1 ? 7 : 5, 'bano'));
-      pb.back.push(R('Patio de servicio', 7, 'serv'));
-      if (F === 1) { pb.back.push(R('Estudio', 9, 'soc')); }
+      if (park > 0) pb.front.push(R('Cochera', Math.min(park, 3) * 15, 'coch', { cars: Math.min(park, 3), id: 'cochera' }));
+      if (p.layout === 'abierto' || p.layout === 'planta-libre') pb.front.push(R('Sala · comedor', 34, 'soc', { id: 'sala-comedor' }), R('Cocina abierta', 14, 'serv', { id: 'cocina' }));
+      else pb.front.push(R('Sala', 22, 'soc', { id: 'sala' }), R('Comedor', 15, 'soc', { id: 'comedor' }));
+      if (!(p.layout === 'abierto' || p.layout === 'planta-libre')) pb.back.push(R('Cocina', 13, 'serv', { id: 'cocina' }));
+      if (stair) pb.back.push(R('Escalera', 9, 'circ', { id: 'escalera-0' }));
+      for (i = 0; i < halfPB; i++) pb.back.push(R('Medio baño', 3, 'bano', { id: 'medio-' + (i + 1) }));
+      for (i = 0; i < bedsPB; i++) pb.back.push(R(F === 1 && i === 0 ? 'Recámara principal' : 'Recámara ' + (i + 1), F === 1 && i === 0 ? 16 : 12, 'rec', { id: 'rec-' + (i + 1) }));
+      for (i = 0; i < bathsPB; i++) pb.back.push(R(F === 1 && i === 0 ? 'Baño principal' : 'Baño ' + (i + 1), i === 0 && F === 1 ? 7 : 5, 'bano', { id: 'bano-' + (i + 1) }));
+      pb.back.push(R('Patio de servicio', 7, 'serv', { id: 'patio' }));
+      if (F === 1) { pb.back.push(R('Estudio', 9, 'soc', { id: 'estudio' })); }
       else {
         // Reparte recámaras, baños y medios baños restantes entre los niveles superiores
         var restB = beds - bedsPB, restBa = baths - bathsPB, upper = F - 1, bi = bedsPB, bai = bathsPB;
         for (var l = 1; l < F; l++) {
           var nb = Math.ceil(restB / (upper - l + 1)), nba = Math.ceil(restBa / (upper - l + 1)), lvl = lv[l];
-          lvl.back.push(R('Escalera', 9, 'circ'));
+          lvl.back.push(R('Escalera', 9, 'circ', { id: 'escalera-' + l }));
           for (i = 0; i < nb; i++) {
             bi++;
             var main = bi === 1 || (bi === bedsPB + 1 && l === 1 && bedsPB === 0);
-            lvl[i % 2 ? 'back' : 'front'].push(R(main ? 'Recámara principal' : 'Recámara ' + bi, main ? 18 : 12.5, 'rec'));
-            if (main) lvl.front.push(R('Vestidor', 6, 'rec'));
+            lvl[i % 2 ? 'back' : 'front'].push(R(main ? 'Recámara principal' : 'Recámara ' + bi, main ? 18 : 12.5, 'rec', { id: 'rec-' + bi }));
+            if (main) lvl.front.push(R('Vestidor', 6, 'rec', { id: 'vestidor' }));
           }
-          for (i = 0; i < nba; i++) { bai++; lvl.back.push(R(bai === 1 || (i === 0 && l === 1 && bathsPB === 0) ? 'Baño principal' : 'Baño ' + bai, i === 0 ? 7 : 5, 'bano')); }
-          if (l === 1 && halfUp > 0) for (i = 0; i < halfUp; i++) lvl.back.push(R('Medio baño', 3, 'bano'));
-          if (l === 1 || nb === 0) lvl.front.push(R(l === F - 1 && F > 2 ? 'Terraza' : 'Estancia familiar', 16, 'soc'));
-          if (!nb && !nba) lvl.back.push(R('Cuarto de usos múltiples', 14, 'soc'));
+          for (i = 0; i < nba; i++) { bai++; lvl.back.push(R(bai === 1 || (i === 0 && l === 1 && bathsPB === 0) ? 'Baño principal' : 'Baño ' + bai, i === 0 ? 7 : 5, 'bano', { id: 'bano-' + bai })); }
+          if (l === 1 && halfUp > 0) for (i = 0; i < halfUp; i++) lvl.back.push(R('Medio baño', 3, 'bano', { id: 'medio-' + (halfPB + i + 1) }));
+          if (l === 1 || nb === 0) lvl.front.push(R(l === F - 1 && F > 2 ? 'Terraza' : 'Estancia familiar', 16, 'soc', { id: 'estancia-' + l }));
+          if (!nb && !nba) lvl.back.push(R('Cuarto de usos múltiples', 14, 'soc', { id: 'usos-' + l }));
           restB -= nb; restBa -= nba;
         }
       }
+      // Espacios agregados por el usuario
+      (Array.isArray(p.extra) ? p.extra : []).forEach(function (x, k) {
+        if (!x || !ESPACIOS[x.t]) return;
+        var E = ESPACIOS[x.t], L2 = lv[Math.max(0, Math.min(F - 1, x.lvl | 0))];
+        L2[k % 2 ? 'front' : 'back'].push(R(E.n, E.a, E.k, { id: x.id, added: true }));
+      });
+      lv.forEach(function (L3) { L3.front.concat(L3.back).forEach(function (r) { applyRoom(r, p); }); });
     } else if (t === 'deptos') {
       var dA = deptoArea(p);
       var pbL = lv[0];
@@ -240,6 +360,9 @@
       pItems.push(it(p.units >= Math.ceil(r.footprint / 600) ? 'ok' : 'warn', p.units + ' andenes para ' + nf0.format(r.footprint) + ' m² de nave. La práctica es un andén por cada 500–700 m².'));
       pItems.push(it(p.floors <= 2 ? 'ok' : 'warn', p.floors <= 2 ? 'Altura libre recomendada: 9–12 m para rack selectivo.' : 'Las bodegas de más de dos niveles complican la logística; considerar mezzanines en lugar de pisos completos.'));
     }
+    var yd = r.yard;
+    if (yd) pItems.push(yd.fits ? it('ok', 'Jardín: ' + yd.items.map(function (g) { return g.n.toLowerCase(); }).join(', ') + ' caben en el patio posterior de ' + nf1.format(yd.rear) + ' m de fondo.')
+      : it('warn', 'Los elementos del jardín necesitan unos ' + nf1.format(yd.need) + ' m de patio posterior y solo quedan ' + nf1.format(yd.rear) + ' m. Reduce la alberca, quita elementos o compacta la casa.'));
     if (probs) pItems.push(it(probs > 2 ? 'bad' : 'warn', probs + ' espacio(s) quedan por debajo del área mínima de referencia con el terreno y los niveles actuales.'));
     else if (rows.length) pItems.push(it('ok', 'Todos los espacios habitables cumplen las áreas mínimas de referencia.'));
     scores.push(100 - probs * 9 - pItems.filter(function (x) { return x.st === 'warn'; }).length * 6);
@@ -299,6 +422,7 @@
 
   window.RinovaProyecto = {
     ESTADOS: ESTADOS, TIPOS: TIPOS, DISTRIBUCION: DISTRIBUCION, PISOS: PISOS,
-    loc: loc, normalizeLoc: normalizeLoc, program: program, analyze: analyze, parkingRequired: parkingRequired, deptoArea: deptoArea, minFor: minFor
+    loc: loc, normalizeLoc: normalizeLoc, program: program, EQUIPO: EQUIPO, JARDIN: JARDIN, ESPACIOS: ESPACIOS, ETIQUETAS: ETIQUETAS,
+    useOf: useOf, kindOfRoom: kindOfRoom, deptoRooms: deptoRooms, gardenItems: gardenItems, siteYard: siteYard, gardenNeed: gardenNeed, amenities: amenities, analyze: analyze, parkingRequired: parkingRequired, deptoArea: deptoArea, minFor: minFor
   };
 })();
