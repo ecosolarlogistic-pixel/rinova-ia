@@ -41,7 +41,7 @@
 <!-- /App instalable -->
 <link rel="preload" href="assets/fonts/montserrat.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/rinova.css?v=20261122">
+<link rel="stylesheet" href="assets/css/rinova.css?v=20261123">
 <style>
 body{background:var(--mist)}
 .shell{display:grid;grid-template-columns:256px 1fr;min-height:100vh;min-height:100dvh}
@@ -303,6 +303,66 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
 .cq-notes{margin:0;padding-left:18px;font-size:13px;color:var(--muted);display:grid;gap:6px}
 .cq-acts{display:flex;justify-content:flex-end;gap:8px;padding:14px 22px 20px;border-top:1px solid var(--line);flex-wrap:wrap}
 @media(max-width:760px){.cq-grid{grid-template-columns:1fr;padding:14px}.cq-pic{height:240px}.cq-acts .btn{flex:1}}
+/* Planos: sub-vistas, mejora de fachada y render 3D */
+.pv-tabs{grid-template-columns:repeat(3,1fr);margin-bottom:16px;max-width:620px}
+.pv-tabs button{display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13.5px;min-height:42px}
+.pv-tabs svg{width:17px;height:17px;flex:none}
+.pv-tabs button[aria-pressed="true"] svg{color:var(--gold)}
+@media(max-width:520px){.pv-tabs button{font-size:12px;gap:4px;padding-inline:4px}.pv-tabs svg{display:none}}
+.fx-grid{display:grid;grid-template-columns:1fr;gap:18px;align-items:start}
+.fx-stage{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--navy);aspect-ratio:5/3}
+.fx-stage svg{display:block;width:100%;height:100%}
+.fx-before{position:absolute;inset:0}
+.fx-tag{position:absolute;top:12px;background:rgba(11,15,23,.78);color:#fff;border-color:rgba(212,175,55,.45);backdrop-filter:blur(6px);font-size:12px}
+.fx-tag-a{right:12px}.fx-tag-b{left:12px}
+.fx-cmp{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize}
+.fx-before:not([hidden])+.fx-tag{display:inline-flex}
+.fx-stage:has(.fx-cmp:not([hidden]))::after{content:"";position:absolute;top:0;bottom:0;left:var(--cmp,50%);width:2px;background:var(--gold);pointer-events:none}
+.fx-legend{list-style:none;padding:0;margin:12px 0 0;display:flex;flex-wrap:wrap;gap:8px}
+.fx-legend li{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;background:#fff;border:1px solid var(--line);border-radius:99px;padding:5px 12px 5px 5px}
+.fx-legend li.fx-empty{padding:8px 12px;font-weight:500;color:var(--muted)}
+.fx-legend .n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--navy);color:var(--gold);font-size:12px;font-weight:700;border:1.5px solid var(--gold)}
+.fx-acts{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+.fx-acts .lay{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:99px;border:1px solid var(--line);font-size:13px;font-weight:600;cursor:pointer;background:#fff;min-height:40px}
+.fx-hora{grid-template-columns:repeat(3,1fr);min-width:240px}
+.fx-ctl{display:grid;gap:14px;align-content:start}
+.fx-ctl fieldset{border:0;padding:0;margin:0;min-width:0}
+.fx-ctl legend{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:8px;padding:0}
+.fx-ctl .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fx-styles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fx-styles button{text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 12px;cursor:pointer;min-height:44px;display:grid;gap:2px;transition:border-color .2s,box-shadow .2s}
+.fx-styles button b{font-size:13.5px}
+.fx-styles button small{font-size:11.5px;color:var(--muted);line-height:1.35}
+.fx-styles button:hover{border-color:var(--silver)}
+.fx-styles button[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-glow);background:#FFFDF6}
+.fx-opts{display:grid;gap:6px}
+.fx-opt{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border:1px solid var(--line);border-radius:12px;cursor:pointer;background:#fff;min-height:44px}
+.fx-opt input{margin-top:3px;accent-color:var(--gold);width:17px;height:17px;flex:none}
+.fx-opt b{display:block;font-size:13.5px}
+.fx-opt small{font-size:12px;color:var(--muted)}
+.fx-why{margin:0;padding-left:18px;display:grid;gap:8px;font-size:14px}
+.fx-ci{display:flex;justify-content:space-between;gap:12px;font-size:14px;padding:4px 0;border-bottom:1px dashed var(--line)}
+.fx-ci b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.r3d{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--navy);aspect-ratio:16/9}
+@media(max-width:640px){.r3d{aspect-ratio:4/5}}
+.r3d canvas{display:block;width:100%;height:100%;cursor:grab}
+.r3d canvas:active{cursor:grabbing}
+.r3d.full,.r3d:fullscreen{position:fixed;inset:0;z-index:90;border-radius:0;border:0;aspect-ratio:auto;width:100vw;height:100vh;height:100dvh}
+.r3d-load{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:15px;background:radial-gradient(circle at 50% 40%,#18202B,#0B0F17);text-align:center;padding:20px}
+.r3d-load[hidden]{display:none}
+.r3d-top{position:absolute;left:12px;top:12px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}
+.r3d-top .chip{background:rgba(11,15,23,.72);color:#fff;border-color:rgba(212,175,55,.45);backdrop-filter:blur(6px)}
+.r3d-rec{color:#FF8A80 !important}
+.r3d-hint{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:rgba(11,15,23,.7);color:#fff;font-size:12.5px;padding:7px 14px;border-radius:99px;pointer-events:none;transition:opacity .6s;white-space:nowrap}
+.r3d-hint.off{opacity:0}
+.r3d-full{position:absolute;right:12px;top:12px;width:44px;height:44px;border-radius:12px;border:1px solid rgba(212,175,55,.45);background:rgba(11,15,23,.72);color:#fff;display:grid;place-items:center;cursor:pointer}
+.r3d-full svg{width:20px;height:20px}
+.r3d-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+.r3d-views{grid-template-columns:repeat(4,1fr);min-width:300px}
+.r3d-exp{display:flex;gap:8px;margin-left:auto}
+.r3d-bar .btn svg{width:17px;height:17px}
+@media(max-width:640px){.r3d-bar>*{width:100%}.r3d-views,.fx-hora{min-width:0}.r3d-exp{margin-left:0;display:grid;grid-template-columns:1fr 1fr}.fx-acts>*{flex:1 1 auto}.fx-styles{grid-template-columns:1fr}.fx-ctl .row2{grid-template-columns:1fr}}
+@media(min-width:760px){.fx-styles{grid-template-columns:repeat(3,1fr)}.fx-opts{grid-template-columns:1fr 1fr}.fx-ctl .row2{grid-template-columns:1fr 1fr 1fr}.fx-ctl>#fxAuto{justify-self:start;min-width:260px}}
 /* Impresión del juego de planos */
 #printSheets{display:none}
 @media print{
@@ -378,6 +438,8 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-alert" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></g></symbol>
   <symbol id="i-doc" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></g></symbol>
+  <symbol id="i-cubo" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></g></symbol>
+  <symbol id="i-giro" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v4h-4"/></g></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-2-6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
 </svg>
@@ -511,6 +573,70 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
               </section>
 
               <section class="pane" id="p-planos" role="tabpanel" aria-labelledby="t-planos">
+                <div class="pv-tabs seg" role="group" aria-label="Vista de planos" id="pvTabs">
+                  <button type="button" data-pv="laminas" aria-pressed="true"><svg><use href="#i-plano"/></svg>Láminas</button>
+                  <button type="button" data-pv="fachada" aria-pressed="false"><svg><use href="#i-edif"/></svg>Mejorar fachada</button>
+                  <button type="button" data-pv="r3d" aria-pressed="false"><svg><use href="#i-cubo"/></svg>Render 3D 360°</button>
+                </div>
+
+                <div class="pv" id="pv-fachada" hidden>
+                  <div class="fx-grid">
+                    <div class="fx-view">
+                      <div class="fx-stage" id="fxStage">
+                        <div class="fx-after" id="fxAfter"></div>
+                        <div class="fx-before" id="fxBefore" hidden></div>
+                        <span class="fx-tag fx-tag-a chip" id="fxTagA">Propuesta mejorada</span>
+                        <span class="fx-tag fx-tag-b chip" id="fxTagB" hidden>Fachada original</span>
+                        <input type="range" class="fx-cmp" id="fxCmp" min="0" max="100" value="50" aria-label="Comparar original y mejorada" hidden>
+                      </div>
+                      <ol class="fx-legend" id="fxLegend" aria-label="Elementos señalados en la fachada"></ol>
+                      <div class="fx-acts">
+                        <label class="lay"><input type="checkbox" id="fxCompare"> Comparar con la original</label>
+                        <div class="seg fx-hora" role="group" aria-label="Hora del render" id="fxHora"><button type="button" data-v="dia" aria-pressed="false">Día</button><button type="button" data-v="tarde" aria-pressed="true">Atardecer</button><button type="button" data-v="noche" aria-pressed="false">Noche</button></div>
+                        <button type="button" class="btn btn-ghost btn-sm" id="fxPng"><svg><use href="#i-down"/></svg>Imagen PNG</button>
+                        <button type="button" class="btn btn-ink btn-sm" data-pv-go="r3d"><svg><use href="#i-cubo"/></svg>Ver en 3D 360°</button>
+                      </div>
+                    </div>
+                    <form class="fx-ctl panel" id="fxForm" onsubmit="return false">
+                      <button type="button" class="btn btn-gold" id="fxAuto"><svg><use href="#i-ia"/></svg>Mejorar fachada</button>
+                      <p class="note" style="margin:0">RINOVAIA propone estilo, materiales y elementos según el tipo de inmueble, los niveles y el clima de la ciudad. Después ajusta lo que quieras.</p>
+                      <fieldset><legend>Estilo</legend><div class="fx-styles" id="fxStyles"></div></fieldset>
+                      <div class="row2">
+                        <div class="field"><label for="fxMat">Material principal</label><select class="input" id="fxMat"></select></div>
+                        <div class="field"><label for="fxAcc">Material de acento</label><select class="input" id="fxAcc"></select></div>
+                        <div class="field"><label for="fxCan">Cancelería</label><select class="input" id="fxCan"></select></div>
+                      </div>
+                      <fieldset><legend>Elementos</legend><div class="fx-opts" id="fxOpts"></div></fieldset>
+                    </form>
+                  </div>
+                  <div class="grid2" style="margin-top:16px">
+                    <div class="panel"><h4>Mejoras propuestas</h4><ul class="fx-why" id="fxWhy"></ul></div>
+                    <div class="panel"><h4>Costo estimado de la fachada</h4><div class="fx-cost" id="fxCost"></div></div>
+                  </div>
+                  <p class="note">La fachada mejorada se agrega al juego de planos como lámina R-01 y es la misma que verás en el render 3D. Precios de referencia de demostración.</p>
+                </div>
+
+                <div class="pv" id="pv-r3d" hidden>
+                  <div class="r3d" id="r3d">
+                    <canvas id="r3dCanvas" aria-label="Render 3D del proyecto. Arrastra para girar." role="img"></canvas>
+                    <div class="r3d-load" id="r3dLoad">Generando modelo 3D…</div>
+                    <div class="r3d-top"><span class="chip" id="r3dChip">—</span><span class="chip r3d-rec" id="r3dRec" hidden>● Grabando 360°</span></div>
+                    <div class="r3d-hint" id="r3dHint">Arrastra para girar · rueda o pellizca para acercar</div>
+                    <button type="button" class="r3d-full" id="r3dFull" aria-label="Pantalla completa"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+                  </div>
+                  <div class="r3d-bar">
+                    <button type="button" class="btn btn-gold btn-sm" id="r3dSpin" aria-pressed="true"><svg><use href="#i-giro"/></svg><span>Pausar giro</span></button>
+                    <div class="seg r3d-views" role="group" aria-label="Vista" id="r3dViews"><button type="button" data-v="frente">Frente</button><button type="button" data-v="esquina">Esquina</button><button type="button" data-v="aerea">Aérea</button><button type="button" data-v="posterior">Posterior</button></div>
+                    <div class="seg fx-hora" role="group" aria-label="Hora del render" id="r3dHora"><button type="button" data-v="dia" aria-pressed="false">Día</button><button type="button" data-v="tarde" aria-pressed="true">Atardecer</button><button type="button" data-v="noche" aria-pressed="false">Noche</button></div>
+                    <div class="r3d-exp">
+                      <button type="button" class="btn btn-ghost btn-sm" id="r3dPng"><svg><use href="#i-down"/></svg>Imagen</button>
+                      <button type="button" class="btn btn-ink btn-sm" id="r3dVid"><svg><use href="#i-play"/></svg>Video 360°</button>
+                    </div>
+                  </div>
+                  <p class="note" id="r3dNote">Modelo volumétrico generado con los datos del proyecto: frente, fondo, niveles, alturas, crujías, estacionamiento y la fachada elegida. El video da una vuelta completa de 12 segundos.</p>
+                </div>
+
+                <div class="pv" id="pv-laminas">
                 <div class="sheet-bar">
                   <label class="sheet-pick"><span>Lámina</span><select id="planSheet"></select></label>
                   <span class="chip" id="sheetCount">—</span>
@@ -534,6 +660,7 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
                   </div>
                   <div class="files" id="fileList"></div>
                   <p class="note">En esta maqueta los archivos se registran solo en tu navegador; en producción se guardan en el expediente del proyecto con control de acceso.</p>
+                </div>
                 </div>
               </section>
 
@@ -730,12 +857,15 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
   // RINOVAIA AI: función de Supabase (supabase/functions/rinova-ia). Si no está desplegada, la app usa el análisis por reglas.
   window.RINOVA_IA = { endpoint: 'https://evjoqaphylggvojthezj.supabase.co/functions/v1/rinova-ia', key: 'sb_publishable_ll_SpxeCPe8VEFVVX1KpMg_s6DfoWkX' };
 </script>
-<script src="assets/js/facade.js?v=20261122"></script>
-<script src="assets/js/proyecto.js?v=20261122"></script>
-<script src="assets/js/planos.js?v=20261122"></script>
-<script src="assets/js/estudio.js?v=20261122"></script>
-<script src="assets/js/croquis.js?v=20261122"></script>
-<script src="assets/js/plataforma.js?v=20261122"></script>
-<script src="pwa.js?v=20261122" defer></script>
+<script src="assets/js/facade.js?v=20261123"></script>
+<script src="assets/js/proyecto.js?v=20261123"></script>
+<script src="assets/js/planos.js?v=20261123"></script>
+<script src="assets/js/fachada.js?v=20261123"></script>
+<script src="assets/js/estudio.js?v=20261123"></script>
+<script src="assets/js/render3d.js?v=20261123"></script>
+<script src="assets/js/fachada-ui.js?v=20261123"></script>
+<script src="assets/js/croquis.js?v=20261123"></script>
+<script src="assets/js/plataforma.js?v=20261123"></script>
+<script src="pwa.js?v=20261123" defer></script>
 </body>
 </html>
