@@ -31,6 +31,8 @@ sitio/                      ← lo único que se publica en public_html
   assets/js/fachada.js            mejora de fachada: estilos, materiales, elementos, alzado a color y costo
   assets/js/render3d.js           render 3D con giro 360°, captura y video (three.js en assets/js/vendor, MIT)
   assets/js/fachada-ui.js         vistas Mejorar fachada y Render 3D dentro de Planos
+  assets/js/recorrido.js          recorrido virtual del interior por planta: muros, puertas, ventanas, escalera y mobiliario PBR
+  assets/js/recorrido-ui.js       vista Recorrido virtual dentro de Planos (planta, espacios, hora, recorrido guiado, foto)
   assets/js/plataforma.js         Obra, archivos de planos y RINOVAIA AI
   assets/fonts/*.woff2            Montserrat e Inter autoalojadas (+ licencias OFL)
   assets/img/                     isotipo (color, claro, blanco, negro, plata), logo circular, iconos, hero y OG

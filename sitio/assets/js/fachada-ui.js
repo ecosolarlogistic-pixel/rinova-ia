@@ -23,6 +23,7 @@
     if (v === 'fachada') renderFx();
     if (v === 'r3d') open3d();
     try { sessionStorage.setItem('rinova.pv', v); } catch (e) { }
+    document.dispatchEvent(new CustomEvent('rinova:pv', { detail: v }));
   }
   $('#pvTabs').addEventListener('click', function (e) { var b = e.target.closest('button[data-pv]'); if (b) showPv(b.dataset.pv); });
   $$('[data-pv-go]').forEach(function (b) { b.addEventListener('click', function () { showPv(b.dataset.pvGo); $('#pvTabs').scrollIntoView({ behavior: 'smooth', block: 'start' }); }); });
