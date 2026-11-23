@@ -41,7 +41,7 @@
 <!-- /App instalable -->
 <link rel="preload" href="assets/fonts/montserrat.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/rinova.css?v=20261123">
+<link rel="stylesheet" href="assets/css/rinova.css?v=20261124">
 <style>
 body{background:var(--mist)}
 .shell{display:grid;grid-template-columns:256px 1fr;min-height:100vh;min-height:100dvh}
@@ -320,7 +320,7 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
 .fx-stage:has(.fx-cmp:not([hidden]))::after{content:"";position:absolute;top:0;bottom:0;left:var(--cmp,50%);width:2px;background:var(--gold);pointer-events:none}
 .fx-legend{list-style:none;padding:0;margin:12px 0 0;display:flex;flex-wrap:wrap;gap:8px}
 .fx-legend li{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;background:#fff;border:1px solid var(--line);border-radius:99px;padding:5px 12px 5px 5px}
-.fx-legend li.fx-empty{padding:8px 12px;font-weight:500;color:var(--muted)}
+.fx-legend li.fx-empty{display:block;border-radius:12px;padding:8px 12px;font-weight:500;color:var(--muted)}
 .fx-legend .n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--navy);color:var(--gold);font-size:12px;font-weight:700;border:1.5px solid var(--gold)}
 .fx-acts{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
 .fx-acts .lay{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:99px;border:1px solid var(--line);font-size:13px;font-weight:600;cursor:pointer;background:#fff;min-height:40px}
@@ -363,6 +363,22 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
 .r3d-bar .btn svg{width:17px;height:17px}
 @media(max-width:640px){.r3d-bar>*{width:100%}.r3d-views,.fx-hora{min-width:0}.r3d-exp{margin-left:0;display:grid;grid-template-columns:1fr 1fr}.fx-acts>*{flex:1 1 auto}.fx-styles{grid-template-columns:1fr}.fx-ctl .row2{grid-template-columns:1fr}}
 @media(min-width:760px){.fx-styles{grid-template-columns:repeat(3,1fr)}.fx-opts{grid-template-columns:1fr 1fr}.fx-ctl .row2{grid-template-columns:1fr 1fr 1fr}.fx-ctl>#fxAuto{justify-self:start;min-width:260px}}
+/* Encabezado del proyecto fijo al hacer scroll */
+:root{--top-off:0px;--bar-h:0px}
+.bar-fix{position:sticky;top:var(--top-off);z-index:30;background:var(--mist);margin:0 -30px 18px;padding:12px 30px 14px;border-bottom:1px solid transparent;transition:box-shadow .25s,border-color .25s}
+.bar-fix.stuck{border-bottom-color:var(--line);box-shadow:0 12px 24px -18px rgba(11,15,23,.35)}
+.bar-fix .quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.bar-fix .quick .btn svg{width:17px;height:17px}
+.out,#pvTabs,#aiOut{scroll-margin-top:calc(var(--top-off) + var(--bar-h) + 12px)}
+@media(max-width:640px){
+  .bar-fix{margin:0 -14px 14px;padding:10px 14px;gap:8px}
+  .bar-fix .title small{display:none}
+  .bar-fix .live{display:none}
+  .bar-fix input.pname{font-size:20px}
+  .bar-fix .quick{display:grid;grid-template-columns:1fr 1fr;margin-top:6px}
+  .bar-fix .quick .btn,.bar-fix .acts .btn{min-height:40px;font-size:13px;padding:8px 8px}
+  .bar-fix .acts{gap:8px}
+}
 /* Impresión del juego de planos */
 #printSheets{display:none}
 @media print{
@@ -412,8 +428,9 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
 
 @media print{
   body{background:#fff}
-  .side,.topm,.bar .acts,.params,.tabs,.demo-banner,.pwa-install,.ai-panel,.no-print{display:none!important}
+  .side,.topm,.bar .acts,.bar .quick,.params,.tabs,.demo-banner,.pwa-install,.ai-panel,.no-print{display:none!important}
   .shell{display:block}.main{padding:0}
+  .bar-fix{position:static;margin:0;padding:0;box-shadow:none}
   .present.on{position:static}.present .close,.present .acts{display:none}
   .card{box-shadow:none}
   .print-head{display:flex!important}
@@ -475,8 +492,13 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
 
       <!-- ===== ESTUDIO ===== -->
       <div class="view on" data-v="studio">
-        <div class="bar">
-          <div class="title"><small>Proyecto · RV-0142</small><label class="sr" for="pName">Nombre del proyecto</label><input class="pname" id="pName" value="Residencia Lomas"></div>
+        <div class="bar bar-fix" id="studioBar">
+          <div class="title"><small>Proyecto · RV-0142</small><label class="sr" for="pName">Nombre del proyecto</label><input class="pname" id="pName" value="Residencia Lomas">
+            <div class="quick" aria-label="Accesos rápidos">
+              <button type="button" class="btn btn-gold btn-sm" data-pv-jump="fachada"><svg><use href="#i-edif"/></svg>Mejorar fachada</button>
+              <button type="button" class="btn btn-ink btn-sm" data-pv-jump="r3d"><svg><use href="#i-cubo"/></svg>Render 3D 360°</button>
+            </div>
+          </div>
           <span class="live"><span class="dot"></span><span id="liveTxt">Sincronizado</span></span>
           <div class="acts">
             <button class="btn btn-ghost btn-sm" id="btnExport" data-export><svg><use href="#i-down"/></svg>Exportar plano</button>
@@ -857,15 +879,15 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
   // RINOVAIA AI: función de Supabase (supabase/functions/rinova-ia). Si no está desplegada, la app usa el análisis por reglas.
   window.RINOVA_IA = { endpoint: 'https://evjoqaphylggvojthezj.supabase.co/functions/v1/rinova-ia', key: 'sb_publishable_ll_SpxeCPe8VEFVVX1KpMg_s6DfoWkX' };
 </script>
-<script src="assets/js/facade.js?v=20261123"></script>
-<script src="assets/js/proyecto.js?v=20261123"></script>
-<script src="assets/js/planos.js?v=20261123"></script>
-<script src="assets/js/fachada.js?v=20261123"></script>
-<script src="assets/js/estudio.js?v=20261123"></script>
-<script src="assets/js/render3d.js?v=20261123"></script>
-<script src="assets/js/fachada-ui.js?v=20261123"></script>
-<script src="assets/js/croquis.js?v=20261123"></script>
-<script src="assets/js/plataforma.js?v=20261123"></script>
-<script src="pwa.js?v=20261123" defer></script>
+<script src="assets/js/facade.js?v=20261124"></script>
+<script src="assets/js/proyecto.js?v=20261124"></script>
+<script src="assets/js/planos.js?v=20261124"></script>
+<script src="assets/js/fachada.js?v=20261124"></script>
+<script src="assets/js/estudio.js?v=20261124"></script>
+<script src="assets/js/render3d.js?v=20261124"></script>
+<script src="assets/js/fachada-ui.js?v=20261124"></script>
+<script src="assets/js/croquis.js?v=20261124"></script>
+<script src="assets/js/plataforma.js?v=20261124"></script>
+<script src="pwa.js?v=20261124" defer></script>
 </body>
 </html>
