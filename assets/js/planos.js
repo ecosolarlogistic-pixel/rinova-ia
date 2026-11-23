@@ -356,6 +356,10 @@
     return { hs: hs, total: hs.reduce(function (a, b) { return a + b; }, 0) + 1.0 };
   }
 
+  function fxSheet(fx) {
+    var svg = fx.render().replace('<svg ', '<svg x="40" y="30" width="' + (VW - 80) + '" height="' + (VH - TB - 60) + '" preserveAspectRatio="xMidYMid meet" ');
+    return svg + '<text x="60" y="' + (VH - TB - 14) + '" font-size="11" fill="' + MUTED + '"><tspan font-weight="700" fill="' + INK + '">FACHADA MEJORADA</tspan>  ·  Render de anteproyecto, estilo ' + esc(fx.name.toLowerCase()) + '</text>';
+  }
   /* ---------- Corte ---------- */
   function sectionSheet(ctx) {
     var p = ctx.p, r = ctx.r, o = [], H = heights(p), lv = ctx.levels;
@@ -449,6 +453,7 @@
     });
     var nA = 2 + levels.length;
     sheets.push({ code: 'A-' + String(nA).padStart(2, '0'), name: 'Fachada principal', kind: 'elev', render: function () { return frame(facadeSheet(ctx), meta('A-' + String(nA).padStart(2, '0'), 'Fachada principal', 'Alzado sur / a calle')); } });
+    if (opts.fachada) sheets.push({ code: 'R-01', name: 'Fachada mejorada', kind: 'render', render: function () { return frame(fxSheet(opts.fachada), meta('R-01', 'Fachada mejorada · render', 'Estilo ' + opts.fachada.name.toLowerCase())); } });
     sheets.push({ code: 'A-' + String(nA + 1).padStart(2, '0'), name: 'Corte longitudinal', kind: 'sect', render: function () { return frame(sectionSheet(ctx), meta('A-' + String(nA + 1).padStart(2, '0'), 'Corte longitudinal A-A\'', 'Niveles y alturas')); } });
     sheets.push({ code: 'E-01', name: 'Estructural y cimentación', kind: 'struct', render: function () { return frame(structSheet(ctx), meta('E-01', 'Estructural y cimentación', 'Prediseño · ' + r.city.zone)); } });
     levels.forEach(function (lv, i) {

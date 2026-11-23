@@ -230,7 +230,9 @@
   try { croquis = JSON.parse(localStorage.getItem(KEY + '.croquis') || 'null'); } catch (e) { }
   function layersOn() { var on = {}; $$('#layers input[data-layer]').forEach(function (c) { on[c.dataset.layer] = c.checked; }); return on; }
   function buildPlans(r) {
-    plans = PL.build(p, r, { croquis: croquis, styleName: STYLE_NAME[p.style], unifilar: function () { return unifilarSvg(r); } });
+    var FXP = window.RinovaFachada, fxOn = FXP && p.fx && p.fx.on;
+    plans = PL.build(p, r, { croquis: croquis, styleName: STYLE_NAME[p.style], unifilar: function () { return unifilarSvg(r); },
+      fachada: fxOn ? { name: FXP.ESTILOS[FXP.normalize(p.fx, p).estilo].n, render: function () { return FXP.svg(p, r, p.fx, { id: 'shfx', marks: false }).svg; } } : null });
     r.planInfo = plans.info;
     var sel = $('#planSheet'), cur = sel.value;
     sel.innerHTML = plans.sheets.map(function (s) { return '<option value="' + s.code + '">' + s.code + ' · ' + esc(s.name) + '</option>'; }).join('');
@@ -562,7 +564,8 @@
     generate: generate, sheets: function () { return plans; },
     setCroquis: function (c) { croquis = c; try { if (c) localStorage.setItem(KEY + '.croquis', JSON.stringify(c)); else localStorage.removeItem(KEY + '.croquis'); } catch (e) { } },
     getCroquis: function () { return croquis; },
-    showSheet: function (code) { $('#planSheet').value = code; renderPlan(); }
+    showSheet: function (code) { $('#planSheet').value = code; renderPlan(); },
+    refresh: function () { renderAll(); }
   };
 
   syncForm(); renderAll();
