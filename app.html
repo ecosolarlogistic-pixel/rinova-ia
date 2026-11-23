@@ -41,7 +41,7 @@
 <!-- /App instalable -->
 <link rel="preload" href="assets/fonts/montserrat.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/rinova.css?v=20261127">
+<link rel="stylesheet" href="assets/css/rinova.css?v=20261128">
 <style>.auth-wait body{visibility:hidden}</style>
 <style>
 body{background:var(--mist)}
@@ -347,6 +347,16 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
 .es-open{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:1px dashed var(--gold);border-radius:12px;background:var(--gold-soft);cursor:pointer;text-align:left;font:inherit;color:inherit;min-height:52px}
 .es-open svg{width:22px;height:22px;color:var(--gold-ink);flex:none}.es-open b{display:block;font-size:14px}.es-open small{font-size:12px;color:var(--muted)}
 .es-open:hover{box-shadow:0 0 0 3px var(--gold-glow)}
+.energy{border:1px solid var(--line);border-radius:12px;padding:12px 14px 6px;display:grid;gap:10px;margin:0}
+.energy legend{font-size:13px;font-weight:700;padding:0 6px;color:var(--ink,#18202B)}
+.energy .en-tog{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;cursor:pointer;min-height:36px}
+.energy .en-tog input{width:18px;height:18px;accent-color:var(--gold)}
+.energy .hint{margin:0}
+.en-card{margin-top:18px}.en-card h4{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.en-figs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
+.en-figs div{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}.en-figs b{display:block;font-size:18px}.en-figs span{font-size:12px;color:var(--muted)}
+@media(max-width:700px){.en-figs{grid-template-columns:1fr 1fr}}
+.en-list{display:grid;gap:6px;margin:0;padding:0;list-style:none;font-size:14px}.en-list li{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:6px 0}
 @media(max-width:520px){.es-lvls button{padding-inline:10px;font-size:12.5px}}
 @media(max-width:520px){.pv-tabs{grid-template-columns:1fr 1fr}.pv-tabs button{font-size:12px;gap:4px;padding-inline:4px}.pv-tabs svg{display:none}}
 .fx-grid{display:grid;grid-template-columns:1fr;gap:18px;align-items:start}
@@ -604,6 +614,16 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
               <select class="input" id="pLayout"><option value="abierto">Concepto abierto</option><option value="tradicional">Tradicional (espacios separados)</option><option value="rec-pb">Con recámara en planta baja</option><option value="planta-libre">Planta libre</option></select>
             </div>
             <button type="button" class="es-open" data-open-espacios><svg><use href="#i-plano"/></svg><span><b>Configurar espacios y jardín</b><small id="esSummary">Tamaños, etiquetas y equipamiento</small></span></button>
+            <fieldset class="energy" id="fEnergy"><legend>Energía y movilidad eléctrica</legend>
+              <label class="lay en-tog"><input type="checkbox" id="pSolar"> Paneles solares en azotea</label>
+              <div class="field" id="fCover" hidden><label for="pCover">Tamaño del sistema solar</label>
+                <select class="input" id="pCover"><option value="0.5">Cubre 50 % del consumo</option><option value="0.75">Cubre 75 % del consumo</option><option value="1">Cubre 100 % del consumo</option><option value="1.25">Cubre 125 % (excedentes)</option><option value="1.5">Cubre 150 %</option></select></div>
+              <div class="row">
+                <div class="field"><label for="pChargers" title="Cargadores nivel 2 para autos eléctricos en el estacionamiento">Cargadores EV</label><input class="input num" id="pChargers" type="number" min="0" max="40" step="1" inputmode="numeric" value="0"></div>
+                <div class="field"><label for="pBattery">Baterías</label><select class="input" id="pBattery"><option value="no">Sin baterías</option><option value="respaldo">Respaldo</option><option value="aislado">Sistema aislado</option></select></div>
+              </div>
+              <p class="hint" id="energyHint"></p>
+            </fieldset>
             <div class="field"><label for="pFlooring">Pisos (acabado)</label>
               <select class="input" id="pFlooring"><option value="porcelanato">Porcelanato</option><option value="marmol">Mármol</option><option value="madera">Madera de ingeniería</option><option value="concreto">Concreto pulido</option><option value="vinil">Vinil / SPC</option><option value="epoxico">Epóxico industrial</option></select>
             </div>
@@ -793,6 +813,7 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
                 </div>
                 <div class="costbars" id="costOut"></div>
                 <div class="total"><span>Total estimado <small class="muted" id="costPer"></small></span><b class="num" id="costTotal">—</b></div>
+                <div class="panel en-card" id="energyCard" hidden></div>
                 <p class="note">Precios unitarios de referencia para la región seleccionada. Tipo de cambio de demostración: 18.50 MXN por USD.</p>
               </section>
 
@@ -979,21 +1000,21 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
   // RINOVAIA AI: función de Supabase (supabase/functions/rinova-ia). Si no está desplegada, la app usa el análisis por reglas.
   window.RINOVA_IA = { endpoint: 'https://evjoqaphylggvojthezj.supabase.co/functions/v1/rinova-ia', key: 'sb_publishable_ll_SpxeCPe8VEFVVX1KpMg_s6DfoWkX' };
 </script>
-<script src="assets/js/facade.js?v=20261127"></script>
-<script src="assets/js/proyecto.js?v=20261127"></script>
-<script src="assets/js/planos.js?v=20261127"></script>
-<script src="assets/js/fachada.js?v=20261127"></script>
-<script src="assets/js/estudio.js?v=20261127"></script>
-<script src="assets/js/render3d.js?v=20261127"></script>
-<script src="assets/js/fachada-ui.js?v=20261127"></script>
-<script src="assets/js/recorrido.js?v=20261127"></script>
-<script src="assets/js/recorrido-ui.js?v=20261127"></script>
-<script src="assets/js/espacios.js?v=20261127"></script>
-<script src="assets/js/croquis.js?v=20261127"></script>
-<script src="assets/js/plataforma.js?v=20261127"></script>
+<script src="assets/js/facade.js?v=20261128"></script>
+<script src="assets/js/proyecto.js?v=20261128"></script>
+<script src="assets/js/planos.js?v=20261128"></script>
+<script src="assets/js/fachada.js?v=20261128"></script>
+<script src="assets/js/estudio.js?v=20261128"></script>
+<script src="assets/js/render3d.js?v=20261128"></script>
+<script src="assets/js/fachada-ui.js?v=20261128"></script>
+<script src="assets/js/recorrido.js?v=20261128"></script>
+<script src="assets/js/recorrido-ui.js?v=20261128"></script>
+<script src="assets/js/espacios.js?v=20261128"></script>
+<script src="assets/js/croquis.js?v=20261128"></script>
+<script src="assets/js/plataforma.js?v=20261128"></script>
 <script src="assets/js/vendor/supabase-2.58.0.min.js?v=20261126"></script>
-<script src="assets/js/sesion.js?v=20261127"></script>
-<script src="assets/js/nube.js?v=20261127"></script>
-<script src="pwa.js?v=20261127" defer></script>
+<script src="assets/js/sesion.js?v=20261128"></script>
+<script src="assets/js/nube.js?v=20261128"></script>
+<script src="pwa.js?v=20261128" defer></script>
 </body>
 </html>

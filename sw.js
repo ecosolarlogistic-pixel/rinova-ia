@@ -1,7 +1,7 @@
 /* RINOVAIA — service worker. Cada cambio de este archivo sube VERSION. */
-const VERSION = 'rinovaia-v12';
+const VERSION = 'rinovaia-v13';
 // Debe coincidir con el ?v= de los HTML: la CDN de Hostinger guarda JS y CSS 30 días por URL.
-const V = '?v=20261127';
+const V = '?v=20261128';
 const PRECACHE = [
   './', 'index.html', 'app.html', 'distribuidores.html', 'instalar.html', 'offline.html',
   'manifest.webmanifest', 'favicon.ico',
