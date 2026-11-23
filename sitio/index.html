@@ -75,10 +75,28 @@
 .nav-in{gap:22px}
 @media(max-width:1280px){.links,.nav-cta .btn-ghost{display:none}.menu-btn{display:block}.nav-cta{margin-left:0}}
 @media(max-width:600px){.nav-cta{display:none}.nav-in{height:68px}}
-.mobile-menu{display:none;border-top:1px solid var(--navy-line);padding:12px 0 20px}
-.mobile-menu.open{display:grid;gap:4px}
-.mobile-menu a{padding:12px 4px;text-decoration:none;font-size:16px;border-bottom:1px solid var(--navy-line);color:#E6E9EF}
-.mobile-menu .btn{margin-top:12px;border-bottom:0}
+.mobile-menu{position:fixed;top:0;left:0;bottom:0;z-index:80;width:min(300px,86vw);display:flex;flex-direction:column;background:var(--navy);color:#fff;border-right:1px solid var(--navy-line);padding:18px 14px 18px;overflow-y:auto;transform:translateX(-104%);visibility:hidden;transition:transform .32s var(--ease),visibility 0s .32s;box-shadow:24px 0 70px rgba(0,0,0,.45)}
+.mobile-menu.open{transform:none;visibility:visible;transition:transform .32s var(--ease)}
+.mm-scrim{position:fixed;inset:0;z-index:79;background:rgba(11,15,23,.55);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.mm-scrim[hidden]{display:none}
+.mm-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 6px 14px;border-bottom:1px solid var(--navy-line)}
+.mm-head .wm small{color:var(--gold);letter-spacing:.22em}
+.mm-close{flex:none;width:38px;height:38px;border-radius:10px;border:1px solid var(--navy-line);background:none;color:#fff;font-size:15px;cursor:pointer}
+.mm-close:hover{background:var(--navy-2)}
+.mm-nav{display:flex;flex-direction:column;gap:3px}
+.mm-grp{margin:0;font:600 10.5px var(--sans);letter-spacing:.2em;text-transform:uppercase;color:#6F7A8E;padding:18px 10px 6px}
+.mm-nv{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;color:var(--navy-text);font-size:15px;text-decoration:none;transition:background .2s,color .2s}
+.mm-nv svg{width:19px;height:19px;flex:none;color:#8A93A6;transition:color .2s}
+.mm-nv:hover{background:var(--navy-2);color:#fff}
+.mm-nv:hover svg{color:var(--gold)}
+.mm-nv[aria-current="true"]{background:var(--navy-3,#1A2233);color:#fff;box-shadow:inset 3px 0 0 var(--gold)}
+.mm-nv[aria-current="true"] svg,.mm-int svg{color:var(--gold)}
+.mm-tag{margin-left:auto;font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:2px 8px;border-radius:99px;background:rgba(212,175,55,.16);color:var(--gold)}
+.mm-foot{margin-top:auto;padding-top:18px;display:grid;gap:6px}
+.mm-foot .btn{justify-content:center}
+.mm-login{border:1px solid var(--navy-line);justify-content:center}
+html.mm-lock,html.mm-lock body{overflow:hidden}
+html.mm-lock .cb-lz,html.mm-lock .wa,html.mm-lock .pwa-install{visibility:hidden}
 
 /* ---------- Hero ---------- */
 .on-navy{background:var(--navy);color:#fff}
@@ -291,6 +309,10 @@ footer .motto{font-family:var(--display);color:var(--gold);letter-spacing:.24em;
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-escudo" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></g></symbol>
   <symbol id="i-chat" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></g></symbol>
+  <symbol id="i-movil" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/></g></symbol>
+  <symbol id="i-red" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.2"/><circle cx="5" cy="18" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M11 7l-5 9M13 7l5 9M7.2 18h9.6"/></g></symbol>
+  <symbol id="i-llave" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></g></symbol>
+  <symbol id="i-ruta" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2"/><circle cx="18" cy="19" r="2"/><path d="M8 5h7.5a3.5 3.5 0 0 1 0 7h-7a3.5 3.5 0 0 0 0 7H16"/></g></symbol>
   <symbol id="i-mail" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></g></symbol>
 </svg>
 
@@ -306,12 +328,32 @@ footer .motto{font-family:var(--display);color:var(--gold);letter-spacing:.24em;
     </div>
     <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="mobileMenu" aria-label="Abrir menú"><span></span><span></span><span></span></button>
   </div>
-  <div class="wrap mobile-menu" id="mobileMenu">
-    <a href="#servicios">Servicios</a><a href="#plataforma">Plataforma</a><a href="#ai">RINOVAIA AI</a><a href="#proceso">Proceso</a><a href="#planes">Planes y precios</a><a href="distribuidores.html">Portal de distribuidores</a><a href="instalar.html" data-pwa-link>Instalar la app</a><a href="#contacto">Contacto</a><a href="interno.html">Interno · portal del equipo</a>
-    <a class="btn btn-gold" href="acceso.html?modo=alta&amp;next=app.html%23nuevo">Crear proyecto</a>
-    <a class="btn btn-ink" href="acceso.html?next=interno.html" data-auth-link>Iniciar sesión</a>
-  </div>
 </header>
+  <div class="mm-scrim" id="mmScrim" hidden></div>
+<aside class="mobile-menu" id="mobileMenu" aria-label="Menú" aria-hidden="true">
+  <div class="mm-head">
+    <a class="logo on-dark" href="./" aria-label="RINOVAIA, inicio"><img src="assets/img/isotipo.svg" alt="" width="40" height="34"><span class="wm"><b>RINOVAIA</b><small>Plataforma</small></span></a>
+    <button type="button" class="mm-close" id="mmClose" aria-label="Cerrar menú">✕</button>
+  </div>
+  <nav class="mm-nav" aria-label="Menú principal">
+    <p class="mm-grp">Explora</p>
+    <a class="mm-nv" href="#servicios"><svg><use href="#i-edif"/></svg>Servicios</a>
+    <a class="mm-nv" href="#plataforma"><svg><use href="#i-plano"/></svg>Plataforma</a>
+    <a class="mm-nv" href="#ai"><svg><use href="#i-ia"/></svg>RINOVAIA AI</a>
+    <a class="mm-nv" href="#proceso"><svg><use href="#i-ruta"/></svg>Proceso</a>
+    <a class="mm-nv" href="#planes"><svg><use href="#i-clip"/></svg>Planes y precios</a>
+    <a class="mm-nv" href="#contacto"><svg><use href="#i-mail"/></svg>Contacto</a>
+    <p class="mm-grp">Portales</p>
+    <a class="mm-nv mm-int" href="interno.html"><svg><use href="#i-escudo"/></svg>Interno<span class="mm-tag">Equipo</span></a>
+    <a class="mm-nv" href="distribuidores.html"><svg><use href="#i-red"/></svg>Portal de distribuidores</a>
+    <p class="mm-grp">Herramientas</p>
+    <a class="mm-nv" href="instalar.html" data-pwa-link><svg><use href="#i-movil"/></svg>Instalar la app</a>
+  </nav>
+  <div class="mm-foot">
+    <a class="btn btn-gold" href="acceso.html?modo=alta&amp;next=app.html%23nuevo">Crear proyecto</a>
+    <a class="mm-nv mm-login" href="acceso.html?next=interno.html" data-auth-link><svg><use href="#i-llave"/></svg><span data-auth-txt>Iniciar sesión</span></a>
+  </div>
+</aside>
 
 <main id="contenido">
   <!-- HERO -->
@@ -559,8 +601,23 @@ footer .motto{font-family:var(--display);color:var(--gold);letter-spacing:.24em;
   var nav = document.getElementById('nav');
   addEventListener('scroll', function(){ nav.classList.toggle('scrolled', scrollY > 8); }, {passive:true});
   var mb = document.getElementById('menuBtn'), mm = document.getElementById('mobileMenu');
-  mb.addEventListener('click', function(){ var o = mm.classList.toggle('open'); mb.setAttribute('aria-expanded', o); });
-  mm.addEventListener('click', function(e){ if(e.target.tagName==='A'){ mm.classList.remove('open'); mb.setAttribute('aria-expanded', false);} });
+  var ms = document.getElementById('mmScrim');
+  function menu(o){
+    mm.classList.toggle('open', o); ms.hidden = !o; mb.setAttribute('aria-expanded', o); mm.setAttribute('aria-hidden', !o);
+    document.documentElement.classList.toggle('mm-lock', o);
+    if (o) setTimeout(function(){ document.getElementById('mmClose').focus(); }, 60); else if (mm.contains(document.activeElement)) mb.focus();
+  }
+  mb.addEventListener('click', function(){ menu(!mm.classList.contains('open')); });
+  document.getElementById('mmClose').addEventListener('click', function(){ menu(false); });
+  ms.addEventListener('click', function(){ menu(false); });
+  mm.addEventListener('click', function(e){ if(e.target.closest('a')) menu(false); });
+  addEventListener('keydown', function(e){ if(e.key==='Escape' && mm.classList.contains('open')) menu(false); });
+  addEventListener('resize', function(){ if(innerWidth > 1280 && mm.classList.contains('open')) menu(false); });
+  // Sección visible = opción marcada en dorado, como en el portal interno
+  var mmLinks = [].slice.call(mm.querySelectorAll('.mm-nv[href^="#"]'));
+  var spy = new IntersectionObserver(function(es){ es.forEach(function(e){ if(!e.isIntersecting) return;
+    mmLinks.forEach(function(a){ a.setAttribute('aria-current', a.getAttribute('href') === '#' + e.target.id ? 'true' : 'false'); }); }); }, {rootMargin:'-45% 0px -50% 0px'});
+  mmLinks.forEach(function(a){ var t = document.querySelector(a.getAttribute('href')); if (t) spy.observe(t); });
 
   var io = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} }); }, {threshold:.12, rootMargin:'0px 0px -40px'});
   document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
@@ -626,7 +683,7 @@ footer .motto{font-family:var(--display);color:var(--gold);letter-spacing:.24em;
 </script>
 <script>
   // Si ya hay sesión guardada, "Iniciar sesión" lleva directo al portal
-  try { if (localStorage.getItem('rinova.auth')) document.querySelectorAll('[data-auth-link]').forEach(function(a){ a.textContent = 'Mi portal'; a.href = 'interno.html'; }); } catch(_) {}
+  try { if (localStorage.getItem('rinova.auth')) document.querySelectorAll('[data-auth-link]').forEach(function(a){ (a.querySelector('[data-auth-txt]') || a).textContent = 'Mi portal'; a.href = 'interno.html'; }); } catch(_) {}
 </script>
 <script src="assets/js/voz-chat.js?v=20261127" defer></script>
 <script src="assets/js/chatbot.js?v=20261127" defer></script>
