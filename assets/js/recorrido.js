@@ -756,8 +756,8 @@
     return levels.map(function (lv, li) {
       var rooms = [], id = 0;
       lv.cells.forEach(function (c) {
-        if (c.sub && c.sub.length) c.sub.forEach(function (s) { rooms.push({ id: id++, n: niceName(s.n), unit: c.n, k: s.k, x: s.x, y: s.y, w: s.w, h: s.h }); });
-        else rooms.push({ id: id++, n: c.n, k: c.k, x: c.x, y: c.y, w: c.w, h: c.h, cars: c.cars });
+        if (c.sub && c.sub.length) c.sub.forEach(function (s) { rooms.push({ id: id++, n: niceName(s.n), unit: c.n, k: s.k, x: s.x, y: s.y, w: s.w, h: s.h, use: s.use, fx: s.fx }); });
+        else rooms.push({ id: id++, n: c.n, k: c.k, x: c.x, y: c.y, w: c.w, h: c.h, cars: c.cars, use: c.use, fx: c.fx });
       });
       rooms.forEach(function (r) { r.ext = r.k === 'ext'; r.area = r.w * r.h; r.label = r.unit ? r.unit + ' · ' + r.n : r.n; });
       return { index: li, rooms: rooms, H: hs[li], Hc: Math.max(2.4, hs[li] - (type === 'bodega' && li === 0 ? 0.6 : 0.28)), base: hs.slice(0, li).reduce(function (a, b) { return a + b; }, 0) };
@@ -915,7 +915,7 @@
     var NL = MOBILE ? 4 : 6, pool = [];
     for (var i = 0; i < NL; i++) { var pl = new T.PointLight('#FFD8A8', 0, 0, 2); pl.userData = { room: null, cur: 0, want: 0 }; scene.add(pl); pool.push(pl); }
     var outdoor = new T.Group(); scene.add(outdoor);
-    var levelGroup = null, model = null, L = null, li = 0, hora = 'tarde', W = 10, D = 20;
+    var levelGroup = null, model = null, L = null, li = 0, hora = 'tarde', W = 10, D = 20, yard = null, sideM = 0;
     var floors = [], picks = [], solids = [], blockers = [], lightSpots = [], furn = [];
     var pos = new T.Vector3(), yaw = 0, pitch = -0.05, eye = 1.6, keys = {}, path = null, tour = null, dirty = true, running = false, raf = 0, lastT = 0, curRoom = null;
     var ring = new T.Mesh(new T.RingGeometry(0.16, 0.22, 32), new T.MeshBasicMaterial({ color: '#D4AF37', transparent: true, opacity: 0.9, depthWrite: false })); ring.rotation.x = -Math.PI / 2; ring.visible = false; scene.add(ring);
@@ -933,8 +933,49 @@
         var a = k / 16 * Math.PI * 2, rr = Math.max(W, D) * 0.7 + 6 + r() * 10, t = F.tree(5 + r() * 4, k + 3);
         t.position.set(W / 2 + Math.cos(a) * rr, 0, D / 2 + Math.sin(a) * rr * 1.1); outdoor.add(t);
       }
+      // Jardín posterior: alberca, palapa, asador, fuente, espejo de agua… (coordenadas del editor de espacios)
+      if (yard) yard.items.forEach(function (it) { if (!it.out) outdoor.add(gardenPiece(it)); });
       // vecinos (volúmenes simples)
       [[-12, 0.5, 7, 6.5, D * 0.8], [W + 5, 0.5, 7, 6.5, D * 0.8], [W / 2 - 8, -16, 16, 7, 6]].forEach(function (b) { var m = new T.Mesh(new T.BoxGeometry(b[2], b[3], b[4]), M.facade); m.position.set(b[0] + b[2] / 2, b[3] / 2, b[1] + (b[1] < 0 ? 0 : b[4] / 2)); m.receiveShadow = true; outdoor.add(m); });
+    }
+
+    function gardenPiece(it) {
+      var g = new T.Group(), w = it.w, d = it.d, k = it.k, r = Math.min(w, d) / 2;
+      var thatch = new T.MeshStandardMaterial({ color: '#B48A4A', roughness: 1 });
+      if (k === 'alberca' || k === 'chapoteadero') {
+        K.box(g, w + 1.2, 0.08, d + 1.2, M.travertine, 0, 0, 0);
+        var wt = new T.Mesh(new T.BoxGeometry(w, 0.02, d), waterMat()); wt.position.y = 0.07; g.add(wt);
+        K.box(g, w, 0.1, 0.12, M.travertine, 0, 0, -d / 2); K.box(g, w, 0.1, 0.12, M.travertine, 0, 0, d / 2);
+        K.box(g, 0.12, 0.1, d, M.travertine, -w / 2, 0, 0); K.box(g, 0.12, 0.1, d, M.travertine, w / 2, 0, 0);
+      } else if (k === 'espejo') {
+        K.box(g, w + 0.3, 0.32, d + 0.3, M.travertine, 0, 0, 0);
+        var es = new T.Mesh(new T.BoxGeometry(w, 0.02, d), waterMat()); es.position.y = 0.31; g.add(es);
+      } else if (k === 'jacuzziExt') {
+        K.box(g, w, 0.6, d, M.teak, 0, 0, 0);
+        var jw = new T.Mesh(new T.CylinderGeometry(r * 0.8, r * 0.8, 0.02, 32), waterMat()); jw.position.y = 0.6; g.add(jw);
+      } else if (k === 'palapa') {
+        [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (q) { K.cyl(g, 0.09, 0.11, 2.5, M.teak, q[0] * (w / 2 - 0.3), 0, q[1] * (d / 2 - 0.3), 10); });
+        var roof = new T.Mesh(new T.ConeGeometry(Math.max(w, d) * 0.62, 1.6, 12), thatch); roof.position.y = 3.2; roof.castShadow = true; g.add(roof);
+        K.cyl(g, 0.5, 0.5, 0.04, M.teak, 0, 0.72, 0, 20); K.cyl(g, 0.06, 0.06, 0.72, M.teak, 0, 0, 0, 8);
+      } else if (k === 'asador') {
+        K.box(g, w, 0.9, d, M.travertine, 0, 0, 0); K.box(g, w + 0.05, 0.05, d + 0.05, M.quartz, 0, 0.9, 0);
+        K.box(g, 0.8, 0.25, 0.5, M.steel, -w / 4, 0.95, 0); K.box(g, 0.4, 1.6, 0.4, M.travertine, w / 2 - 0.3, 0.95, -d / 2 + 0.25);
+      } else if (k === 'fuente') {
+        K.cyl(g, r, r, 0.45, M.travertine, 0, 0, 0, 28);
+        var fw = new T.Mesh(new T.CylinderGeometry(r * 0.88, r * 0.88, 0.02, 28), waterMat()); fw.position.y = 0.44; g.add(fw);
+        K.cyl(g, 0.12, 0.16, 1.0, M.travertine, 0, 0.45, 0, 14); K.cyl(g, 0.45, 0.3, 0.12, M.travertine, 0, 1.45, 0, 20);
+      } else if (k === 'fogatero') {
+        K.cyl(g, r * 0.5, r * 0.55, 0.4, M.travertine, 0, 0, 0, 20); K.cyl(g, r * 0.38, r * 0.38, 0.02, M.black, 0, 0.4, 0, 20);
+      } else if (k === 'pergola') {
+        [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (q) { K.box(g, 0.15, 2.6, 0.15, M.teak, q[0] * (w / 2 - 0.1), 0, q[1] * (d / 2 - 0.1)); });
+        for (var x = -w / 2; x <= w / 2 + 0.01; x += 0.45) K.box(g, 0.06, 0.18, d + 0.4, M.teak, x, 2.6, 0);
+      } else if (k === 'juegos') {
+        K.box(g, w, 0.04, d, M.deck, 0, 0, 0); K.box(g, 0.1, 2.2, 0.1, M.steel, -w / 3, 0, 0); K.box(g, 0.1, 2.2, 0.1, M.steel, w / 3, 0, 0); K.box(g, w * 0.7, 0.1, 0.1, M.steel, 0, 2.2, 0);
+      } else if (k === 'huerto') {
+        for (var z2 = -d / 2 + 0.4; z2 < d / 2; z2 += 0.9) { K.box(g, w, 0.35, 0.6, M.teak, 0, 0, z2); K.box(g, w - 0.1, 0.06, 0.5, M.grass, 0, 0.33, z2); }
+      }
+      g.position.set(it.x - sideM + w / 2, 0, -(it.y + d / 2));
+      return g;
     }
 
     /* ---------- Construcción de un nivel ---------- */
@@ -1283,14 +1324,22 @@
           var rc = horiz ? { x0: R.x + a, z0: R.y, x1: R.x + b, z1: R.y + R.h } : { x0: R.x, z0: R.y + a, x1: R.x + R.w, z1: R.y + b };
           fns[i](zone(rc), seed + i);
         });
+        if (R.fx && R.fx.length) extras(R, zone(rect), seed);
         return;
       }
       var z = zone(rect);
+      furnishBase(R, z, n, seed);
+      if (R.fx && R.fx.length) extras(R, z, seed);
+    }
+    function furnishBase(R, z, n, seed) {
+      var u0 = R.use || '';
+      if (u0 === 'estudio' && (R.k === 'rec' || R.k === 'soc')) return study(z, seed);
+      if ((u0 === 'tv' || u0 === 'juegos' || u0 === 'gimnasio') && (R.k === 'rec' || R.k === 'soc')) return living(z, seed);
       if (/Cocina/.test(n)) return kitchen(z, seed);
       if (/^Sala$|Estancia|usos múltiples/.test(n)) return living(z, seed);
       if (/Comedor/.test(n)) return dining(z, seed);
       if (/Vestidor/.test(n)) return walkin(z, seed);
-      if (R.k === 'rec' || /Recámara/.test(n)) return bedroom(z, seed, /principal/i.test(n));
+      if (R.k === 'rec' || /Recámara/.test(n)) return bedroom(z, seed, /principal/i.test(n) || u0 === 'principal');
       if (R.k === 'bano') return /Sanitarios/.test(n) ? publicWC(z, seed) : bath(z, seed, /principal/i.test(n) || R.area > 6.5, /Medio/.test(n));
       if (/Estudio/.test(n)) return study(z, seed);
       if (/Escalera/.test(n)) return hall(z, seed, true);
@@ -1303,6 +1352,27 @@
       if (R.k === 'alm') return warehouse(z, seed);
       return hall(z, seed);
     }
+    // Equipamiento elegido en el editor de espacios (tina, jacuzzi, escritorio, chimenea, isla…)
+    function extras(R, z, seed) {
+      var sidesAll = ['N', 'S', 'W', 'E'];
+      function place(w, d, obj, o) {
+        for (var i = 0; i < 4; i++) { var sd = sidesAll[(i + seed) % 4], u = z.span(sd, w, d, o || {}); if (u != null && z.put(sd, u, 0.05, w, d, obj, { solid: true })) return true; }
+        return false;
+      }
+      R.fx.forEach(function (k) {
+        if (k === 'tina') place(1.7, 0.85, F.tub());
+        else if (k === 'jacuzzi') {
+          var g = new T.Group(); K.rbox(g, 1.9, 0.55, 1.9, 0.08, M.ceramic, 0, 0, 0);
+          var wt = new T.Mesh(new T.CylinderGeometry(0.78, 0.78, 0.02, 32), waterMat()); wt.position.set(0, 0.5, 0); g.add(wt);
+          K.box(g, 0.2, 0.04, 0.05, M.brass, 0.7, 0.55, -0.85);
+          place(1.9, 1.9, g);
+        } else if (k === 'escritorio') { var dg = new T.Group(); dg.add(F.desk(1.2)); place(1.2, 0.65, dg); }
+        else if (k === 'chimenea') { var cg = new T.Group(); K.box(cg, 1.5, 1.1, 0.45, M.travertine, 0, 0, 0); K.box(cg, 0.8, 0.5, 0.06, M.black, 0, 0.25, 0.2); place(1.5, 0.45, cg, { tall: true }); }
+        else if (k === 'isla' || k === 'bar') { var ig = new T.Group(); K.box(ig, 2.0, 0.88, 0.9, M.oak, 0, 0, 0); K.box(ig, 2.1, 0.04, 1.0, M.quartz, 0, 0.88, 0); place(2.1, 1.0, ig); }
+      });
+    }
+    var _water = null;
+    function waterMat() { return _water || (_water = new T.MeshStandardMaterial({ color: '#3E9BC2', roughness: 0.06, metalness: 0.15, transparent: true, opacity: 0.88 })); }
     function living(z, seed) {
       var tv = z.best({ noWin: true }), opp = z.OPP[tv], depth = z.depth(tv), r = RNG(seed);
       var cw = clamp(z.len(tv) - 1.0, 1.2, 2.2), u = z.span(tv, cw, 0.45, { tall: false });
@@ -1730,9 +1800,9 @@
     resize();
 
     return {
-      setModel: function (levels, w, d, keep) {
+      setModel: function (levels, w, d, keep, site) {
         var prevLevel = li, prevPos = pos.clone(), prevYaw = yaw, prevRoom = curRoom ? curRoom.label : null;
-        model = levels; W = w; D = d; buildOutdoor();
+        model = levels; W = w; D = d; yard = site && site.yard || null; sideM = site && site.sideM || 0; buildOutdoor();
         var idx = keep ? Math.min(prevLevel, model.length - 1) : 0; buildLevel(idx);
         var same = keep && roomAt(prevPos.x, prevPos.z); if (same && same.label === prevRoom) { pos.copy(prevPos); yaw = prevYaw; } else this.gotoStart();
         dirty = true;

@@ -27,6 +27,9 @@
     o.use = PR.TIPOS[o.type].use;
     if (!PR.DISTRIBUCION[o.layout]) o.layout = 'abierto';
     if (!PR.PISOS[o.flooring]) o.flooring = 'porcelanato';
+    if (!o.rooms || typeof o.rooms !== 'object' || Array.isArray(o.rooms)) o.rooms = {};
+    if (!Array.isArray(o.extra)) o.extra = [];
+    if (!Array.isArray(o.garden)) o.garden = [];
     return o;
   }
   normalize(p);
@@ -55,6 +58,9 @@
     var need = 0, flex = false;
     PR.program(p).forEach(function (lv) { var a = 0; lv.front.concat(lv.back).forEach(function (x) { if (x.flex) flex = true; else a += x.a; }); need = Math.max(need, a); });
     if (!flex && need) D = Math.min(D, Math.max(7, need * 1.2 / W));
+    // Con jardín (alberca, palapa…) la casa se compacta hacia el frente para dejar patio posterior, sin bajar del programa.
+    var gNeed = PR.gardenNeed(p);
+    if (gNeed) { var Dg = p.depth - Math.min(3, p.depth * 0.15) - gNeed - 0.4; if (Dg < D) D = Math.max(Dg, Math.min(D, need * 1.05 / W), 6); }
     var surf = PL.parkingCapacity(p, { D: D }).surface;
     var footprint = W * D, area = footprint * p.floors;
     var L = W / p.bays;                       // claro en fachada
@@ -127,6 +133,8 @@
     if (p.use === 'ind') circ.push({ use: 'Andenes y niveladores', br: '3P-30A', kw: 1.5 * Math.max(1, p.units) });
     circ.push({ use: p.use !== 'res' ? 'Cocineta / servicio' : 'Cocina', br: '1P-20A', kw: 2.4 });
     circ.push({ use: 'Lavado y bombeo', br: '1P-20A', kw: 1.8 });
+    var amen = PR.amenities(p, city.f);
+    amen.circ.forEach(function (c) { circ.push(c); });
     var kw = circ.reduce(function (s, c) { return s + c.kw; }, 0), kwd = kw * 0.6;
     var tri = kwd > 10;
     var I = kwd * 1000 / (tri ? 220 * 1.732 * 0.9 : 220 * 0.9);
@@ -153,10 +161,16 @@
     if (p.parking > 0 && p.type !== 'casa') parts.splice(6, 0, ['Estacionamiento y exteriores', 3 + Math.min(6, p.parking / 10)]);
     var sum = parts.reduce(function (s, x) { return s + x[1]; }, 0);
     parts = parts.map(function (x) { return { name: x[0], pct: x[1] / sum, v: total * x[1] / sum }; });
+    // Amenidades y equipamiento (alberca, palapa, tina, jacuzzi…) se suman al presupuesto
+    if (amen.total > 0) {
+      total += amen.total;
+      parts.push({ name: 'Amenidades y equipamiento', v: amen.total, items: amen.list });
+      parts.forEach(function (x) { x.pct = x.v / total; });
+    }
 
     return { city: city, fin: fin, W: W, D: D, L: L, Ly: Ly, rows: rows, footprint: footprint, area: area, Wu: Wu, CV: CV, V: V,
       elements: elements, worst: worst, beam: beam, col: col, circ: circ, kw: kw, kwd: kwd, tri: tri, main: main, unit: unit, total: total, parts: parts, drift: drift,
-      type: T, parkSurface: surf, parkFit: surf + (p.type === 'casa' ? Math.min(p.parking, 3) : p.type === 'deptos' && p.floors > 1 ? Math.floor(W * D * 0.55 / 25) : 0) };
+      type: T, parkSurface: surf, amen: amen, yard: PR.siteYard(p, { W: W, D: D }), parkFit: surf + (p.type === 'casa' ? Math.min(p.parking, 3) : p.type === 'deptos' && p.floors > 1 ? Math.floor(W * D * 0.55 / 25) : 0) };
   }
   function pick(list, capFn, dem) {
     for (var i = 0; i < list.length; i++) { var cap = capFn(list[i]); if (dem / cap <= 0.82) return { s: list[i], cap: cap }; }
@@ -164,7 +178,18 @@
   }
 
   /* ---------- Render ---------- */
+  // Con «Mejorar fachada» activa, todas las vistas usan la fachada mejorada (misma que lámina R-01, render 3D y recorrido)
+  function fxActive() { var FXP = window.RinovaFachada; return !!(FXP && p.fx && p.fx.on); }
+  function improvedSvg(r, id, hora) { var FXP = window.RinovaFachada; return FXP.svg(p, r, FXP.normalize(p.fx, p), { id: id, marks: false, hora: hora }).svg; }
+  var FX_VARIANTS = [{ label: 'Día', v: 'dia' }, { label: 'Atardecer', v: 'tarde' }, { label: 'Noche', v: 'noche' }];
   function renderFacade(r) {
+    if (fxActive() && !p.line) {
+      $('#renderOut').innerHTML = improvedSvg(r, 'r');
+      $('#sunChip').textContent = 'Fachada mejorada · ' + window.RinovaFachada.ESTILOS[p.fx.estilo].n;
+      $('#sunChip').hidden = false;
+      $('#phiChip').textContent = p.bays + ' crujías · ' + r.city.short;
+      return;
+    }
     $('#renderOut').innerHTML = F.build({ floors: p.floors, bays: p.bays, style: p.style, mode: p.line ? 'line' : 'render', phi: p.phi,
       lat: r.city.lat, month: p.month, hour: p.hour, palette: p.palette, width: 1000, height: 600, id: 'r', frontM: p.front });
     var s = F.sun(r.city.lat, p.month, p.hour);
@@ -178,7 +203,14 @@
     { label: 'Concreto aparente', o: { palette: 'concreto' } }, { label: 'Mármol', o: { palette: 'marmol' } }
   ];
   function renderVariants(r) {
-    $('#variants').innerHTML = VARIANTS.map(function (v, i) {
+    var vb = $('#variants');
+    if (fxActive()) {
+      vb.style.gridTemplateColumns = 'repeat(3,1fr)';
+      vb.innerHTML = FX_VARIANTS.map(function (v, i) { return '<button type="button" data-fxh="' + v.v + '" aria-pressed="' + (p.fx.hora === v.v) + '">' + improvedSvg(r, 'vf' + i, v.v) + '<small>' + v.label + '</small></button>'; }).join('');
+      return;
+    }
+    vb.style.gridTemplateColumns = '';
+    vb.innerHTML = VARIANTS.map(function (v, i) {
       var o = Object.assign({ floors: p.floors, bays: p.bays, style: p.style, mode: 'render', phi: false, lat: r.city.lat, month: p.month, hour: p.hour, palette: p.palette, width: 600, height: 380, id: 'v' + i }, v.o);
       var pressed = Object.keys(v.o).every(function (k) { return p[k] === v.o[k]; });
       return '<button type="button" data-var="' + i + '" aria-pressed="' + pressed + '">' + F.build(o) + '<small>' + v.label + '</small></button>';
@@ -268,7 +300,7 @@
   function renderCosts(r) {
     var max = Math.max.apply(null, r.parts.map(function (x) { return x.pct; }));
     $('#costOut').innerHTML = r.parts.map(function (x, i) {
-      return '<div class="cb"><span>' + esc(x.name) + '</span><div class="track"><i style="width:' + (x.pct / max * 100) + '%;background:' + COLORS[i] + '"></i></div><b>' + money(x.v) + '</b></div>';
+      return '<div class="cb"><span>' + esc(x.name) + '</span><div class="track"><i style="width:' + (x.pct / max * 100) + '%;background:' + COLORS[i % COLORS.length] + '"></i></div><b>' + money(x.v) + '</b></div>';
     }).join('');
     $('#costTotal').textContent = money(r.total);
     $('#costPer').textContent = '· ' + money(r.unit) + ' por m²';
@@ -367,7 +399,9 @@
   bind.forEach(function (b) { $(b[0]).addEventListener(b[1], function (e) { b[2](e); changed(); }); });
   $('#segStyle').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; p.style = b.dataset.v; syncForm(); changed(); });
   $('#segCur').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; p.cur = b.dataset.v; syncForm(); renderAll(); });
-  $('#variants').addEventListener('click', function (e) { var b = e.target.closest('button[data-var]'); if (!b) return; Object.assign(p, VARIANTS[+b.dataset.var].o); syncForm(); renderAll(); });
+  $('#variants').addEventListener('click', function (e) {
+    var h = e.target.closest('button[data-fxh]'); if (h && p.fx) { p.fx.hora = h.dataset.fxh; renderAll(); return; }
+    var b = e.target.closest('button[data-var]'); if (!b) return; Object.assign(p, VARIANTS[+b.dataset.var].o); syncForm(); renderAll(); });
   $('#layers').addEventListener('change', function () { renderPlan(); });
   $('#planSheet').addEventListener('change', function () { renderPlan(); });
 
@@ -408,7 +442,7 @@
   $('#mNav').addEventListener('change', function (e) {
     var v = e.target.value;
     if (v === 'present') { openPresent(); e.target.value = 'studio'; }
-    else if (v === 'dist') location.href = 'distribuidores.html';
+    else if (v === 'dist') { e.target.value = document.querySelector('.view.on').dataset.v; if (window.RinovaNube && window.RinovaNube.leave) window.RinovaNube.leave('distribuidores.html'); else location.href = 'distribuidores.html'; }
     else if (v === 'ai') { if (window.RinovaAI) window.RinovaAI.open(); e.target.value = document.querySelector('.view.on').dataset.v; }
     else showView(v);
   });
@@ -452,9 +486,9 @@
   /* ---------- Presentación ---------- */
   function openPresent() {
     var r = last || compute();
-    $('#presentPic').innerHTML = F.build({ floors: p.floors, bays: p.bays, style: p.style, mode: 'render', phi: false, lat: r.city.lat, month: p.month, hour: p.hour, palette: p.palette, width: 1000, height: 640, id: 'pp' });
+    $('#presentPic').innerHTML = fxActive() ? improvedSvg(r, 'pp') : F.build({ floors: p.floors, bays: p.bays, style: p.style, mode: 'render', phi: false, lat: r.city.lat, month: p.month, hour: p.hour, palette: p.palette, width: 1000, height: 640, id: 'pp' });
     $('#presentName').textContent = p.name;
-    var lead = ({ casa: 'Residencia', deptos: 'Edificio de departamentos', comercial: 'Centro comercial', bodega: 'Bodega' }[p.type]) + ' de ' + p.floors + (p.floors === 1 ? ' nivel' : ' niveles') + ' de estilo ' + STYLE_NAME[p.style] + ' en ' + r.city.name + ', con ' + nf0.format(r.area) + ' m² de construcción y estructura revisada por ingeniería.';
+    var lead = ({ casa: 'Residencia', deptos: 'Edificio de departamentos', comercial: 'Centro comercial', bodega: 'Bodega' }[p.type]) + ' de ' + p.floors + (p.floors === 1 ? ' nivel' : ' niveles') + ' de estilo ' + (fxActive() ? window.RinovaFachada.ESTILOS[p.fx.estilo].n.toLowerCase() : STYLE_NAME[p.style]) + ' en ' + r.city.name + ', con ' + nf0.format(r.area) + ' m² de construcción y estructura revisada por ingeniería.';
     $('#presentLead').textContent = lead;
     $('#presentFigs').innerHTML = [[nf0.format(r.area) + ' m²', 'Construcción'], [money(r.total, true), 'Presupuesto estimado'], [r.circ.length + ' circuitos', 'Instalación eléctrica'], [stateOf(r.worst) === 'bad' ? 'Revisar' : 'Aprobada', 'Estructura']]
       .map(function (f) { return '<div><b>' + esc(f[0]) + '</b><span>' + f[1] + '</span></div>'; }).join('');
@@ -497,7 +531,7 @@
 
   /* ---------- Análisis experto ---------- */
   var aiRes = null, aiSig = '';
-  function sig() { return JSON.stringify([p.type, p.state, p.city, p.front, p.depth, p.floors, p.beds, p.baths, p.halfBaths, p.parking, p.layout, p.flooring, p.units, p.finish, p.style, p.bays]); }
+  function sig() { return JSON.stringify([p.type, p.state, p.city, p.front, p.depth, p.floors, p.beds, p.baths, p.halfBaths, p.parking, p.layout, p.flooring, p.units, p.finish, p.style, p.bays, p.rooms, p.extra, p.garden]); }
   var ST_ICON = { ok: '✓', warn: '!', bad: '×' };
   function md(t) {
     var html = [], list = false;
@@ -561,6 +595,8 @@
     cities: PR.ESTADOS, styleName: STYLE_NAME, nf0: nf0, nf1: nf1,
     // Para el módulo de croquis
     apply: function (o) { Object.assign(p, o); normalize(p); syncForm(); },
+    // Cambio hecho desde otro módulo (editor de espacios): recalcula con el mismo retraso que el formulario
+    changed: function () { changed(); },
     generate: generate, sheets: function () { return plans; },
     setCroquis: function (c) { croquis = c; try { if (c) localStorage.setItem(KEY + '.croquis', JSON.stringify(c)); else localStorage.removeItem(KEY + '.croquis'); } catch (e) { } },
     getCroquis: function () { return croquis; },
