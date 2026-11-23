@@ -13,7 +13,7 @@
   function data() {
     var p = E.project(), r = E.result(), set = E.sheets && E.sheets();
     var levels = set && set.levels ? set.levels : PL.build(p, r, {}).levels;
-    return { levels: RV.buildModel(levels, PL.heights(p).hs, p.type), W: r.W, D: r.D };
+    return { levels: RV.buildModel(levels, PL.heights(p).hs, p.type), W: r.W, D: r.D, site: { yard: window.RinovaProyecto.siteYard(p, r), sideM: (p.front - r.W) / 2 } };
   }
   function show() {
     open = true;
@@ -42,7 +42,7 @@
   function hide() { open = false; if (ctl) ctl.stop(); setTour(false); }
   function rebuild(keep) {
     var d = data(); stale = false; nLevels = d.levels.length;
-    ctl.setModel(d.levels, d.W, d.D, keep);
+    ctl.setModel(d.levels, d.W, d.D, keep, d.site);
     $('#rvLevels').innerHTML = d.levels.map(function (L, i) { return '<button type="button" data-l="' + i + '" aria-pressed="false">' + lvName(i) + '</button>'; }).join('');
     $('#rvLevels').style.display = d.levels.length > 1 ? '' : 'none';
     onLevel(ctl.state().L);

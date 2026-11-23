@@ -62,17 +62,14 @@
     });
     return levels;
   }
+  var SHORT = { 'Rec. principal': 'Rec. 1', 'Medio baño': '½ B', 'Lavado': 'Lav.', 'Estancia · comedor · cocina': 'Estancia' };
   function unitRooms(p) {
-    var rooms = [];
-    if (p.layout === 'tradicional') rooms.push({ n: 'Sala', a: 16, k: 'soc' }, { n: 'Comedor', a: 10, k: 'soc' }, { n: 'Cocina', a: 8, k: 'serv' });
-    else rooms.push({ n: 'Estancia', a: 30 + p.beds * 2, k: 'soc' });
-    for (var i = 0; i < p.beds; i++) rooms.push({ n: i === 0 ? 'Rec. 1' : 'Rec. ' + (i + 1), a: i === 0 ? 14 : 10.5, k: 'rec' });
-    for (i = 0; i < p.baths; i++) rooms.push({ n: 'Baño', a: 5, k: 'bano' });
-    for (i = 0; i < p.halfBaths; i++) rooms.push({ n: '½ B', a: 2.6, k: 'bano' });
-    rooms.push({ n: 'Lav.', a: 3.5, k: 'serv' });
-    return rooms;
+    return PR.deptoRooms(p.beds, p.baths, p.halfBaths, p.layout, p).map(function (r) {
+      var renamed = p.rooms && p.rooms[r.id] && p.rooms[r.id].n;
+      var n = renamed ? r.n : SHORT[r.n] || r.n.replace(/^Recámara (\d+)$/, 'Rec. $1').replace(/^Baño principal$/, 'Baño');
+      return Object.assign({}, r, { n: n });
+    });
   }
-
   /* ---------- Marco de lámina ---------- */
   var VW = 1100, VH = 780, TB = 74;
   function frame(body, meta) {
@@ -133,7 +130,10 @@
     var faint = !on.arq;
     // Espacios
     o.push('<g>');
-    lv.cells.forEach(function (c) { o.push('<rect x="' + X(c.x) + '" y="' + Y(c.y) + '" width="' + f(c.w * s) + '" height="' + f(c.h * s) + '" fill="' + (faint ? '#fff' : FILL[c.k] || '#fff') + '"/>'); });
+    lv.cells.forEach(function (c) {
+      o.push('<rect' + (c.id ? ' data-rid="' + esc(c.id) + '"' : '') + ' x="' + X(c.x) + '" y="' + Y(c.y) + '" width="' + f(c.w * s) + '" height="' + f(c.h * s) + '" fill="' + (faint ? '#fff' : FILL[c.k] || '#fff') + '"/>');
+      if (c.sub) c.sub.forEach(function (u) { if (u.id) o.push('<rect data-rid="' + esc(u.id) + '" x="' + X(u.x) + '" y="' + Y(u.y) + '" width="' + f(u.w * s) + '" height="' + f(u.h * s) + '" fill="transparent"/>'); });
+    });
     o.push('</g>');
     // Mobiliario
     if (on.arq) o.push(furniture(lv.cells, X, Y, s, p));
@@ -195,6 +195,25 @@
     if (!it.length) return '';
     return '<g font-size="10" fill="' + MUTED + '">' + it.map(function (x, i) { return '<g transform="translate(' + (VW - 140) + ' ' + (120 + i * 22) + ')">' + x[0] + '<text x="14" y="3.5">' + x[1] + '</text></g>'; }).join('') + '</g>';
   }
+  // Equipamiento agregado en el espacio (tina, jacuzzi, chimenea, isla…): símbolo a escala con rótulo
+  var FXDIM = { tina: [1.7, 0.8], jacuzzi: [2.0, 2.0], regadera: [1.2, 1.0], lavabo2: [1.5, 0.55], vestidor: [2.0, 0.6], escritorio: [1.3, 0.6], estar: [2.0, 0.9], chimenea: [1.5, 0.45], bar: [2.2, 0.6], cava: [1.6, 0.5], isla: [2.2, 1.0], desayunador: [1.2, 1.2] };
+  function fixtures(o, c, x, y, w, h, s) {
+    var slots = [[1, 1], [0, 1], [1, 0.5], [0, 0.5]];
+    c.fx.forEach(function (k, i) {
+      var dm = FXDIM[k] || [1, 1], fw = Math.min(dm[0] * s, w * 0.42), fh = Math.min(dm[1] * s, h * 0.38), sl = slots[i % 4];
+      var fx0 = sl[0] ? x + w - fw - 5 : x + 5, fy0 = sl[1] === 1 ? y + h - fh - 5 : y + h / 2 - fh / 2;
+      var g = '<g stroke="' + TECH + '" stroke-width="1.1">';
+      if (k === 'tina') g += '<rect x="' + f(fx0) + '" y="' + f(fy0) + '" width="' + f(fw) + '" height="' + f(fh) + '" rx="' + f(Math.min(fw, fh) * 0.25) + '" fill="#EEF6FA"/><rect x="' + f(fx0 + 3) + '" y="' + f(fy0 + 3) + '" width="' + f(fw - 6) + '" height="' + f(fh - 6) + '" rx="' + f(Math.min(fw, fh) * 0.3) + '"/>';
+      else if (k === 'jacuzzi') { var rr = Math.min(fw, fh) / 2; g += '<rect x="' + f(fx0) + '" y="' + f(fy0) + '" width="' + f(rr * 2) + '" height="' + f(rr * 2) + '" rx="3" fill="#EEF6FA"/><circle cx="' + f(fx0 + rr) + '" cy="' + f(fy0 + rr) + '" r="' + f(rr * 0.78) + '"/><circle cx="' + f(fx0 + rr) + '" cy="' + f(fy0 + rr) + '" r="' + f(rr * 0.15) + '"/>'; fw = rr * 2; fh = rr * 2; }
+      else if (k === 'chimenea') g += '<rect x="' + f(fx0) + '" y="' + f(fy0) + '" width="' + f(fw) + '" height="' + f(fh) + '" fill="#F3E6D8"/><path d="M' + f(fx0 + fw * 0.3) + ' ' + f(fy0 + fh) + 'l' + f(fw * 0.2) + ' ' + f(-fh * 0.8) + 'l' + f(fw * 0.2) + ' ' + f(fh * 0.8) + '"/>';
+      else if (k === 'isla' || k === 'bar') g += '<rect x="' + f(fx0) + '" y="' + f(fy0) + '" width="' + f(fw) + '" height="' + f(fh) + '" fill="#F1EFEA"/><circle cx="' + f(fx0 + fw * 0.25) + '" cy="' + f(fy0 + fh + 5) + '" r="3.5"/><circle cx="' + f(fx0 + fw * 0.75) + '" cy="' + f(fy0 + fh + 5) + '" r="3.5"/>';
+      else if (k === 'desayunador') g += '<circle cx="' + f(fx0 + fw / 2) + '" cy="' + f(fy0 + fh / 2) + '" r="' + f(Math.min(fw, fh) * 0.35) + '" fill="#F1EFEA"/>';
+      else g += '<rect x="' + f(fx0) + '" y="' + f(fy0) + '" width="' + f(fw) + '" height="' + f(fh) + '" fill="#F4F6FA" stroke-dasharray="' + (k === 'vestidor' || k === 'cava' ? '3 2' : '0') + '"/>';
+      g += '</g>';
+      if (fw > 22 && fh > 9) g += '<text x="' + f(fx0 + fw / 2) + '" y="' + f(fy0 + fh / 2 + 3) + '" font-size="7.5" font-weight="700" text-anchor="middle" fill="' + TECH + '" stroke="none">' + esc(PR.EQUIPO[k] ? PR.EQUIPO[k].n.split(' ')[0] : k) + '</text>';
+      o.push(g);
+    });
+  }
   function furniture(cells, X, Y, s, p) {
     var o = ['<g fill="none" stroke="#7D8696" stroke-width="1">'];
     function all(c) { return c.sub ? c.sub : [c]; }
@@ -202,8 +221,16 @@
       all(c0).forEach(function (c) {
         var x = X(c.x), y = Y(c.y), w = c.w * s, h = c.h * s, m = Math.min(w, h);
         if (w < 26 || h < 26) return;
-        if (c.k === 'rec' && c.n.indexOf('Vestidor') < 0) { // cama
-          var bw = Math.min(w * 0.55, (c.n.indexOf('principal') > -1 || c.n === 'Rec. 1' ? 1.9 : 1.35) * s), bh = Math.min(h * 0.6, 2.0 * s);
+        var use = c.use || PR.useOf(c.n, c.k);
+        if (c.fx && c.fx.length) fixtures(o, c, x, y, w, h, s);
+        if (use === 'estudio' && (c.k === 'rec' || c.k === 'soc')) { // escritorio y librero
+          var dw2 = Math.min(w * 0.5, 1.4 * s); o.push('<rect x="' + f(x + w / 2 - dw2 / 2) + '" y="' + f(y + 5) + '" width="' + f(dw2) + '" height="' + f(Math.min(h * 0.2, 0.65 * s)) + '"/><circle cx="' + f(x + w / 2) + '" cy="' + f(y + 5 + Math.min(h * 0.2, 0.65 * s) + 0.35 * s) + '" r="' + f(0.25 * s) + '"/><rect x="' + f(x + 5) + '" y="' + f(y + h * 0.3) + '" width="' + f(Math.min(w * 0.12, 0.36 * s)) + '" height="' + f(h * 0.5) + '"/>');
+        } else if (use === 'gimnasio' && (c.k === 'rec' || c.k === 'soc')) {
+          for (var gm = 0; gm < 3; gm++) o.push('<rect x="' + f(x + w * (0.12 + gm * 0.28)) + '" y="' + f(y + h * 0.3) + '" width="' + f(w * 0.18) + '" height="' + f(h * 0.4) + '" rx="3" stroke-dasharray="3 2"/>');
+        } else if ((use === 'tv' || use === 'juegos') && (c.k === 'rec' || c.k === 'soc')) {
+          var sw0 = Math.min(w * 0.55, 2.4 * s); o.push('<path d="M' + f(x + w / 2 - sw0 / 2) + ' ' + f(y + h - 0.95 * s) + 'h' + f(sw0) + 'v' + f(0.8 * s) + 'h' + f(-sw0) + 'z"/><line x1="' + f(x + w / 2 - sw0 * 0.4) + '" y1="' + f(y + 6) + '" x2="' + f(x + w / 2 + sw0 * 0.4) + '" y2="' + f(y + 6) + '" stroke-width="3"/>');
+        } else if (c.k === 'rec' && c.n.indexOf('Vestidor') < 0) { // cama
+          var bw = Math.min(w * 0.55, (use === 'principal' || c.n === 'Rec. 1' ? 1.9 : use === 'bebe' ? 0.8 : 1.35) * s), bh = Math.min(h * 0.6, (use === 'bebe' ? 1.3 : 2.0) * s);
           var bxp = x + (w - bw) / 2, byp = y + 6;
           o.push('<rect x="' + f(bxp) + '" y="' + f(byp) + '" width="' + f(bw) + '" height="' + f(bh) + '" rx="2"/><line x1="' + f(bxp) + '" y1="' + f(byp + bh * 0.22) + '" x2="' + f(bxp + bw) + '" y2="' + f(byp + bh * 0.22) + '"/>');
         } else if (c.k === 'bano') {
@@ -290,7 +317,7 @@
   }
   function hydraulic(lv, X, Y, s, x0, y0, W, D) {
     var o = [], wet = [];
-    lv.cells.forEach(function (c) { (c.sub || [c]).forEach(function (u) { if (u.k === 'bano' || /Cocina|Lav|Patio de servicio|Estancia|Sanitarios|Cuarto de máquinas/.test(u.n)) wet.push(u); }); });
+    lv.cells.forEach(function (c) { (c.sub || [c]).forEach(function (u) { if (u.k === 'bano' || /Cocina|Lav|Patio de servicio|Estancia|Sanitarios|Cuarto de máquinas/.test(u.n) || (u.fx || []).some(function (x) { return PR.EQUIPO[x] && PR.EQUIPO[x].wet; })) wet.push(u); }); });
     var tx = x0 + 12, ty = y0 + D + 30, mid = y0 + lv.yMid * s, reg = { x: x0 + W - 18, y: y0 + D + 22 };
     o.push('<g fill="none" stroke-width="1.8">');
     wet.forEach(function (c, k) {
@@ -311,7 +338,8 @@
     var p = ctx.p, r = ctx.r, o = [];
     var areaW = VW - 260, areaH = VH - TB - 150, s = Math.min(areaW / p.front, areaH / p.depth);
     var LW = p.front * s, LD = p.depth * s, x0 = 130 + (areaW - LW) / 2, y0 = 60 + (areaH - LD) / 2;
-    var sideM = (p.front - r.W) / 2, rear = p.depth * 0.03, setback = p.depth - r.D - rear;
+    var yard = PR.siteYard(p, r);
+    var sideM = (p.front - r.W) / 2, rear = yard ? yard.rear : p.depth * 0.03, setback = p.depth - r.D - rear;
     var bx = x0 + sideM * s, by = y0 + rear * s;
     o.push('<rect x="' + f(x0) + '" y="' + f(y0) + '" width="' + f(LW) + '" height="' + f(LD) + '" fill="#F1F7F1" stroke="' + INK + '" stroke-width="1.5" stroke-dasharray="14 4 3 4"/>');
     o.push('<rect x="' + f(bx) + '" y="' + f(by) + '" width="' + f(r.W * s) + '" height="' + f(r.D * s) + '" fill="#E9EDF2" stroke="' + INK + '" stroke-width="3"/>');
@@ -320,6 +348,7 @@
     o.push('</g>');
     o.push('<text x="' + f(bx + r.W * s / 2) + '" y="' + f(by + r.D * s / 2) + '" text-anchor="middle" font-size="14" font-weight="800" fill="' + INK + '">' + esc(PR.TIPOS[p.type].n.toUpperCase()) + '</text>');
     o.push('<text x="' + f(bx + r.W * s / 2) + '" y="' + f(by + r.D * s / 2 + 18) + '" text-anchor="middle" font-size="11" fill="' + MUTED + '">' + p.floors + (p.floors === 1 ? ' nivel' : ' niveles') + ' · desplante ' + n1(r.footprint) + ' m²</text>');
+    if (yard) o.push(gardenSvg(yard, function (m) { return f(x0 + m * s); }, function (m) { return f(by - m * s); }, s));
     // estacionamiento en el remetimiento frontal
     var fit = r.parkSurface || 0, extra = p.type === 'casa' ? 0 : Math.min(p.parking, fit);
     if (extra) {
@@ -333,11 +362,34 @@
     o.push('</g>');
     o.push('<rect x="' + f(x0 - 60) + '" y="' + f(y0 + LD + 56) + '" width="' + f(LW + 120) + '" height="34" fill="#E9EDF2"/><text x="' + f(x0 + LW / 2) + '" y="' + f(y0 + LD + 78) + '" text-anchor="middle" font-size="11" font-weight="700" letter-spacing="3" fill="' + MUTED + '">CALLE</text>');
     // cuadro de áreas
+    if (yard) o.push('<line x1="' + f(x0 + LW + 22) + '" y1="' + f(y0) + '" x2="' + f(x0 + LW + 22) + '" y2="' + f(by) + '" stroke="' + GOLD + '"/><text x="' + f(x0 + LW + 30) + '" y="' + f(y0 + rear * s / 2 + 4) + '" font-size="10" font-weight="600" fill="' + GOLD + '">Jardín ' + n2(rear) + ' m</text>');
     var lot = p.front * p.depth, rows = [['Terreno', n1(lot) + ' m²'], ['Desplante', n1(r.footprint) + ' m²'], ['COS', Math.round(r.footprint / lot * 100) + ' %'], ['Construcción', n1(r.area) + ' m²'], ['CUS', n2(r.area / lot)], ['Área libre', n1(lot - r.footprint) + ' m²'], ['Cajones', p.parking + ' (req. ' + PR.parkingRequired(p, r.area) + ')']];
     o.push('<g font-size="11"><rect x="' + (VW - 215) + '" y="100" width="190" height="' + (30 + rows.length * 22) + '" fill="#FBFCFD" stroke="' + SILVER + '"/><text x="' + (VW - 203) + '" y="120" font-size="9.5" letter-spacing="1.2" font-weight="700" fill="' + MUTED + '">CUADRO DE ÁREAS</text>');
     rows.forEach(function (rw, k) { o.push('<text x="' + (VW - 203) + '" y="' + (144 + k * 22) + '" fill="' + MUTED + '">' + rw[0] + '</text><text x="' + (VW - 37) + '" y="' + (144 + k * 22) + '" text-anchor="end" font-weight="700" fill="' + INK + '">' + rw[1] + '</text>'); });
     o.push('</g>');
     o.push(north(VW - 60, 62), scaleBar(s));
+    return o.join('');
+  }
+
+  // Elementos del jardín en planta. X(m) desde el lindero izquierdo; Y(m) desde el muro posterior de la casa hacia el fondo.
+  function gardenSvg(yard, X, Y, s) {
+    var o = ['<g font-size="9" text-anchor="middle">'];
+    yard.items.forEach(function (g) {
+      var x = +X(g.x), y = +Y(g.y + g.d), w = g.w * s, h = g.d * s, cx = x + w / 2, cy = y + h / 2, bad = g.out, st = bad ? SEWER : TECH;
+      var body = '';
+      if (g.k === 'alberca' || g.k === 'chapoteadero' || g.k === 'espejo') body = '<rect x="' + f(x - (g.k === 'espejo' ? 0 : 0.5 * s)) + '" y="' + f(y - (g.k === 'espejo' ? 0 : 0.5 * s)) + '" width="' + f(w + (g.k === 'espejo' ? 0 : s)) + '" height="' + f(h + (g.k === 'espejo' ? 0 : s)) + '" fill="#E9E4DA" stroke="#B9B2A4"/><rect x="' + f(x) + '" y="' + f(y) + '" width="' + f(w) + '" height="' + f(h) + '" rx="' + (g.k === 'espejo' ? f(h / 2) : 2) + '" fill="#BFE0F0" stroke="' + st + '" stroke-width="1.4"/><path d="M' + f(x + w * 0.15) + ' ' + f(cy) + 'q' + f(w * 0.1) + ' -4 ' + f(w * 0.2) + ' 0t' + f(w * 0.2) + ' 0t' + f(w * 0.2) + ' 0" fill="none" stroke="#5E9CC0"/>';
+      else if (g.k === 'jacuzziExt') body = '<rect x="' + f(x) + '" y="' + f(y) + '" width="' + f(w) + '" height="' + f(h) + '" rx="4" fill="#E9E4DA" stroke="' + st + '"/><circle cx="' + f(cx) + '" cy="' + f(cy) + '" r="' + f(Math.min(w, h) * 0.38) + '" fill="#BFE0F0" stroke="#5E9CC0"/>';
+      else if (g.k === 'palapa') body = '<rect x="' + f(x) + '" y="' + f(y) + '" width="' + f(w) + '" height="' + f(h) + '" fill="#EFE2C2" stroke="' + st + '"/><path d="M' + f(x) + ' ' + f(y) + 'L' + f(x + w) + ' ' + f(y + h) + 'M' + f(x + w) + ' ' + f(y) + 'L' + f(x) + ' ' + f(y + h) + '" stroke="#B89A5A"/>';
+      else if (g.k === 'fuente' || g.k === 'fogatero') body = '<circle cx="' + f(cx) + '" cy="' + f(cy) + '" r="' + f(Math.min(w, h) / 2) + '" fill="' + (g.k === 'fuente' ? '#BFE0F0' : '#EADBD0') + '" stroke="' + st + '"/><circle cx="' + f(cx) + '" cy="' + f(cy) + '" r="' + f(Math.min(w, h) / 5) + '" fill="#fff" stroke="' + (g.k === 'fuente' ? '#5E9CC0' : '#C0492F') + '"/>';
+      else if (g.k === 'pergola') { body = '<rect x="' + f(x) + '" y="' + f(y) + '" width="' + f(w) + '" height="' + f(h) + '" fill="#F6F1E7" stroke="' + st + '"/>'; for (var k = 1; k < 8; k++) body += '<line x1="' + f(x + w * k / 8) + '" y1="' + f(y) + '" x2="' + f(x + w * k / 8) + '" y2="' + f(y + h) + '" stroke="#B89A5A" stroke-width=".7"/>'; }
+      else if (g.k === 'huerto') { body = '<rect x="' + f(x) + '" y="' + f(y) + '" width="' + f(w) + '" height="' + f(h) + '" fill="#E3EFD9" stroke="' + st + '"/>'; for (var k2 = 1; k2 < 4; k2++) body += '<line x1="' + f(x) + '" y1="' + f(y + h * k2 / 4) + '" x2="' + f(x + w) + '" y2="' + f(y + h * k2 / 4) + '" stroke="#7FA685"/>'; }
+      else body = '<rect x="' + f(x) + '" y="' + f(y) + '" width="' + f(w) + '" height="' + f(h) + '" rx="2" fill="' + (g.k === 'asador' ? '#EDE7E1' : '#F3F0E6') + '" stroke="' + st + '"/>';
+      if (bad) body = '<g stroke-dasharray="4 3" opacity=".75">' + body + '</g>';
+      o.push(body);
+      if (w > 26) o.push('<text x="' + f(cx) + '" y="' + f(cy + 3) + '" font-weight="700" fill="' + (bad ? SEWER : INK) + '">' + esc(clip(g.n, w / 5.4)) + '</text>');
+      if (w > 40 && h > 22) o.push('<text x="' + f(cx) + '" y="' + f(cy + 13) + '" fill="' + MUTED + '" font-size="8">' + n1(g.w) + ' × ' + n1(g.d) + ' m</text>');
+    });
+    o.push('</g>');
     return o.join('');
   }
 
@@ -462,7 +514,7 @@
       sheets.push({ code: c2, name: 'Hidrosanitaria · ' + lvName(i), kind: 'inst', level: i, render: function () { return frame(planSheet(ctx, i, { hid: true, cot: false }), meta(c2, 'Instalación hidrosanitaria · ' + lvName(i), 'Agua fría y drenaje')); } });
     });
     if (opts.unifilar) sheets.push({ code: 'IE-U', name: 'Diagrama unifilar', kind: 'uni', render: function () { return frame('<g transform="translate(60 40)">' + opts.unifilar().replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '') + '</g>', meta('IE-U', 'Diagrama unifilar', 'Tablero general')); } });
-    var info = levels.map(function (lv) { return lv.cells.map(function (c) { return { n: c.n, k: c.k, m2: c.m2, unit: !!c.unit }; }); });
+    var info = levels.map(function (lv) { return lv.cells.map(function (c) { return { n: c.n, k: c.k, m2: c.m2, unit: !!c.unit, id: c.id }; }); });
     return { sheets: sheets, levels: levels, info: info };
   }
   // Cajones que caben en superficie (remetimiento frontal) y dentro de planta baja
@@ -470,5 +522,5 @@
     var rear = p.depth * 0.03, setback = p.depth - r.D - rear, surf = setback >= 5 ? Math.floor((p.front - 1) / 2.5) : 0;
     return { surface: surf };
   }
-  window.RinovaPlanos = { build: build, parkingCapacity: parkingCapacity, heights: heights };
+  window.RinovaPlanos = { build: build, parkingCapacity: parkingCapacity, heights: heights, layoutLevels: layoutLevels, siteSheet: function (p, r) { return siteSheet({ p: p, r: r }); }, frame: frame, VW: VW, VH: VH, TB: TB };
 })();
