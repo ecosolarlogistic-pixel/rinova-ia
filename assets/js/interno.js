@@ -189,14 +189,13 @@
     return '<button type="button" class="' + cls + '" style="--c:' + esc(x.o.color) + '" data-ev="' + (x.e.id || '') + '" data-obra="' + x.o.id + '" title="' + esc(x.o.name + ' — ' + x.e.name + ': ' + fdate(x.e.start_date) + ' a ' + fdate(x.e.end_date) + ', ' + x.e.progress + ' %') + '">' + esc(t) + '</button>';
   }
   function on(x, d) { return x.s <= d && x.f >= d; }
+  function stOf(e) { return isLate(e) ? 'late' : e.status === 'terminada' ? 'done' : e.status === 'en_proceso' || e.progress > 0 ? 'run' : 'plan'; }
+  var ST_LBL = { run: 'En proceso', late: 'Atrasada', plan: 'Programada', done: 'Terminada' };
+  function addBtn(day) { return can.obra ? '<button type="button" class="addd" data-new-obra="' + iso(day) + '" title="Programar obra el ' + esc(fdate(iso(day))) + '" aria-label="Programar obra este día">+</button>' : ''; }
+  function dots(list) { return list.length ? '<span class="dots">' + list.slice(0, 4).map(function (x) { return '<i class="st-' + stOf(x.e) + '"></i>'; }).join('') + '</span>' : ''; }
   function renderCal() {
     $$('.seg button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.v === cal.v); });
     var ev = events(), body = $('#calBody'), d = cal.d, html = '';
-    if (!obras.length) {
-      $('#calTitle').textContent = cap(fMonth.format(d));
-      body.innerHTML = '<div class="empty">' + (can.obra ? 'Aún no hay obras. Crea la primera con <b>Nueva obra</b> y sus etapas aparecerán aquí.' : 'Aún no hay obras asignadas a tu cuenta. Cuando el equipo programe tu obra, verás aquí cada etapa.') + '</div>';
-      $('#calLegend').innerHTML = ''; return;
-    }
     if (cal.v === 'mes') {
       $('#calTitle').textContent = cap(fMonth.format(d));
       var first = new Date(d.getFullYear(), d.getMonth(), 1), start = monday(first);
@@ -204,7 +203,7 @@
       html = '<div class="month">' + ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(function (x) { return '<div class="dow">' + x + '</div>'; }).join('');
       for (var i = 0; i < weeks * 7; i++) {
         var day = addD(start, i), list = ev.filter(function (x) { return on(x, day); });
-        html += '<div class="day' + (day.getMonth() !== d.getMonth() ? ' out' : '') + (+day === +TODAY ? ' today' : '') + '" data-day="' + iso(day) + '"><span class="n">' + day.getDate() + '</span>' +
+        html += '<div class="day' + (day.getMonth() !== d.getMonth() ? ' out' : '') + (+day === +TODAY ? ' today' : '') + '" data-day="' + iso(day) + '"><span class="n">' + day.getDate() + '</span>' + addBtn(day) +
           list.slice(0, 3).map(function (x) { return evBtn(x); }).join('') + (list.length > 3 ? '<span class="more">+' + (list.length - 3) + ' más</span>' : '') + '</div>';
       }
       html += '</div>';
@@ -214,7 +213,7 @@
       html = '<div class="week">';
       for (var j = 0; j < 7; j++) {
         var dd = addD(m, j), ls = ev.filter(function (x) { return on(x, dd); });
-        html += '<div class="wcol' + (+dd === +TODAY ? ' today' : '') + '"><h4><span>' + esc(fDayHead.format(dd)) + '</span><small>' + ls.length + '</small></h4>' + (ls.map(function (x) { return evBtn(x, true); }).join('') || '<span class="more">Sin etapas</span>') + '</div>';
+        html += '<div class="wcol' + (+dd === +TODAY ? ' today' : '') + '"><h4><span>' + esc(fDayHead.format(dd)) + '</span><small>' + ls.length + '</small></h4>' + (ls.map(function (x) { return evBtn(x, true); }).join('') || '<span class="more">Sin etapas</span>') + (can.obra ? '<button type="button" class="addw" data-new-obra="' + iso(dd) + '">+ Programar</button>' : '') + '</div>';
       }
       html += '</div>';
     } else if (cal.v === 'dia') {
@@ -225,13 +224,29 @@
         if (isLate(x.e)) tag = '<span class="tag off">Atrasada</span> ';
         return '<div class="drow" style="--c:' + esc(x.o.color) + '" data-ev="' + (x.e.id || '') + '" data-obra="' + x.o.id + '" role="button" tabindex="0"><span class="bar"></span><div><b>' + esc(x.e.name) + '</b><small>' + tag + esc(x.o.code + ' · ' + x.o.name) + (x.o.city ? ' · ' + esc(x.o.city) : '') + '</small></div>' +
           '<div><div class="prog"><i style="width:' + x.e.progress + '%"></i></div><small>' + x.e.progress + ' % · ' + esc(ET_ST[x.e.status] || x.e.status) + '</small></div><small>' + esc(personName(x.resp)) + '<br>' + fdate(x.e.start_date) + ' – ' + fdate(x.e.end_date) + '</small></div>';
-      }).join('') + '</div>' : '<div class="empty">Sin etapas programadas este día.</div>';
+      }).join('') + '</div>' : '<div class="empty">Sin etapas programadas este día.' + (can.obra ? '<br><button type="button" class="btn btn-gold btn-sm" style="margin-top:12px" data-new-obra="' + iso(d) + '">+ Programar una obra este día</button>' : '') + '</div>';
+      if (ld.length && can.obra) html += '<div style="margin-top:10px"><button type="button" class="btn btn-ghost btn-sm" data-new-obra="' + iso(d) + '">+ Programar otra obra este día</button></div>';
     } else {
-      var y = d.getFullYear(), y0 = new Date(y, 0, 1), y1 = new Date(y + 1, 0, 1), span = (y1 - y0);
-      $('#calTitle').textContent = 'Año ' + y;
+      var y = d.getFullYear(), m0 = d.getMonth(), y0 = new Date(y, m0, 1), y1 = new Date(y, m0 + 12, 1), span = (y1 - y0);
+      var mab = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      $('#calTitle').textContent = m0 === 0 ? 'Año ' + y : mab[m0] + ' ' + y + ' – ' + mab[(m0 + 11) % 12] + ' ' + (y + 1);
       var pos = function (s, f) { var a = Math.max(s, y0), b = Math.min(+addD(f, 1), +y1); return { l: (a - y0) / span * 100, w: Math.max(0.4, (b - a) / span * 100) }; };
-      var mnames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-      var nowL = TODAY.getFullYear() === y ? '<span class="now" style="left:' + ((TODAY - y0) / span * 100) + '%"></span>' : '';
+      var mnames = []; for (var mk = 0; mk < 12; mk++) mnames.push(mab[(m0 + mk) % 12]);
+      var nowL = TODAY >= y0 && TODAY < y1 ? '<span class="now" style="left:' + ((TODAY - y0) / span * 100) + '%"></span>' : '';
+      var mfull = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+      var mini = '<div class="ygrid">';
+      for (var mi = 0; mi < 12; mi++) {
+        var f1 = new Date(y, m0 + mi, 1), nd = new Date(f1.getFullYear(), f1.getMonth() + 1, 0).getDate(), pad = (f1.getDay() + 6) % 7, cnt = 0, cells = '';
+        for (var b = 0; b < pad; b++) cells += '<span></span>';
+        for (var dn = 1; dn <= nd; dn++) {
+          var dd2 = new Date(f1.getFullYear(), f1.getMonth(), dn), l2 = ev.filter(function (x) { return on(x, dd2); });
+          if (l2.length) cnt++;
+          cells += '<button type="button" class="yd' + (l2.length ? ' has' : '') + (+dd2 === +TODAY ? ' today' : '') + '" data-day="' + iso(dd2) + '" title="' + esc(fdate(iso(dd2)) + (l2.length ? ': ' + l2.length + ' etapa(s)' : can.obra ? ': toca para programar' : '')) + '">' + dn + dots(l2) + '</button>';
+        }
+        mini += '<div class="ym' + (TODAY.getFullYear() === f1.getFullYear() && TODAY.getMonth() === f1.getMonth() ? ' cur' : '') + '"><h5><button type="button" data-month="' + iso(f1) + '">' + mfull[f1.getMonth()] + ' ' + f1.getFullYear() + '</button>' + (cnt ? '<small>' + cnt + '</small>' : '') + '</h5><div class="ymg">' +
+          ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map(function (x) { return '<b>' + x + '</b>'; }).join('') + cells + '</div></div>';
+      }
+      mini += '</div>';
       html = '<div class="year"><div class="yr head"><div class="lbl">Obra / etapa</div><div class="track">' + mnames.map(function (n) { return '<div class="m">' + n + '</div>'; }).join('') + '</div></div>';
       var byObra = {};
       ev.forEach(function (x) { if (x.f >= y0 && x.s < y1) (byObra[x.o.id] = byObra[x.o.id] || { o: x.o, l: [] }).l.push(x); });
@@ -246,17 +261,20 @@
             '<span class="gb" style="--c:' + esc(o.color) + ';--p:' + x.e.progress + '%;left:' + q.l + '%;width:' + q.w + '%" data-ev="' + (x.e.id || '') + '" data-obra="' + o.id + '" title="' + esc(x.e.name + ': ' + fdate(x.e.start_date) + ' a ' + fdate(x.e.end_date) + ', ' + x.e.progress + ' %') + '"><i></i></span></div></div>';
         });
       });
-      if (!keys.length) html += '<div class="empty" style="border:0">Sin obras en ' + y + ' con estos filtros.</div>';
       html += '</div>';
+      html = mini + (keys.length ? '<h4 class="yh">Programa anual por obra</h4>' + html : '');
     }
     body.innerHTML = html;
-    var used = {}; ev.forEach(function (x) { used[x.o.id] = x.o; });
-    $('#calLegend').innerHTML = Object.keys(used).slice(0, 12).map(function (k) { return '<span><i style="--c:' + esc(used[k].color) + '"></i>' + esc(used[k].name) + '</span>'; }).join('') + '<span><i style="--c:#FBEEEC;border:1px solid #EBC6C1"></i>Atrasada</span>';
+    var cnt = { run: 0, late: 0, plan: 0, done: 0 }, used = {};
+    ev.forEach(function (x) { cnt[stOf(x.e)]++; used[x.o.id] = x.o; });
+    $('#calLegend').innerHTML = ['run', 'late', 'plan', 'done'].map(function (k) { return '<span><i class="st-' + k + '"></i>' + ST_LBL[k] + ' <b>' + cnt[k] + '</b></span>'; }).join('') +
+      Object.keys(used).slice(0, 8).map(function (k) { return '<span><i style="--c:' + esc(used[k].color) + '"></i>' + esc(used[k].name) + '</span>'; }).join('') +
+      '<span class="hint">' + (can.obra ? (obras.length ? 'Toca un día para verlo o «+» para programar una obra.' : 'Aún no hay obras: toca un día o «+» para programar la primera.') : 'Toca un día para ver sus etapas.') + '</span>';
   }
   $$('.seg button').forEach(function (b) { b.addEventListener('click', function () { cal.v = b.dataset.v; try { localStorage.setItem('rinova.cal.v', cal.v); } catch (e) { } renderCal(); }); });
   function step(n) {
     var d = cal.d;
-    cal.d = cal.v === 'mes' ? new Date(d.getFullYear(), d.getMonth() + n, 1) : cal.v === 'semana' ? addD(d, 7 * n) : cal.v === 'dia' ? addD(d, n) : new Date(d.getFullYear() + n, 0, 1);
+    cal.d = cal.v === 'mes' ? new Date(d.getFullYear(), d.getMonth() + n, 1) : cal.v === 'semana' ? addD(d, 7 * n) : cal.v === 'dia' ? addD(d, n) : new Date(d.getFullYear(), d.getMonth() + 12 * n, 1);
     renderCal();
   }
   $('#calPrev').addEventListener('click', function () { step(-1); });
@@ -265,6 +283,10 @@
   ['#fObra', '#fStat', '#fResp'].forEach(function (s) { $(s).addEventListener('change', renderCal); });
   $('#calRefresh').addEventListener('click', function () { loadAll().then(function () { toast('Calendario actualizado.'); }); });
   $('#calBody').addEventListener('click', function (e) {
+    var nb = e.target.closest('[data-new-obra]');
+    if (nb) { e.stopPropagation(); return openObra(null, nb.dataset.newObra); }
+    var mb = e.target.closest('[data-month]');
+    if (mb) { cal.d = pd(mb.dataset.month); cal.v = 'mes'; try { localStorage.setItem('rinova.cal.v', 'mes'); } catch (x) { } return renderCal(); }
     var t = e.target.closest('[data-ev],[data-obra-edit]');
     if (t) { e.stopPropagation(); if (t.dataset.obraEdit) return openObra(t.dataset.obraEdit); return t.dataset.ev ? openEtapa(+t.dataset.ev) : openObra(t.dataset.obra); }
     var day = e.target.closest('[data-day]');
@@ -345,7 +367,7 @@
   var isTeam = function (p) { return String(p.email || '').slice(-DOM.length) === DOM; };
 
   var editObra = null;
-  function openObra(id) {
+  function openObra(id, day) {
     var o = id ? obras.find(function (x) { return x.id === id; }) : null;
     editObra = o;
     if (o && !(can.obra || o.responsible_id === A.id)) { toast('Solo el equipo de obra puede editarla.'); return; }
@@ -354,7 +376,7 @@
     peopleOptions($('#oResp'), isTeam, 'Sin asignar');
     $('#oProject').innerHTML = '<option value="">Ninguno</option>' + projects.map(function (p) { return '<option value="' + p.id + '">' + esc(p.code + ' · ' + p.name) + '</option>'; }).join('');
     $('#dlgObraT').textContent = o ? 'Editar obra ' + o.code : 'Nueva obra';
-    var start = iso(TODAY), end = iso(addD(TODAY, 180));
+    var start = day || iso(TODAY), end = iso(addD(pd(start), 180));
     $('#oName').value = o ? o.name : ''; $('#oClient').value = o ? o.client_name || '' : '';
     $('#oOwner').value = o ? o.owner_id || '' : ''; $('#oProject').value = o ? o.project_id || '' : ''; $('#oResp').value = o ? o.responsible_id || '' : '';
     $('#oCity').value = o ? o.city || '' : ''; $('#oAddr').value = o ? o.address || '' : '';
