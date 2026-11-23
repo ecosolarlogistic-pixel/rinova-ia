@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Acceso · RINOVAIA</title>
+<meta name="description" content="Inicia sesión o crea tu cuenta en RINOVAIA para diseñar y guardar tus proyectos.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0B0F17">
+<link rel="icon" href="assets/img/logo-mark.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/img/app/apple-180.png">
+<link rel="preload" href="assets/fonts/montserrat.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/rinova.css?v=20261126">
+<style>
+[hidden]{display:none!important}
+body{background:var(--navy);color:#fff;min-height:100vh}
+.acc{min-height:100vh;display:grid;grid-template-columns:1.05fr 1fr}
+.acc-art{position:relative;overflow:hidden;padding:44px 56px;display:flex;flex-direction:column;justify-content:space-between;
+  background:radial-gradient(70% 60% at 85% 20%,rgba(47,75,124,.45),transparent 70%),
+  linear-gradient(rgba(192,198,212,.05) 1px,transparent 1px) 0 0/48px 48px,
+  linear-gradient(90deg,rgba(192,198,212,.05) 1px,transparent 1px) 0 0/48px 48px,var(--navy)}
+.acc-art h1{font-size:clamp(34px,4vw,54px);line-height:1.04;letter-spacing:-.03em;margin:18px 0 18px;max-width:14ch}
+.acc-art h1 .d{color:var(--gold)}
+.acc-art p{color:var(--navy-text);max-width:46ch;margin:0}
+.acc-art ul{list-style:none;padding:0;margin:30px 0 0;display:grid;gap:12px;color:#DDE1E8;font-size:15px}
+.acc-art li{display:flex;gap:12px;align-items:flex-start}
+.acc-art li::before{content:"";flex:none;width:22px;height:22px;border-radius:50%;margin-top:1px;background:var(--navy-3) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23D4AF37' stroke-width='3'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center/12px no-repeat;border:1px solid var(--navy-line)}
+.acc-art small{color:var(--navy-text);font-size:12px}
+.acc-form{background:var(--mist);color:var(--graphite);display:flex;align-items:center;justify-content:center;padding:40px 24px}
+.box{width:min(440px,100%)}
+.box h2{font-size:28px;margin:6px 0 6px;letter-spacing:-.02em}
+.box .sub{color:var(--muted);margin:0 0 22px;font-size:15px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:22px}
+.tabs button{border:0;background:none;padding:10px;border-radius:9px;font-weight:600;color:var(--muted);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--navy);color:#fff}
+form{display:grid;gap:14px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pw{position:relative}.pw .input{padding-right:84px}
+.pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--gold-ink);font-weight:600;font-size:13px;cursor:pointer;padding:8px}
+.msg{display:none;padding:12px 14px;border-radius:10px;font-size:14px}
+.msg.on{display:block}.msg.ok{background:#ECF6F0;color:var(--ok);border:1px solid #BFDCCB}.msg.bad{background:#FBEEEC;color:var(--bad);border:1px solid #EBC6C1}
+.links{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:14px;margin-top:4px}
+.links a,.links button{color:var(--gold-ink);background:none;border:0;padding:0;cursor:pointer;font-weight:600;text-decoration:none}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted)}
+.check input{margin-top:3px;accent-color:var(--gold)}
+.back{display:inline-flex;gap:8px;align-items:center;color:var(--navy-text);text-decoration:none;font-size:14px}
+.back:hover{color:#fff}
+.btn.wide{width:100%}
+.note{font-size:12.5px;color:var(--muted);margin:16px 0 0;text-align:center}
+@media(max-width:900px){.acc{grid-template-columns:1fr}.acc-art{padding:28px 20px 34px}.acc-art ul,.acc-art .foot{display:none}.acc-art h1{font-size:32px;margin:16px 0 8px}.acc-form{padding:28px 16px 40px}}
+@media(max-width:420px){.row2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="acc">
+  <section class="acc-art" aria-label="RINOVAIA">
+    <div>
+      <a class="logo on-dark" href="index.html" aria-label="RINOVAIA, inicio"><img src="assets/img/isotipo.svg" alt="" width="44" height="38"><span class="wm"><b>RINOVAIA</b><small>Arquitectura · Ingeniería · Gestión de proyectos</small></span></a>
+      <h1>Tu proyecto, <span class="d">guardado</span> y bajo control.</h1>
+      <p>Con tu cuenta, cada diseño del Estudio se guarda en tu área de trabajo y lo retomas desde cualquier equipo.</p>
+      <ul>
+        <li>Diseña, genera planos y presupuesto y guárdalo en tu cartera.</li>
+        <li>Sigue tus obras por etapa en el calendario.</li>
+        <li>El equipo RINOVAIA entra al portal interno con su correo @rinovaia.com.</li>
+      </ul>
+    </div>
+    <div class="foot"><a class="back" href="index.html">← Volver al sitio</a></div>
+  </section>
+
+  <section class="acc-form">
+    <div class="box">
+      <p class="eyebrow" id="kicker">Acceso</p>
+      <h2 id="ttl">Inicia sesión</h2>
+      <p class="sub" id="sub">Entra a tu área de trabajo o al portal interno.</p>
+
+      <div class="tabs" role="tablist" id="tabs">
+        <button type="button" role="tab" id="tIn" aria-selected="true" aria-controls="fIn">Iniciar sesión</button>
+        <button type="button" role="tab" id="tUp" aria-selected="false" aria-controls="fUp">Crear cuenta</button>
+      </div>
+
+      <div class="msg" id="msg" role="status" aria-live="polite"></div>
+
+      <form id="fIn" novalidate>
+        <div class="field"><label for="inEmail">Correo</label><input class="input" id="inEmail" type="email" autocomplete="email" required></div>
+        <div class="field"><label for="inPass">Contraseña</label><div class="pw"><input class="input" id="inPass" type="password" autocomplete="current-password" required><button type="button" data-show="inPass">Mostrar</button></div></div>
+        <button class="btn btn-gold wide" type="submit">Entrar</button>
+        <div class="links"><button type="button" id="goForgot">¿Olvidaste tu contraseña?</button><button type="button" id="goUp">Crear cuenta</button></div>
+      </form>
+
+      <form id="fUp" novalidate hidden>
+        <div class="field"><label for="upName">Nombre completo</label><input class="input" id="upName" autocomplete="name" maxlength="120" required></div>
+        <div class="row2">
+          <div class="field"><label for="upPhone">WhatsApp</label><input class="input" id="upPhone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="10 dígitos"></div>
+          <div class="field"><label for="upCompany">Empresa (opcional)</label><input class="input" id="upCompany" autocomplete="organization" maxlength="120"></div>
+        </div>
+        <div class="field"><label for="upEmail">Correo</label><input class="input" id="upEmail" type="email" autocomplete="email" required></div>
+        <div class="field"><label for="upPass">Contraseña</label><div class="pw"><input class="input" id="upPass" type="password" autocomplete="new-password" minlength="8" required><button type="button" data-show="upPass">Mostrar</button></div><small class="muted" style="font-size:12px;color:var(--muted)">Mínimo 8 caracteres, con letras y números.</small></div>
+        <label class="check"><input type="checkbox" id="upTerms" required> Acepto que RINOVAIA guarde mis datos y proyectos para darme el servicio.</label>
+        <button class="btn btn-gold wide" type="submit">Crear mi cuenta</button>
+        <div class="links"><span></span><button type="button" id="goIn">Ya tengo cuenta</button></div>
+      </form>
+
+      <form id="fForgot" novalidate hidden>
+        <div class="field"><label for="fgEmail">Correo de tu cuenta</label><input class="input" id="fgEmail" type="email" autocomplete="email" required></div>
+        <button class="btn btn-gold wide" type="submit">Enviarme el enlace</button>
+        <div class="links"><button type="button" data-back>← Volver</button></div>
+      </form>
+
+      <form id="fReset" novalidate hidden>
+        <div class="field"><label for="rsPass">Nueva contraseña</label><div class="pw"><input class="input" id="rsPass" type="password" autocomplete="new-password" minlength="8" required><button type="button" data-show="rsPass">Mostrar</button></div></div>
+        <button class="btn btn-gold wide" type="submit">Guardar contraseña</button>
+      </form>
+
+      <p class="note">¿Eres del equipo RINOVAIA? Entra con tu correo @rinovaia.com; tu cuenta la da de alta Dirección.</p>
+    </div>
+  </section>
+</div>
+
+<script src="assets/js/vendor/supabase-2.58.0.min.js?v=20261126"></script>
+<script src="assets/js/sesion.js?v=20261126"></script>
+<script>
+(function(){
+  'use strict';
+  var db = window.rinovaDB, $ = function(id){ return document.getElementById(id); };
+  var params = new URLSearchParams(location.search);
+  // Solo se regresa a páginas de este sitio
+  var next = params.get('next') || 'interno.html';
+  if (!/^[a-z0-9-]+\.html([?#][^\s]*)?$/i.test(next)) next = 'interno.html';
+
+  var forms = ['fIn','fUp','fForgot','fReset'];
+  var TXT = {
+    fIn: ['Acceso','Inicia sesión','Entra a tu área de trabajo o al portal interno.'],
+    fUp: ['Nuevo usuario','Crea tu cuenta','Regístrate gratis para crear y guardar tus proyectos.'],
+    fForgot: ['Recuperar acceso','Restablece tu contraseña','Te enviamos un enlace a tu correo.'],
+    fReset: ['Recuperar acceso','Elige una contraseña nueva','Escríbela dos veces sin prisa: la usarás para entrar.']
+  };
+  function show(id){
+    forms.forEach(function(f){ $(f).hidden = f !== id; });
+    $('tabs').hidden = !(id === 'fIn' || id === 'fUp');
+    $('tIn').setAttribute('aria-selected', id === 'fIn'); $('tUp').setAttribute('aria-selected', id === 'fUp');
+    $('kicker').textContent = TXT[id][0]; $('ttl').textContent = TXT[id][1]; $('sub').textContent = TXT[id][2];
+    msg('');
+    var first = $(id).querySelector('input'); if (first) setTimeout(function(){ first.focus(); }, 30);
+  }
+  function msg(t, ok){ var m = $('msg'); m.textContent = t || ''; m.className = 'msg' + (t ? ' on ' + (ok ? 'ok' : 'bad') : ''); }
+  function busy(form, on, label){ var b = form.querySelector('button[type=submit]'); if (on) { b.dataset.t = b.textContent; b.textContent = label || 'Un momento…'; } else if (b.dataset.t) b.textContent = b.dataset.t; b.disabled = on; }
+  function human(e){
+    var m = (e && e.message) || '';
+    if (/Invalid login credentials/i.test(m)) return 'Correo o contraseña incorrectos.';
+    if (/Email not confirmed/i.test(m)) return 'Primero confirma tu correo: abre el enlace que te enviamos.';
+    if (/already registered|already exists/i.test(m)) return 'Ese correo ya tiene cuenta. Inicia sesión o recupera tu contraseña.';
+    if (/rate limit|too many/i.test(m)) return 'Demasiados intentos. Espera unos minutos y vuelve a intentar.';
+    if (/banned/i.test(m)) return 'Tu acceso está suspendido. Escribe a Dirección.';
+    if (/Password should/i.test(m)) return 'La contraseña debe tener al menos 8 caracteres.';
+    return m || 'No se pudo completar. Intenta de nuevo.';
+  }
+  var emailOk = function(v){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v); };
+
+  $('tIn').onclick = $('goIn').onclick = function(){ show('fIn'); };
+  $('tUp').onclick = $('goUp').onclick = function(){ show('fUp'); };
+  $('goForgot').onclick = function(){ $('fgEmail').value = $('inEmail').value; show('fForgot'); };
+  document.querySelectorAll('[data-back]').forEach(function(b){ b.onclick = function(){ show('fIn'); }; });
+  document.querySelectorAll('[data-show]').forEach(function(b){ b.onclick = function(){ var i = $(b.dataset.show); var s = i.type === 'password'; i.type = s ? 'text' : 'password'; b.textContent = s ? 'Ocultar' : 'Mostrar'; }; });
+
+  function go(){ location.replace(next); }
+
+  $('fIn').addEventListener('submit', function(e){
+    e.preventDefault();
+    var em = $('inEmail').value.trim().toLowerCase(), pw = $('inPass').value;
+    if (!emailOk(em) || !pw) return msg('Escribe tu correo y tu contraseña.');
+    busy(this, true, 'Entrando…'); var f = this;
+    db.auth.signInWithPassword({ email: em, password: pw }).then(function(r){
+      if (r.error) throw r.error; go();
+    }).catch(function(err){ msg(human(err)); busy(f, false); });
+  });
+
+  $('fUp').addEventListener('submit', function(e){
+    e.preventDefault();
+    var name = $('upName').value.trim(), em = $('upEmail').value.trim().toLowerCase(), pw = $('upPass').value, ph = $('upPhone').value.replace(/[^\d+]/g,'');
+    if (name.length < 3) return msg('Escribe tu nombre completo.');
+    if (!emailOk(em)) return msg('Revisa tu correo.');
+    if (pw.length < 8 || !/[a-z]/i.test(pw) || !/\d/.test(pw)) return msg('La contraseña necesita al menos 8 caracteres, con letras y números.');
+    if (ph && (ph.length < 10 || ph.length > 15)) return msg('El WhatsApp debe tener 10 dígitos.');
+    if (!$('upTerms').checked) return msg('Acepta el aviso para crear tu cuenta.');
+    busy(this, true, 'Creando tu cuenta…'); var f = this;
+    db.auth.signUp({ email: em, password: pw, options: {
+      data: { full_name: name, phone: ph || null, company: $('upCompany').value.trim() || null },
+      emailRedirectTo: location.origin + location.pathname.replace(/[^/]*$/, '') + 'acceso.html?next=' + encodeURIComponent(next)
+    }}).then(function(r){
+      if (r.error) throw r.error;
+      if (r.data.session) return go();
+      // Supabase no avisa si el correo ya existía: identities vacío
+      if (r.data.user && r.data.user.identities && !r.data.user.identities.length) throw new Error('already registered');
+      f.reset(); show('fIn'); $('inEmail').value = em;
+      msg('Listo. Te enviamos un correo a ' + em + ': abre el enlace para confirmar tu cuenta y luego inicia sesión.', true);
+    }).catch(function(err){ msg(human(err)); }).then(function(){ busy(f, false); });
+  });
+
+  $('fForgot').addEventListener('submit', function(e){
+    e.preventDefault();
+    var em = $('fgEmail').value.trim().toLowerCase();
+    if (!emailOk(em)) return msg('Revisa tu correo.');
+    busy(this, true, 'Enviando…'); var f = this;
+    db.auth.resetPasswordForEmail(em, { redirectTo: location.origin + location.pathname + '?reset=1' }).then(function(r){
+      if (r.error) throw r.error;
+      msg('Si el correo tiene cuenta, te llegará un enlace para elegir una contraseña nueva.', true);
+    }).catch(function(err){ msg(human(err)); }).then(function(){ busy(f, false); });
+  });
+
+  $('fReset').addEventListener('submit', function(e){
+    e.preventDefault();
+    var pw = $('rsPass').value;
+    if (pw.length < 8 || !/[a-z]/i.test(pw) || !/\d/.test(pw)) return msg('La contraseña necesita al menos 8 caracteres, con letras y números.');
+    busy(this, true, 'Guardando…'); var f = this;
+    db.auth.updateUser({ password: pw }).then(function(r){
+      if (r.error) throw r.error;
+      msg('Contraseña actualizada. Entrando…', true); setTimeout(go, 900);
+    }).catch(function(err){ msg(human(err)); busy(f, false); });
+  });
+
+  // Enlace de recuperación: Supabase abre la página con sesión temporal
+  var recovering = params.get('reset') === '1' || /type=recovery/.test(location.hash);
+  db.auth.onAuthStateChange(function(ev){ if (ev === 'PASSWORD_RECOVERY') { recovering = true; show('fReset'); } });
+  if (params.get('modo') === 'alta') show('fUp');
+  db.auth.getSession().then(function(r){
+    if (recovering && r.data.session) return show('fReset');
+    if (r.data.session && !recovering) go();
+  });
+  var err = new URLSearchParams(location.hash.slice(1)).get('error_description');
+  if (err) msg(err.replace(/\+/g,' '));
+})();
+</script>
+</body>
+</html>
