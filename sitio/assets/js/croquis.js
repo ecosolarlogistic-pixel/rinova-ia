@@ -62,7 +62,7 @@
       var n = Math.min(max || 4, doc.numPages), out = [], chain = Promise.resolve();
       for (var i = 1; i <= n; i++) (function (k) {
         chain = chain.then(function () { return doc.getPage(k); }).then(function (page) {
-          var vp0 = page.getViewport({ scale: 1 }), sc = Math.min(3, 1800 / Math.max(vp0.width, vp0.height)), vp = page.getViewport({ scale: sc });
+          var vp0 = page.getViewport({ scale: 1 }), sc = Math.min(4, 2400 / Math.max(vp0.width, vp0.height)), vp = page.getViewport({ scale: sc });
           var c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
           var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
           return page.render({ canvasContext: g, viewport: vp }).promise.then(function () { out.push(c); });
@@ -97,8 +97,17 @@
   function facade() { return items.filter(function (it) { return it.role === 'fachada'; })[0]; }
   // Distribución de un archivo en metros, con las cotas que hay en el formulario
   function roomsOf(it, W, D) {
-    if (it.ai) { var kx = W / it.ai.W, ky = D / it.ai.D; return { rooms: it.ai.rooms.map(function (q) { return Object.assign({}, q, { x: q.x * kx, y: q.y * ky, w: q.w * kx, h: q.h * ky }); }), doors: it.ai.doors.map(function (d) { return Object.assign({}, d, { x: d.x * kx, y: d.y * ky, w: d.w * (d.o === 'v' ? ky : kx) }); }) }; }
+    if (it.ai) {
+      var F = frame(), kx = W / F.W, ky = D / F.D, ox = it.ai.ox || 0, oy = it.ai.oy || 0;
+      return { rooms: it.ai.rooms.map(function (q) { return Object.assign({}, q, { x: (q.x + ox) * kx, y: (q.y + oy) * ky, w: q.w * kx, h: q.h * ky }); }),
+        doors: it.ai.doors.map(function (d) { return Object.assign({}, d, { x: (d.x + ox) * kx, y: (d.y + oy) * ky, w: d.w * (d.o === 'v' ? ky : kx) }); }) };
+    }
     return { rooms: LP.classify(it.geom, W, D, it.level), doors: [] };
+  }
+  // Marco común de todas las plantas leídas por la IA (la mayor manda; las demás se alinean por la escalera)
+  function frame() {
+    var gs = plans().filter(function (it) { return it.ai; }).map(function (it) { return it.ai; });
+    return gs.length ? LP.align(gs) : { W: 1, D: 1 };
   }
   function dims() { return { W: num('#cqFront', 4, 40, 10), D: num('#cqDepth', 4, 40, 10) }; }
   function hasPlan() { return plans().length > 0; }
@@ -121,7 +130,7 @@
     if (dimsTouched) return;
     var P = plans(), p = E.project(); if (!P.length) return;
     var ai = P.filter(function (it) { return it.ai; })[0];
-    if (ai) { $('#cqFront').value = r05(ai.ai.W); $('#cqDepth').value = r05(ai.ai.D); return; }
+    if (ai) { var F = frame(); $('#cqFront').value = r05(F.W); $('#cqDepth').value = r05(F.D); return; }
     var W = p.sk ? p.sk.W : Math.round(p.front * 0.92 * 2) / 2;
     $('#cqFront').value = r05(W); $('#cqDepth').value = r05(W * P[0].geom.ratio);
   }
@@ -165,7 +174,7 @@
   function renderItems() {
     $('#cqItems').hidden = !items.length;
     $('#cqItems').innerHTML = items.map(function (it, i) {
-      var opts = [0, 1, 2, 3].map(function (l) { return '<option value="p' + l + '"' + (it.role === 'planta' && it.level === l ? ' selected' : '') + '>' + LVN(l) + '</option>'; }).join('') +
+      var opts = [0, 1, 2, 3, 4, 5].map(function (l) { return '<option value="p' + l + '"' + (it.role === 'planta' && it.level === l ? ' selected' : '') + '>' + LVN(l) + '</option>'; }).join('') +
         '<option value="fachada"' + (it.role === 'fachada' ? ' selected' : '') + '>Fachada</option><option value="ninguno"' + (it.role === 'ninguno' ? ' selected' : '') + '>No usar</option>';
       return '<div class="cq-it' + (i === curIdx ? ' on' : '') + '" data-i="' + i + '"><button type="button" class="cq-th" data-i="' + i + '" aria-label="Ver ' + esc(it.name) + '">' + (it.thumb ? '<img alt="" src="' + it.thumb + '">' : '') + '</button>' +
         '<div class="cq-meta"><b title="' + esc(it.name) + '">' + esc(it.name) + '</b><small>' + esc(roleText(it)) + '</small>' +
@@ -203,7 +212,7 @@
     if (!isPdf && !isImg) return Promise.resolve([]);
     if (file.size > 25 * 1024 * 1024) { E.toast(file.name + ' pesa más de 25 MB.'); return Promise.resolve([]); }
     var cp = isPdf ? readAs(file, 'readAsArrayBuffer').then(function (buf) { return pdfPages(buf, 4); })
-      : readAs(file, 'readAsDataURL').then(loadImg).then(function (img) { return [toCanvas(img, 2000)]; });
+      : readAs(file, 'readAsDataURL').then(loadImg).then(function (img) { return [toCanvas(img, 2400)]; });
     return cp.then(function (cs) {
       return cs.map(function (c, k) { return { name: file.name + (cs.length > 1 ? ' · pág. ' + (k + 1) : ''), file: file, isPdf: isPdf, canvas: c, img: toCanvas(c, 1600).toDataURL('image/jpeg', 0.86), thumb: toCanvas(c, 240).toDataURL('image/jpeg', 0.7) }; });
     }, function () { E.toast('No se pudo abrir ' + file.name + '. Prueba con una foto JPG.'); return []; });
@@ -230,20 +239,64 @@
       });
       refresh();
       // lectura con RINOVAIA AI, un archivo por solicitud y en paralelo
-      return Promise.all(items.map(function (it) {
-        return window.RinovaIA.readPlan({ tipo: 'imagen', media_type: 'image/jpeg', datos: it.img.split(',')[1], nombre: it.name }).then(function (j) {
-          var L = j.lectura || j; it.aiRaw = L;
-          if (L.clase === 'fachada') { it.role = 'fachada'; it.aiFx = L.fachada; }
-          else if (L.clase === 'planta') {
-            var g = LP.fromAI(L); it.role = 'planta';
-            if (g && g.rooms.length) { it.ai = g; it.level = Math.max(0, Math.min(3, L.nivel | 0)); }
-            it.notes = (L.observaciones || []).slice(0, 4);
-            if (L.cotas_leidas === false) it.notes.unshift('No se leyeron cotas en ' + it.name + ': las medidas son estimadas; corrígelas si las conoces.');
-          }
+      return Promise.all(items.slice().map(function (it) {
+        return window.RinovaIA.readPlan({ tipo: 'imagen', media_type: 'image/jpeg', datos: forAI(it), nombre: it.name }).then(function (j) {
+          applyReading(it, j.lectura || j);
         }, function (err) {
           aiNote = err && err.message === NOT_READY ? 'La lectura de nombres, cotas y puertas con RINOVAIA AI no está activa en el servidor; esta es la lectura del trazo hecha en tu navegador.' : (err && err.message) || '';
-        }).then(function () { it.busy = false; refresh(); });
+        }).then(function () { it.busy = false; fixLevels(); refresh(); });
       }));
+    });
+  }
+  // Imagen para la IA: hasta 2400 px (los modelos actuales leen hasta 2576) y, si es una foto de papel, con niveles ajustados
+  function forAI(it) {
+    var c = it.canvas;
+    if (it.role !== 'fachada' && !it.isPdf) c = levels(c);
+    return c.toDataURL('image/jpeg', 0.85).split(',')[1];
+  }
+  function levels(src) {
+    try {
+      var c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
+      var g = c.getContext('2d'); g.drawImage(src, 0, 0);
+      var id = g.getImageData(0, 0, c.width, c.height), d = id.data, h = new Uint32Array(256), n = d.length / 4;
+      for (var i = 0; i < d.length; i += 16) h[(d[i] * 299 + d[i + 1] * 587 + d[i + 2] * 114) / 1000 | 0]++;
+      var tot = n / 4, acc = 0, lo = 0, hi = 255;
+      for (i = 0; i < 256; i++) { acc += h[i]; if (acc < tot * 0.01) lo = i; if (acc < tot * 0.6) hi = i; }
+      // papel gris o con sombra: el 60 % más claro se lleva a blanco y la tinta a negro
+      if (hi - lo < 40 || (hi > 235 && lo < 40)) return src;
+      var k = 255 / Math.max(1, hi - lo);
+      for (i = 0; i < d.length; i += 4) {
+        var y = (d[i] * 299 + d[i + 1] * 587 + d[i + 2] * 114) / 1000, v = Math.max(0, Math.min(255, (y - lo) * k));
+        d[i] = d[i + 1] = d[i + 2] = v;
+      }
+      g.putImageData(id, 0, 0); return c;
+    } catch (e) { return src; }
+  }
+  // Una lectura puede traer varias plantas (hoja con planta baja y alta): cada una pasa a ser un elemento
+  function applyReading(it, L) {
+    if (L.clase === 'fachada') { it.role = 'fachada'; it.aiFx = L.fachada; return; }
+    if (L.clase !== 'planta') { it.notes = (L.observaciones || []).slice(0, 2); return; }
+    var P = (L.plantas && L.plantas.length ? L.plantas : [L]).filter(function (q) { return +q.frente_m > 1 && +q.fondo_m > 1; });
+    it.aiRaw = L;
+    P.forEach(function (pl, k) {
+      var t = k === 0 ? it : Object.assign({}, it, { name: it.name + ' · ' + (pl.titulo || LVN(pl.nivel | 0)), geom: null, notes: [] });
+      var g = LP.fromAI(pl); t.role = 'planta'; t.busy = false;
+      if (g && g.rooms.length) { t.ai = g; t.level = Math.max(0, Math.min(3, pl.nivel | 0)); t.aiLevel = true; }
+      t.notes = k === 0 ? (L.observaciones || []).slice(0, 4) : [];
+      if (pl.cotas_leidas === false) t.notes.unshift('No se leyeron cotas en ' + t.name + ': las medidas se estimaron' + (L.escala ? ' con la escala ' + L.escala : ' con puertas y muebles') + '; corrígelas si las conoces.');
+      if (g && g.quality && g.quality.coverage < 0.85) t.notes.unshift('La lectura de ' + t.name + ' cubre ' + Math.round(g.quality.coverage * 100) + ' % de la planta; revisa los espacios que falten en la vista «Lectura a escala».');
+      if (k > 0) items.splice(items.indexOf(it) + k, 0, t);
+    });
+    if (P.length > 1) it.notes.unshift('Se encontraron ' + P.length + ' plantas en ' + it.name + '; cada una se dibuja como su nivel.');
+  }
+  // Dos plantas con el mismo nivel: se ordenan por el nombre del archivo o el orden en que se subieron
+  function fixLevels() {
+    var P = items.filter(function (it) { return it.role === 'planta' && it.ai; }), used = {};
+    P.sort(function (a, b) { return a.level - b.level || items.indexOf(a) - items.indexOf(b); }).forEach(function (it) {
+      var hn = levelHint(it.name);
+      if (used[it.level] && hn != null && !used[hn]) it.level = hn;
+      while (used[it.level]) it.level++;
+      it.level = Math.min(it.level, 7); used[it.level] = 1;
     });
   }
 
