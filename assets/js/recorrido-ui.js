@@ -32,6 +32,8 @@
         onInteract: function () { $('#rvHint').classList.add('off'); },
         onTour: function (on) { setTour(on); }
       });
+      var FU = window.RinovaFachadaUI, fh = FU && FU.hora && FU.hora();
+      if (fh) { hora = fh; $$('#rvHora button').forEach(function (x) { x.setAttribute('aria-pressed', x.dataset.v === hora); }); }
       ctl.setHora(hora);
       rebuild(false);
       $('#rvLoad').hidden = true;
@@ -45,6 +47,8 @@
   function hide() { open = false; if (ctl) ctl.stop(); setTour(false); }
   function rebuild(keep) {
     var d = data(); stale = false; nLevels = d.levels.length;
+    var FU = window.RinovaFachadaUI;
+    if (FU && FU.facade) ctl.setFacade(FU.facade());
     ctl.setModel(d.levels, d.W, d.D, keep, d.site);
     $('#rvLevels').innerHTML = d.levels.map(function (L, i) { return '<button type="button" data-l="' + i + '" aria-pressed="false">' + lvName(i) + '</button>'; }).join('');
     $('#rvLevels').style.display = d.levels.length > 1 ? '' : 'none';
