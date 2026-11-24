@@ -33,6 +33,7 @@
     if (!o.walls || typeof o.walls !== 'object') o.walls = {};
     if (!Array.isArray(o.walls.m)) o.walls.m = [];
     if (!Array.isArray(o.walls.x)) o.walls.x = [];
+    if (o.sk && !(o.sk.W > 0 && o.sk.D > 0 && Array.isArray(o.sk.levels) && o.sk.levels.length)) delete o.sk;
     o.energy = PR.energyOpts(o);
     return o;
   }
@@ -62,8 +63,11 @@
     var need = 0, flex = false;
     PR.program(p).forEach(function (lv) { var a = 0; lv.front.concat(lv.back).forEach(function (x) { if (x.flex) flex = true; else a += x.a; }); need = Math.max(need, a); });
     if (!flex && need) D = Math.min(D, Math.max(7, need * 1.2 / W));
+    // Con un croquis o plano leído, el desplante es exactamente el del dibujo (sus cotas mandan).
+    var sk = PL.hasSketch(p);
+    if (sk) { W = Math.min(p.sk.W, p.front); D = Math.min(p.sk.D, p.depth); }
     // Con jardín (alberca, palapa…) la casa se compacta hacia el frente para dejar patio posterior, sin bajar del programa.
-    var gNeed = PR.gardenNeed(p);
+    var gNeed = sk ? 0 : PR.gardenNeed(p);
     if (gNeed) { var Dg = p.depth - Math.min(3, p.depth * 0.15) - gNeed - 0.4; if (Dg < D) D = Math.max(Dg, Math.min(D, need * 1.05 / W), 6); }
     var surf = PL.parkingCapacity(p, { D: D }).surface;
     var footprint = W * D, area = footprint * p.floors;

@@ -166,8 +166,12 @@
       else list.unshift({ name: name, ver: 1, t: Date.now(), st: ['warn', 'En revisión'], size: size(file.size) });
       n++;
     });
-    var all = load(FKEY); all[pkey()] = list; store(FKEY, all); renderFiles(); this.value = '';
-    if (n) E.toast(n === 1 ? 'Plano registrado como nueva versión en revisión' : n + ' planos registrados en revisión');
+    var all = load(FKEY); all[pkey()] = list; store(FKEY, all); renderFiles();
+    // las fotos y PDF también se leen para redibujar el juego de planos con su distribución
+    var legibles = Array.prototype.filter.call(this.files, function (f) { return /^image\//.test(f.type) || /\.(pdf|jpe?g|png|webp|heic)$/i.test(f.name); });
+    if (legibles.length && window.RinovaCroquis) window.RinovaCroquis.open(legibles);
+    else if (n) E.toast(n === 1 ? 'Plano registrado como nueva versión en revisión' : n + ' planos registrados en revisión');
+    this.value = '';
   });
 
   /* ================= RINOVAIA AI (demostración con reglas) ================= */

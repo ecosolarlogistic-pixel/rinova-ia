@@ -44,7 +44,37 @@
     return items;
   }
 
+  /* ---------- Distribución leída de un croquis o plano subido (p.sk) ----------
+     p.sk = { W, D, levels: [{ rooms: [{ n, k, x, y, w, h, g }], doors: [{ x, y, o, w }] }], by }
+     Medidas en metros desde la esquina superior izquierda del contorno construido; abajo = calle.
+     Los rectángulos con el mismo «g» son un solo espacio (en L): el muro entre ellos se quita. */
+  function hasSketch(p) { return !!(p.sk && Array.isArray(p.sk.levels) && p.sk.levels.length && p.sk.W > 0 && p.sk.D > 0); }
+  function sketchLevels(p, r) {
+    var sk = p.sk, kx = r.W / sk.W, ky = r.D / sk.D, levels = [], F = Math.max(1, p.floors | 0);
+    for (var li = 0; li < F; li++) {
+      var src = sk.levels[Math.min(li, sk.levels.length - 1)], cells = [];
+      (src.rooms || []).forEach(function (q, i) {
+        if (!(q.w > 0.05 && q.h > 0.05)) return;
+        var id = 'sk' + li + '-' + i, o = (p.rooms && p.rooms[id]) || {};
+        var c = { id: id, n: o.n ? String(o.n).slice(0, 40) : q.n, k: q.k || 'soc', x: q.x * kx, y: q.y * ky, w: q.w * kx, h: q.h * ky, g: q.g != null ? 'g' + q.g : null, cars: q.cars };
+        if (o.x && o.x.length) c.fx = o.x.filter(function (x) { return PR.EQUIPO[x]; });
+        c.use = PR.useOf(c.n, c.k);
+        if (c.k === 'coch' && !c.cars) c.cars = Math.max(1, Math.min(4, Math.floor(c.w / 2.5)));
+        cells.push(c);
+      });
+      cells.forEach(function (c) { c.band = c.y + c.h / 2 > r.D / 2 ? 'front' : 'back'; c.wk = c.id; });
+      var removed = applyWalls(p, li, cells);
+      // los tramos de un mismo espacio en L quedan integrados
+      for (var a = 0; a < cells.length; a++) for (var b = a + 1; b < cells.length; b++)
+        if (cells[a].g && cells[a].g === cells[b].g && sharedEdge(cells[a], cells[b])) removed.push({ a: cells[a].wk, b: cells[b].wk, auto: true });
+      cells.forEach(function (c) { c.m2 = c.w * c.h; c.a = c.base = Math.round(c.m2 * 2) / 2; });
+      var doors = (li < sk.levels.length ? src.doors || [] : []).map(function (d) { return { x: d.x * kx, y: d.y * ky, o: d.o === 'v' ? 'v' : 'h', w: (d.w || 0.9) * (d.o === 'v' ? ky : kx), main: !!d.main }; });
+      levels.push({ cells: cells, yMid: r.D / 2, note: '', removed: removed, doors: doors, sk: true });
+    }
+    return levels;
+  }
   function layoutLevels(p, r) {
+    if (hasSketch(p)) return sketchLevels(p, r);
     var prog = PR.program(p), levels = [];
     prog.forEach(function (lv, li) {
       var fa = lv.front.reduce(function (s, x) { return s + (x.flex ? 30 * (x.w || 1) : x.a); }, 0);
@@ -234,7 +264,11 @@
     if (on.arq) o.push(openings(lv, X, Y, s, li, r, p));
     // Rótulos
     o.push('<g text-anchor="middle" fill="' + INK + '">');
+    // un espacio en L (varios rectángulos del mismo grupo) lleva un solo rótulo, en su tramo mayor, con el área total
+    var gArea = {}, gMain = {};
+    lv.cells.forEach(function (c) { if (!c.g) return; gArea[c.g] = (gArea[c.g] || 0) + c.m2; if (!gMain[c.g] || c.m2 > gMain[c.g].m2) gMain[c.g] = c; });
     lv.cells.forEach(function (c) {
+      if (c.g && gMain[c.g] !== c) return;
       var fs = c.w * s > 130 && c.h * s > 60 ? 13 : c.w * s > 70 ? 11 : 9.5, cx = X(c.x + c.w / 2), cy = Y(c.y + c.h / 2);
       if (c.sub) {
         o.push('<text x="' + cx + '" y="' + f(Y(c.y) + 15) + '" font-size="11" font-weight="800" fill="' + TECH + '">' + esc(c.n.toUpperCase()) + ' · ' + n1(c.m2) + ' m²</text>');
@@ -243,7 +277,7 @@
       }
       if (c.w * s < 40 || c.h * s < 26) return;
       o.push('<text x="' + cx + '" y="' + f(cy - 2) + '" font-size="' + fs + '" font-weight="700">' + esc(clip(c.n, c.w * s / (fs * 0.58))) + '</text>');
-      o.push('<text x="' + cx + '" y="' + f(cy + fs + 1) + '" font-size="' + (fs - 2) + '" fill="' + MUTED + '">' + n1(c.m2) + ' m²</text>');
+      o.push('<text x="' + cx + '" y="' + f(cy + fs + 1) + '" font-size="' + (fs - 2) + '" fill="' + MUTED + '">' + n1(c.g ? gArea[c.g] : c.m2) + ' m²</text>');
     });
     o.push('</g>');
     if (on.ele) o.push(electric(lv, X, Y, s, li, x0, y0, D));
@@ -363,7 +397,58 @@
     o.push('</g>');
     return o.join('');
   }
+  // Puertas y ventanas de una distribución leída del croquis
+  function skOpenings(lv, X, Y, s, li, r) {
+    var o = [], cells = lv.cells, segs = wallSegments(lv), doors = lv.doors.slice();
+    if (!doors.length) { // sin puertas leídas: cada espacio abre hacia la circulación o el área social con la que más colinda
+      var done = {};
+      cells.forEach(function (A) {
+        if (A.k === 'ext' || A.k === 'soc' || A.k === 'circ') return;
+        var best = null, bl = 0;
+        segs.forEach(function (e) {
+          if (e.off || (e.A !== A && e.B !== A)) return;
+          var B = e.A === A ? e.B : e.A, len = e.hi - e.lo; if (B.k === 'ext' || len < 0.95) return;
+          var sc = len + (B.k === 'circ' ? 6 : B.k === 'soc' ? 3 : 0) - (B.k === 'bano' ? 8 : 0) - (B.k === 'rec' && A.k !== 'bano' ? 4 : 0);
+          if (sc > bl) { bl = sc; best = e; }
+        });
+        if (!best) return; var key = best.a + '|' + best.b; if (done[key]) return; done[key] = 1;
+        var dw0 = Math.min(0.9, best.hi - best.lo - 0.2), mid = (best.lo + best.hi) / 2 - dw0 / 2;
+        doors.push(best.o === 'v' ? { x: best.c, y: mid, o: 'v', w: dw0 } : { x: mid, y: best.c, o: 'h', w: dw0 });
+      });
+    }
+    var main = doors.filter(function (d) { return d.main; })[0];
+    doors.forEach(function (d) {
+      var L = d.w * s, xx = X(d.x), yy = Y(d.y), dir = (d.o === 'h' ? d.y : d.x) > (d.o === 'h' ? r.D : r.W) - 0.3 ? -1 : 1;
+      if (d.o === 'h') o.push('<rect x="' + xx + '" y="' + f(yy - 3) + '" width="' + f(L) + '" height="6" fill="#fff"/><path d="M' + xx + ' ' + yy + ' v' + f(dir * L) + ' A' + f(L) + ' ' + f(L) + ' 0 0 ' + (dir > 0 ? 0 : 1) + ' ' + f(+xx + L) + ' ' + yy + '" fill="none" stroke="' + MUTED + '" stroke-width="1"/>');
+      else o.push('<rect x="' + f(xx - 3) + '" y="' + yy + '" width="6" height="' + f(L) + '" fill="#fff"/><path d="M' + xx + ' ' + yy + ' h' + f(dir * L) + ' A' + f(L) + ' ' + f(L) + ' 0 0 ' + (dir > 0 ? 1 : 0) + ' ' + xx + ' ' + f(+yy + L) + '" fill="none" stroke="' + MUTED + '" stroke-width="1"/>');
+    });
+    // ventanas en los muros exteriores de los espacios habitables y baños
+    o.push('<g stroke="' + TECH + '" stroke-width="1.4">');
+    cells.forEach(function (c) {
+      var hab = /soc|rec|ofi|depto|com/.test(c.k) || (c.k === 'serv' && /Cocina/.test(c.n)), small = c.k === 'bano';
+      if (!hab && !small) return;
+      var k = small ? 0.3 : 0.6, ed = [];
+      if (c.y <= 0.02) ed.push(['h', 0, c.x, c.w]); if (c.y + c.h >= r.D - 0.02) ed.push(['h', r.D, c.x, c.w]);
+      if (c.x <= 0.02) ed.push(['v', 0, c.y, c.h]); if (c.x + c.w >= r.W - 0.02) ed.push(['v', r.W, c.y, c.h]);
+      ed.forEach(function (q) {
+        var a = q[2] + q[3] * (1 - k) / 2, L = q[3] * k * s;
+        if (main && q[0] === main.o && Math.abs(q[1] - (main.o === 'h' ? main.y : main.x)) < 0.05) return;
+        if (q[0] === 'h') { var wx = X(a), ey = Y(q[1]); o.push('<rect x="' + wx + '" y="' + f(ey - 3) + '" width="' + f(L) + '" height="6" fill="#fff" stroke="none"/><line x1="' + wx + '" y1="' + f(ey - 2) + '" x2="' + f(+wx + L) + '" y2="' + f(ey - 2) + '"/><line x1="' + wx + '" y1="' + f(ey + 2) + '" x2="' + f(+wx + L) + '" y2="' + f(ey + 2) + '"/>'); }
+        else { var ex = X(q[1]), wy = Y(a); o.push('<rect x="' + f(ex - 3) + '" y="' + wy + '" width="6" height="' + f(L) + '" fill="#fff" stroke="none"/><line x1="' + f(ex - 2) + '" y1="' + wy + '" x2="' + f(ex - 2) + '" y2="' + f(+wy + L) + '"/><line x1="' + f(ex + 2) + '" y1="' + wy + '" x2="' + f(ex + 2) + '" y2="' + f(+wy + L) + '"/>'); }
+      });
+    });
+    o.push('</g>');
+    if (li === 0) { // acceso principal
+      var ax, ay = Y(r.D), dw = Math.min(0.9 * s, 30);
+      if (main && main.o === 'h') ax = X(main.x + main.w / 2);
+      else { var acc = cells.filter(function (c) { return c.y + c.h >= r.D - 0.02 && (c.k === 'soc' || c.k === 'circ'); }).sort(function (a, b) { return (b.k === 'circ') - (a.k === 'circ') || b.m2 - a.m2; })[0] || cells[0]; ax = X(acc.x + acc.w / 2); }
+      if (!main) o.push('<rect x="' + f(ax - dw * 0.7) + '" y="' + f(ay - 4) + '" width="' + f(dw * 1.4) + '" height="8" fill="#fff"/>');
+      o.push('<path d="M' + ax + ' ' + f(ay + 26) + 'v-16" stroke="' + GOLD + '" stroke-width="2"/><path d="M' + f(ax - 5) + ' ' + f(ay + 14) + 'l5 -6l5 6" fill="none" stroke="' + GOLD + '" stroke-width="2"/><text x="' + ax + '" y="' + f(ay + 38) + '" font-size="10" font-weight="700" text-anchor="middle" fill="' + GOLD + '">ACCESO</text>');
+    }
+    return o.join('');
+  }
   function openings(lv, X, Y, s, li, r, p) {
+    if (lv.sk) return skOpenings(lv, X, Y, s, li, r);
     var offs = wallSegments(lv).filter(function (e) { return e.off; });
     var o = [], dw = Math.min(0.9 * s, 30);
     lv.cells.forEach(function (c) {
@@ -673,5 +758,5 @@
     var rear = p.depth * 0.03, setback = p.depth - r.D - rear, surf = setback >= 5 ? Math.floor((p.front - 1) / 2.5) : 0;
     return { surface: surf };
   }
-  window.RinovaPlanos = { build: build, parkingCapacity: parkingCapacity, heights: heights, layoutLevels: layoutLevels, wallSegments: wallSegments, siteSheet: function (p, r) { return siteSheet({ p: p, r: r }); }, frame: frame, VW: VW, VH: VH, TB: TB };
+  window.RinovaPlanos = { build: build, parkingCapacity: parkingCapacity, heights: heights, layoutLevels: layoutLevels, hasSketch: hasSketch, wallSegments: wallSegments, siteSheet: function (p, r) { return siteSheet({ p: p, r: r }); }, frame: frame, VW: VW, VH: VH, TB: TB };
 })();

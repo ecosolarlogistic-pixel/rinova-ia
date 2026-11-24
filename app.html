@@ -41,7 +41,7 @@
 <!-- /App instalable -->
 <link rel="preload" href="assets/fonts/montserrat.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/rinova.css?v=20261203">
+<link rel="stylesheet" href="assets/css/rinova.css?v=20261204">
 <style>.auth-wait body{visibility:hidden}</style>
 <style>
 body{background:var(--mist)}
@@ -250,9 +250,10 @@ dialog .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin
 .params .row3 label,.params .row label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [hidden]{display:none !important}
 .hint{margin:-10px 0 0;font-size:12px;color:var(--muted)}
-.cq-up{display:grid;gap:8px;padding:14px;border:1px dashed var(--silver);border-radius:12px;background:#FBFCFD}
+.cq-up{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:14px;border:1px dashed var(--silver);border-radius:12px;background:#FBFCFD;min-width:0}
+.cq-up .btn{white-space:normal;text-align:center}
 .cq-up small{font-size:12px;color:var(--muted);line-height:1.4}
-.cq-cur{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px}
+.cq-cur{min-width:0;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px}
 .cq-cur span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .btn-text{cursor:pointer;font-weight:600;font-size:13px}
 /* Láminas */
@@ -297,6 +298,19 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
 .cq-pic{background:var(--mist);border:1px solid var(--line);border-radius:12px;height:min(460px,60dvh);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:8px}
 .cq-pic img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
 .cq-load{color:var(--muted);font-size:14px;text-align:center;padding:20px}
+.cq-left{display:grid;gap:10px;align-content:start;min-width:0}
+.cq-view{grid-template-columns:1fr 1fr}
+.cq-sch{width:100%;height:100%;background:#fff;border-radius:8px}
+.cq-items{display:grid;gap:8px}
+.cq-it{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:center;padding:6px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.cq-it.on{border-color:var(--gold);box-shadow:0 0 0 2px rgba(184,147,42,.18)}
+.cq-th{width:64px;height:52px;padding:0;border:0;border-radius:6px;overflow:hidden;background:var(--mist);cursor:pointer}
+.cq-th img{width:100%;height:100%;object-fit:cover;display:block}
+.cq-meta{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center;min-width:0}
+.cq-meta b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cq-meta small{grid-column:1;font-size:12px;color:var(--muted)}
+.cq-meta select{grid-column:2;grid-row:1/3;min-height:40px;padding:6px 8px;font-size:13px;width:auto}
+.cq-up.drag{border-color:var(--gold);background:#FFFBEF}
 .cq-form{display:grid;gap:12px;align-content:start}
 .cq-form .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .cq-form .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
@@ -602,9 +616,9 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
           <form class="card params" id="params" aria-label="Parámetros del proyecto">
             <h3>Parámetros del proyecto</h3>
             <div class="cq-up">
-              <label class="btn btn-ink btn-sm" for="upCroquis"><svg><use href="#i-up"/></svg>Subir croquis (foto o PDF)</label>
-              <input type="file" id="upCroquis" accept="image/*,application/pdf,.pdf,.heic" class="sr">
-              <small>RINOVAIA lee el croquis y desarrolla el juego completo de planos.</small>
+              <label class="btn btn-ink btn-sm" for="upCroquis"><svg><use href="#i-up"/></svg>Subir croquis, planos o fachada</label>
+              <input type="file" id="upCroquis" accept="image/*,application/pdf,.pdf,.heic" multiple class="sr">
+              <small>Fotos o PDF; puedes subir varios a la vez (planta baja, planta alta, fachada). RINOVAIA lee medidas y espacios y redibuja el juego completo de planos con tu distribución.</small>
               <div class="cq-cur" id="cqCurrent" hidden><span>Croquis: <b id="cqCurName"></b></span><button type="button" class="btn-text" id="cqRemove">Quitar</button></div>
             </div>
             <div class="field"><label for="pType">Tipo de inmueble</label>
@@ -826,7 +840,7 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
                 <div style="margin-top:18px">
                   <div class="box-h"><div><h2 style="font-size:18px">Archivos y versiones</h2><small>Revisiones y entregables del proyecto</small></div>
                     <label class="btn btn-gold btn-sm" for="upPlans"><svg><use href="#i-up"/></svg>Subir planos</label>
-                    <input type="file" id="upPlans" multiple accept=".pdf,.dwg,.dxf,.svg,.png,.jpg" class="sr">
+                    <input type="file" id="upPlans" multiple accept=".pdf,.dwg,.dxf,.svg,.png,.jpg,.jpeg,.webp,.heic" class="sr">
                   </div>
                   <div class="files" id="fileList"></div>
                   <p class="note">En esta maqueta los archivos se registran solo en tu navegador; en producción se guardan en el expediente del proyecto con control de acceso.</p>
@@ -977,15 +991,19 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
 <dialog id="dlgCroquis" class="cq-dlg" aria-labelledby="cqTitle">
   <div class="cq-in">
     <div class="cq-hd">
-      <div><p class="eyebrow">Croquis a planos</p><h3 id="cqTitle">Lectura del croquis</h3><small id="cqName"></small></div>
+      <div><p class="eyebrow">Croquis y planos</p><h3 id="cqTitle">Lectura de tus archivos</h3><small id="cqName"></small></div>
       <button type="button" class="cq-x" id="cqClose" aria-label="Cerrar">×</button>
     </div>
     <div class="cq-grid">
-      <div class="cq-pic" id="cqPic"></div>
+      <div class="cq-left">
+        <div class="cq-view seg" id="cqView" role="group" aria-label="Vista" hidden><button type="button" data-v="lectura" aria-pressed="true">Lectura a escala</button><button type="button" data-v="original" aria-pressed="false">Archivo original</button></div>
+        <div class="cq-pic" id="cqPic"></div>
+        <div class="cq-items" id="cqItems" hidden></div>
+      </div>
       <div class="cq-form">
         <span class="chip" id="cqStatus"><span class="dot"></span>Leyendo…</span>
         <div class="field"><label for="cqType">Tipo de inmueble</label><select class="input" id="cqType"><option value="casa">Casa</option><option value="deptos">Departamentos</option><option value="comercial">Centro comercial</option><option value="bodega">Bodega</option></select></div>
-        <div class="row"><div class="field"><label for="cqFront">Frente (m)</label><input class="input num" id="cqFront" type="number" min="8" max="40" step="0.5"></div><div class="field"><label for="cqDepth">Fondo (m)</label><input class="input num" id="cqDepth" type="number" min="10" max="40" step="0.5"></div></div>
+        <div class="row"><div class="field"><label for="cqFront">Frente (m)</label><input class="input num" id="cqFront" type="number" min="4" max="40" step="0.05"></div><div class="field"><label for="cqDepth">Fondo (m)</label><input class="input num" id="cqDepth" type="number" min="4" max="40" step="0.05"></div></div>
         <div class="row3"><div class="field"><label for="cqFloors">Pisos</label><input class="input num" id="cqFloors" type="number" min="1" max="8"></div><div class="field"><label for="cqBeds">Recámaras</label><input class="input num" id="cqBeds" type="number" min="0" max="10"></div><div class="field"><label for="cqParking">Cajones</label><input class="input num" id="cqParking" type="number" min="0" max="400"></div></div>
         <div class="row3"><div class="field"><label for="cqBaths">Baños</label><input class="input num" id="cqBaths" type="number" min="0" max="10"></div><div class="field"><label for="cqHalf">Medios baños</label><input class="input num" id="cqHalf" type="number" min="0" max="6"></div><div class="field"><label for="cqUnits">Unid. / piso</label><input class="input num" id="cqUnits" type="number" min="1" max="24"></div></div>
         <div class="field"><label for="cqLayout">Distribución</label><select class="input" id="cqLayout"><option value="abierto">Concepto abierto</option><option value="tradicional">Tradicional</option><option value="rec-pb">Con recámara en planta baja</option><option value="planta-libre">Planta libre</option></select></div>
@@ -1028,21 +1046,22 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
   // RINOVAIA AI: función de Supabase (supabase/functions/rinova-ia). Si no está desplegada, la app usa el análisis por reglas.
   window.RINOVA_IA = { endpoint: 'https://evjoqaphylggvojthezj.supabase.co/functions/v1/rinova-ia', key: 'sb_publishable_ll_SpxeCPe8VEFVVX1KpMg_s6DfoWkX' };
 </script>
-<script src="assets/js/facade.js?v=20261203"></script>
-<script src="assets/js/proyecto.js?v=20261203"></script>
-<script src="assets/js/planos.js?v=20261203"></script>
-<script src="assets/js/fachada.js?v=20261203"></script>
-<script src="assets/js/estudio.js?v=20261203"></script>
-<script src="assets/js/render3d.js?v=20261203"></script>
-<script src="assets/js/fachada-ui.js?v=20261203"></script>
-<script src="assets/js/recorrido.js?v=20261203"></script>
-<script src="assets/js/recorrido-ui.js?v=20261203"></script>
-<script src="assets/js/espacios.js?v=20261203"></script>
-<script src="assets/js/croquis.js?v=20261203"></script>
-<script src="assets/js/plataforma.js?v=20261203"></script>
+<script src="assets/js/facade.js?v=20261204"></script>
+<script src="assets/js/proyecto.js?v=20261204"></script>
+<script src="assets/js/planos.js?v=20261204"></script>
+<script src="assets/js/fachada.js?v=20261204"></script>
+<script src="assets/js/estudio.js?v=20261204"></script>
+<script src="assets/js/render3d.js?v=20261204"></script>
+<script src="assets/js/fachada-ui.js?v=20261204"></script>
+<script src="assets/js/recorrido.js?v=20261204"></script>
+<script src="assets/js/recorrido-ui.js?v=20261204"></script>
+<script src="assets/js/espacios.js?v=20261204"></script>
+<script src="assets/js/lectura-plano.js?v=20261204"></script>
+<script src="assets/js/croquis.js?v=20261204"></script>
+<script src="assets/js/plataforma.js?v=20261204"></script>
 <script src="assets/js/vendor/supabase-2.58.0.min.js?v=20261126"></script>
-<script src="assets/js/sesion.js?v=20261203"></script>
-<script src="assets/js/nube.js?v=20261203"></script>
-<script src="pwa.js?v=20261203" defer></script>
+<script src="assets/js/sesion.js?v=20261204"></script>
+<script src="assets/js/nube.js?v=20261204"></script>
+<script src="pwa.js?v=20261204" defer></script>
 </body>
 </html>
