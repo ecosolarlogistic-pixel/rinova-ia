@@ -18,7 +18,7 @@
 
 Con la función desplegada, Claude (modelo `claude-opus-5-5`) además:
 
-* **Lee cada plano** (acción `plano`, una imagen por solicitud): si es planta o fachada, el nivel, las cotas (13000 mm = 13 m), cada espacio como rectángulo en metros con su nombre y tipo, las puertas y el lado de la calle. Con eso los planos reproducen la distribución del archivo, con los nombres correctos. Si es fachada, propone estilo, material y mejoras.
+* **Lee cada plano** (acción `plano`, una imagen o página por solicitud, enviada hasta 2400 px; las fotos de papel se envían con los niveles ajustados): si es planta o fachada. Una hoja puede traer varias plantas (`plantas[]`), cada una con título, nivel, unidad (mm, cm, m o pies y pulgadas), escala escrita o gráfica, cadenas de cotas (`ejes_x`, `ejes_y`), cada espacio como rectángulo en metros con su nombre y tipo, las puertas y el lado de la calle; reconoce abreviaturas en español e inglés y croquis a mano. En el navegador, `lectura-plano.js` corrige la lectura antes de dibujar: lleva los lados a los ejes de cotas, une bordes casi iguales en un solo muro, quita traslapes, pone las puertas sobre su muro, mide qué parte de la planta quedó cubierta y alinea los niveles por la escalera. Si es fachada, propone estilo, material y mejoras.
 * **Redacta el dictamen** en la pestaña *Análisis experto* ("Pedir dictamen con IA"): veredicto, fortalezas, riesgos, normativa y siguientes pasos, a partir de los datos del proyecto, los cálculos y la revisión por reglas.
 
 Mientras la función no exista, la app lo indica y sigue funcionando con el motor de reglas.
