@@ -30,6 +30,9 @@
     if (!o.rooms || typeof o.rooms !== 'object' || Array.isArray(o.rooms)) o.rooms = {};
     if (!Array.isArray(o.extra)) o.extra = [];
     if (!Array.isArray(o.garden)) o.garden = [];
+    if (!o.walls || typeof o.walls !== 'object') o.walls = {};
+    if (!Array.isArray(o.walls.m)) o.walls.m = [];
+    if (!Array.isArray(o.walls.x)) o.walls.x = [];
     o.energy = PR.energyOpts(o);
     return o;
   }
@@ -569,7 +572,7 @@
 
   /* ---------- Análisis experto ---------- */
   var aiRes = null, aiSig = '';
-  function sig() { return JSON.stringify([p.energy, p.type, p.state, p.city, p.front, p.depth, p.floors, p.beds, p.baths, p.halfBaths, p.parking, p.layout, p.flooring, p.units, p.finish, p.style, p.bays, p.rooms, p.extra, p.garden]); }
+  function sig() { return JSON.stringify([p.energy, p.type, p.state, p.city, p.front, p.depth, p.floors, p.beds, p.baths, p.halfBaths, p.parking, p.layout, p.flooring, p.units, p.finish, p.style, p.bays, p.rooms, p.extra, p.garden, p.walls]); }
   var ST_ICON = { ok: '✓', warn: '!', bad: '×' };
   function md(t) {
     var html = [], list = false;
