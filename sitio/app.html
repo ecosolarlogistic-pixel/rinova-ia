@@ -41,7 +41,7 @@
 <!-- /App instalable -->
 <link rel="preload" href="assets/fonts/montserrat.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/rinova.css?v=20261129">
+<link rel="stylesheet" href="assets/css/rinova.css?v=20261130">
 <style>.auth-wait body{visibility:hidden}</style>
 <style>
 body{background:var(--mist)}
@@ -709,7 +709,7 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
 
                 <div class="pv" id="pv-rv" hidden>
                   <div class="rv" id="rv">
-                    <canvas id="rvCanvas" aria-label="Recorrido virtual del interior. Arrastra para mirar y toca el piso para caminar." role="img"></canvas>
+                    <canvas id="rvCanvas" aria-label="Recorrido virtual: fachada, interior y jardín. Arrastra para mirar y toca el piso para caminar." role="img"></canvas>
                     <div class="r3d-load" id="rvLoad">Amueblando los espacios…</div>
                     <div class="r3d-top rv-top"><span class="chip" id="rvChip">—</span></div>
                     <canvas class="rv-map" id="rvMap" width="300" height="300" aria-label="Plano de ubicación. Toca un punto para ir ahí."></canvas>
@@ -727,7 +727,7 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
                       <button type="button" class="btn btn-gold btn-sm" id="rvTour" aria-pressed="false"><svg><use href="#i-play"/></svg><span>Recorrido guiado</span></button>
                     </div>
                   </div>
-                  <p class="note">Interior amueblado generado con la distribución de cada planta del juego de planos: muros, puertas, ventanas, escalera, mobiliario, cuadros, lámparas, closets y accesorios por tipo de espacio. Texturas y modelos creados por RINOVAIA en el navegador. Mobiliario ilustrativo; las medidas de los espacios son las del proyecto.</p>
+                  <p class="note">El recorrido empieza en la fachada: entra por la puerta principal, recorre cada planta y sal al jardín posterior por el cancel. Interior amueblado generado con la distribución de cada planta del juego de planos: muros, puertas, ventanas, escalera, mobiliario, cuadros, lámparas, closets y accesorios por tipo de espacio. Texturas y modelos creados por RINOVAIA en el navegador. Mobiliario ilustrativo; las medidas de los espacios son las del proyecto.</p>
                 </div>
 
                 <div class="pv" id="pv-fachada" hidden>
@@ -1009,21 +1009,21 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
   // RINOVAIA AI: función de Supabase (supabase/functions/rinova-ia). Si no está desplegada, la app usa el análisis por reglas.
   window.RINOVA_IA = { endpoint: 'https://evjoqaphylggvojthezj.supabase.co/functions/v1/rinova-ia', key: 'sb_publishable_ll_SpxeCPe8VEFVVX1KpMg_s6DfoWkX' };
 </script>
-<script src="assets/js/facade.js?v=20261129"></script>
-<script src="assets/js/proyecto.js?v=20261129"></script>
-<script src="assets/js/planos.js?v=20261129"></script>
-<script src="assets/js/fachada.js?v=20261129"></script>
-<script src="assets/js/estudio.js?v=20261129"></script>
-<script src="assets/js/render3d.js?v=20261129"></script>
-<script src="assets/js/fachada-ui.js?v=20261129"></script>
-<script src="assets/js/recorrido.js?v=20261129"></script>
-<script src="assets/js/recorrido-ui.js?v=20261129"></script>
-<script src="assets/js/espacios.js?v=20261129"></script>
-<script src="assets/js/croquis.js?v=20261129"></script>
-<script src="assets/js/plataforma.js?v=20261129"></script>
+<script src="assets/js/facade.js?v=20261130"></script>
+<script src="assets/js/proyecto.js?v=20261130"></script>
+<script src="assets/js/planos.js?v=20261130"></script>
+<script src="assets/js/fachada.js?v=20261130"></script>
+<script src="assets/js/estudio.js?v=20261130"></script>
+<script src="assets/js/render3d.js?v=20261130"></script>
+<script src="assets/js/fachada-ui.js?v=20261130"></script>
+<script src="assets/js/recorrido.js?v=20261130"></script>
+<script src="assets/js/recorrido-ui.js?v=20261130"></script>
+<script src="assets/js/espacios.js?v=20261130"></script>
+<script src="assets/js/croquis.js?v=20261130"></script>
+<script src="assets/js/plataforma.js?v=20261130"></script>
 <script src="assets/js/vendor/supabase-2.58.0.min.js?v=20261126"></script>
-<script src="assets/js/sesion.js?v=20261129"></script>
-<script src="assets/js/nube.js?v=20261129"></script>
-<script src="pwa.js?v=20261129" defer></script>
+<script src="assets/js/sesion.js?v=20261130"></script>
+<script src="assets/js/nube.js?v=20261130"></script>
+<script src="pwa.js?v=20261130" defer></script>
 </body>
 </html>

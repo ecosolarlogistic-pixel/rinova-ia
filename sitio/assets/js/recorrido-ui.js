@@ -13,7 +13,10 @@
   function data() {
     var p = E.project(), r = E.result(), set = E.sheets && E.sheets();
     var levels = set && set.levels ? set.levels : PL.build(p, r, {}).levels;
-    return { levels: RV.buildModel(levels, PL.heights(p).hs, p.type), W: r.W, D: r.D, site: { yard: window.RinovaProyecto.siteYard(p, r), sideM: (p.front - r.W) / 2 } };
+    var yd = window.RinovaProyecto.siteYard(p, r);
+    // terreno como en el render 3D: remetimiento al frente según el jardín posterior
+    var lot = p.front > 0 && p.depth > 0 ? { W: p.front, D: p.depth, setback: yd ? Math.max(1, yd.front) : Math.max(1.5, (p.depth - r.D) * 0.7) } : null;
+    return { levels: RV.buildModel(levels, PL.heights(p).hs, p.type), W: r.W, D: r.D, site: { yard: yd, sideM: (p.front - r.W) / 2, lot: lot } };
   }
   function show() {
     open = true;
@@ -50,7 +53,7 @@
   function onLevel(L) {
     if (!L) return; level = L.index;
     $$('#rvLevels button').forEach(function (b) { b.setAttribute('aria-pressed', +b.dataset.l === L.index); });
-    var rooms = L.rooms.filter(function (R) { return !R.ext || R.reachable; });
+    var rooms = L.rooms.filter(function (R) { return (!R.ext || R.reachable) && !R.side; }).sort(function (a, b) { return (a.outer === 'front' ? -1 : 0) - (b.outer === 'front' ? -1 : 0); });
     $('#rvRoom').innerHTML = '<option value="">Ir a un espacio…</option>' + rooms.map(function (R) { return '<option value="' + R.id + '">' + esc(R.label) + '</option>'; }).join('');
     mapBase = null; drawMap();
   }
@@ -71,11 +74,11 @@
   function drawMap() {
     if (!ctl) return;
     var c = $('#rvMap'), g = c.getContext('2d'), st = ctl.state(), L = st.L; if (!L) return;
-    var n = c.width, pad = 16, s = Math.min((n - pad * 2) / st.W, (n - pad * 2) / st.D), ox = (n - st.W * s) / 2, oy = (n - st.D * s) / 2;
+    var B = st.B, bw = B.x1 - B.x0, bd = B.z1 - B.z0, n = c.width, pad = 16, s = Math.min((n - pad * 2) / bw, (n - pad * 2) / bd), ox = (n - bw * s) / 2 - B.x0 * s, oy = (n - bd * s) / 2 - B.z0 * s;
     mapFit = { s: s, ox: ox, oy: oy, el: c };
     if (!mapBase) {
       mapBase = document.createElement('canvas'); mapBase.width = mapBase.height = n; var b = mapBase.getContext('2d');
-      L.rooms.forEach(function (R) { b.fillStyle = R.ext ? 'rgba(120,160,110,.35)' : 'rgba(243,245,247,.14)'; b.fillRect(ox + R.x * s, oy + R.y * s, R.w * s, R.h * s); });
+      L.rooms.forEach(function (R) { b.fillStyle = R.outer ? 'rgba(120,160,110,.2)' : R.ext ? 'rgba(120,160,110,.35)' : 'rgba(243,245,247,.14)'; b.fillRect(ox + R.x * s, oy + R.y * s, R.w * s, R.h * s); });
       b.strokeStyle = 'rgba(192,198,212,.9)'; b.lineWidth = 2;
       (L.edges || []).forEach(function (e) {
         if (!e.A || (e.A.ext && (!e.B || e.B.ext))) return;
