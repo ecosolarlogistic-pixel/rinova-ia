@@ -37,7 +37,8 @@
   window.RinovaIA = {
     status: function () { return aiState; },
     analyze: function (datos) { return call('analisis', { datos: datos }).then(function (j) { return { texto: j.texto, meta: 'Dictamen de RINOVAIA AI' + (j.modelo ? ' · ' + j.modelo : '') }; }); },
-    readSketch: function (file) { return call('croquis', { archivo: file }, 150000); }
+    readSketch: function (file) { return call('croquis', { archivo: file }, 150000); },
+    readFacade: function (file) { return call('fachada', { archivo: file }, 150000); }
   };
 
   /* ---------- Carga del archivo ---------- */

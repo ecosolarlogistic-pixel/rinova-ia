@@ -1,5 +1,6 @@
 // RINOVAIA AI — función de Supabase (Deno) que usa Claude para:
 //   action "croquis":  leer un croquis (foto o PDF) y devolver tipo de inmueble, medidas, niveles y programa.
+//   action "fachada":  leer la foto o PDF de una fachada existente y proponer estilo, material y elementos.
 //   action "analisis": redactar el dictamen de arquitecto a partir de los datos y cálculos del Estudio.
 //
 // Secretos requeridos:  ANTHROPIC_API_KEY
@@ -103,6 +104,58 @@ Enlista cada espacio con su nivel (0 = planta baja) y área aproximada. En obser
   return { lectura: JSON.parse(texto(msg)), modelo: msg.model };
 }
 
+const ESQUEMA_FACHADA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    descripcion: { type: "string" },
+    niveles: { type: "integer" },
+    estilo_actual: { type: "string" },
+    estilo_sugerido: { type: "string", enum: ["contemporaneo", "minimalista", "industrial", "tropical", "mediterraneo", "colonial"] },
+    material_principal: { type: "string", enum: ["concreto", "aplanado", "piedra", "ladrillo", "cantera", "travertino", "ocre", "grafito", "madera"] },
+    elementos: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        volado: { type: "boolean" }, celosia: { type: "boolean" }, balcones: { type: "boolean" }, pergola: { type: "boolean" },
+        jardineras: { type: "boolean" }, basamento: { type: "boolean" }, iluminacion: { type: "boolean" },
+      },
+      required: ["volado", "celosia", "balcones", "pergola", "jardineras", "basamento", "iluminacion"],
+    },
+    mejoras: { type: "array", items: { type: "string" } },
+  },
+  required: ["descripcion", "niveles", "estilo_actual", "estilo_sugerido", "material_principal", "elementos", "mejoras"],
+};
+
+async function leerFachada(archivo: { tipo: string; media_type: string; datos: string; nombre?: string }) {
+  if (!archivo?.datos || archivo.datos.length > 14_000_000) throw new Error("archivo_invalido");
+  const bloque = archivo.tipo === "pdf"
+    ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: archivo.datos } }
+    : { type: "image", source: { type: "base64", media_type: archivo.media_type || "image/jpeg", data: archivo.datos } };
+  const msg = await client.beta.messages.create({
+    model: MODEL,
+    max_tokens: 8000,
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+    system: SISTEMA_ARQ,
+    output_config: { effort: "medium", format: { type: "json_schema", schema: ESQUEMA_FACHADA } },
+    messages: [{
+      role: "user",
+      content: [
+        bloque,
+        {
+          type: "text",
+          text: `Esta es la fachada actual de un inmueble (${archivo.nombre ?? "sin nombre"}), en foto, render o plano.
+Describe en una frase lo que ves (niveles, material, cubierta, vanos). Indica su estilo actual y el material principal más parecido.
+Propón el estilo que mejor la renueva sin perder su carácter y qué elementos agregar. En "mejoras" da de 4 a 8 frases cortas y concretas, cada una con su porqué (clima, luz, privacidad, mantenimiento o valor).`,
+        },
+      ],
+    }],
+  } as never) as unknown as { content: Array<{ type: string; text?: string }>; stop_reason: string; model: string };
+  if (msg.stop_reason === "refusal") throw new Error("rechazo");
+  return { lectura: JSON.parse(texto(msg)), modelo: msg.model };
+}
+
 async function analizar(datos: unknown) {
   const msg = await client.beta.messages.create({
     model: MODEL,
@@ -148,6 +201,7 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     if (body.action === "croquis") return json(await leerCroquis(body.archivo), 200, origin);
+    if (body.action === "fachada") return json(await leerFachada(body.archivo), 200, origin);
     if (body.action === "analisis") return json(await analizar(body.datos), 200, origin);
     return json({ error: "Acción desconocida" }, 400, origin);
   } catch (e) {

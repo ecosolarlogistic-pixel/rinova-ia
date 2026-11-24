@@ -267,7 +267,7 @@
   function layersOn() { var on = {}; $$('#layers input[data-layer]').forEach(function (c) { on[c.dataset.layer] = c.checked; }); return on; }
   function buildPlans(r) {
     var FXP = window.RinovaFachada, fxOn = FXP && p.fx && p.fx.on;
-    plans = PL.build(p, r, { croquis: croquis, styleName: STYLE_NAME[p.style], unifilar: function () { return unifilarSvg(r); },
+    plans = PL.build(p, r, { croquis: croquis, fachadaFoto: window.RinovaFachadaFoto ? window.RinovaFachadaFoto() : null, styleName: STYLE_NAME[p.style], unifilar: function () { return unifilarSvg(r); },
       fachada: fxOn ? { name: FXP.ESTILOS[FXP.normalize(p.fx, p).estilo].n, render: function () { return FXP.svg(p, r, p.fx, { id: 'shfx', marks: false }).svg; } } : null });
     r.planInfo = plans.info;
     var sel = $('#planSheet'), cur = sel.value;
