@@ -54,13 +54,89 @@
       var top = li === 0 ? (p.type === 'casa' ? 'Jardín' : 'Área común') : 'Terraza';
       squarify(fit(lv.back, W * hB, { n: top }), 0, 0, W, hB, cells);
       squarify(fit(lv.front, W * hF, { n: li === 0 ? (p.type === 'casa' ? 'Jardín frontal' : 'Plaza de acceso') : 'Terraza' }), 0, hB, W, hF, cells);
+      cells.forEach(function (c) { c.band = c.y < hB - 0.01 ? 'back' : 'front'; c.wk = c.id || 'k:' + c.n + ':' + c.band; });
+      var removed = applyWalls(p, li, cells, W, D);
       cells.forEach(function (c) {
-        c.m2 = c.w * c.h; c.band = c.y < hB - 0.01 ? 'back' : 'front';
+        c.m2 = c.w * c.h;
         if (c.unit) { c.sub = []; squarify(fit(unitRooms(p), c.m2 * 0.94), c.x, c.y, c.w, c.h, c.sub); c.sub.forEach(function (s) { s.m2 = s.w * s.h; }); }
       });
-      levels.push({ cells: cells, yMid: hB, note: lv.note });
+      levels.push({ cells: cells, yMid: hB, note: lv.note, removed: removed });
     });
     return levels;
+  }
+  /* ---------- Muros editables ----------
+     p.walls = { m: [{ l, a, b, d }], x: [{ l, a, b }] }: a y b son las claves de los dos espacios que separa el
+     muro. «m» desplaza la línea completa del muro d metros (positivo = derecha / hacia la calle) y «x» lo quita
+     (los dos espacios quedan integrados). Si el programa cambia y los espacios ya no colindan, se ignora. */
+  var WEPS = 0.03, WMIN = 1.2;
+  function sharedEdge(A, B) {
+    var o = null, c;
+    if (Math.abs(A.x + A.w - B.x) < WEPS) { o = 'v'; c = B.x; } else if (Math.abs(B.x + B.w - A.x) < WEPS) { o = 'v'; c = A.x; }
+    if (o) { var lo = Math.max(A.y, B.y), hi = Math.min(A.y + A.h, B.y + B.h); if (hi - lo > 0.05) return { o: o, c: c, lo: lo, hi: hi }; }
+    o = null;
+    if (Math.abs(A.y + A.h - B.y) < WEPS) { o = 'h'; c = B.y; } else if (Math.abs(B.y + B.h - A.y) < WEPS) { o = 'h'; c = A.y; }
+    if (o) { var lo2 = Math.max(A.x, B.x), hi2 = Math.min(A.x + A.w, B.x + B.w); if (hi2 - lo2 > 0.05) return { o: o, c: c, lo: lo2, hi: hi2 }; }
+    return null;
+  }
+  // Todos los espacios que tocan la misma línea de muro (recta continua) y de qué lado quedan
+  function wallLine(cells, e) {
+    var lo = e.lo, hi = e.hi, grow = true, mem = [];
+    function span(c) { return e.o === 'v' ? [c.y, c.y + c.h] : [c.x, c.x + c.w]; }
+    function side(c) { var a = e.o === 'v' ? c.x : c.y, l = e.o === 'v' ? c.w : c.h; return Math.abs(a + l - e.c) < WEPS ? -1 : Math.abs(a - e.c) < WEPS ? 1 : 0; }
+    while (grow) {
+      grow = false;
+      cells.forEach(function (c) { if (!side(c)) return; var sp = span(c); if (Math.min(hi, sp[1]) - Math.max(lo, sp[0]) > 0.05 && (sp[0] < lo - 1e-6 || sp[1] > hi + 1e-6)) { lo = Math.min(lo, sp[0]); hi = Math.max(hi, sp[1]); grow = true; } });
+    }
+    cells.forEach(function (c) { var sd = side(c), sp = span(c); if (sd && Math.min(hi, sp[1]) - Math.max(lo, sp[0]) > 0.05) mem.push({ c: c, side: sd }); });
+    var mn = -Infinity, mx = Infinity;
+    mem.forEach(function (m) { var l = e.o === 'v' ? m.c.w : m.c.h; if (m.side < 0) mn = Math.max(mn, WMIN - l); else mx = Math.min(mx, l - WMIN); });
+    return { mem: mem, lo: lo, hi: hi, min: Math.min(0, mn), max: Math.max(0, mx) };
+  }
+  function moveWall(cells, e, d) {
+    var L = wallLine(cells, e); d = Math.max(L.min, Math.min(L.max, d)); if (Math.abs(d) < 1e-3) return 0;
+    L.mem.forEach(function (m) {
+      if (e.o === 'v') { if (m.side < 0) m.c.w += d; else { m.c.x += d; m.c.w -= d; } }
+      else { if (m.side < 0) m.c.h += d; else { m.c.y += d; m.c.h -= d; } }
+    });
+    return d;
+  }
+  function byKey(cells, k) { for (var i = 0; i < cells.length; i++) if (cells[i].wk === k) return cells[i]; return null; }
+  function applyWalls(p, li, cells) {
+    var w = p.walls || {}, out = [];
+    (w.m || []).forEach(function (m) {
+      if (m.l !== li) return; var A = byKey(cells, m.a), B = byKey(cells, m.b), e = A && B && sharedEdge(A, B);
+      if (e) moveWall(cells, e, +m.d || 0);
+    });
+    (w.x || []).forEach(function (x) { if (x.l === li && byKey(cells, x.a) && byKey(cells, x.b)) out.push({ a: x.a, b: x.b }); });
+    return out;
+  }
+  function isRemoved(lv, a, b) { return (lv.removed || []).some(function (x) { return (x.a === a && x.b === b) || (x.a === b && x.b === a); }); }
+  // Muros interiores entre espacios (un tramo por cada par que colinda)
+  function wallSegments(lv) {
+    var cells = lv.cells, out = [];
+    for (var i = 0; i < cells.length; i++) for (var j = i + 1; j < cells.length; j++) {
+      var e = sharedEdge(cells[i], cells[j]); if (!e) continue;
+      var A = cells[i], B = cells[j];
+      // a = izquierda/arriba, b = derecha/abajo
+      var aFirst = e.o === 'v' ? A.x < B.x : A.y < B.y;
+      e.a = (aFirst ? A : B).wk; e.b = (aFirst ? B : A).wk; e.A = aFirst ? A : B; e.B = aFirst ? B : A;
+      e.off = isRemoved(lv, e.a, e.b); out.push(e);
+    }
+    return out;
+  }
+  function wallRange(lv, e) { var L = wallLine(lv.cells, e); return { min: L.min, max: L.max }; }
+  // Lados de un espacio menos los tramos de muro quitados
+  function sideLines(c, offs) {
+    var sides = [['h', c.y, c.x, c.x + c.w], ['h', c.y + c.h, c.x, c.x + c.w], ['v', c.x, c.y, c.y + c.h], ['v', c.x + c.w, c.y, c.y + c.h]], out = [];
+    sides.forEach(function (sd) {
+      var parts = [[sd[2], sd[3]]];
+      offs.forEach(function (e) {
+        if (e.o !== sd[0] || Math.abs(e.c - sd[1]) > WEPS) return;
+        var nx = []; parts.forEach(function (pt) { if (e.hi <= pt[0] || e.lo >= pt[1]) nx.push(pt); else { if (e.lo > pt[0] + 0.02) nx.push([pt[0], e.lo]); if (e.hi < pt[1] - 0.02) nx.push([e.hi, pt[1]]); } }); parts = nx;
+      });
+      parts.forEach(function (pt) { out.push(sd[0] === 'h' ? [pt[0], sd[1], pt[1], sd[1]] : [sd[1], pt[0], sd[1], pt[1]]); });
+    });
+    return out;
   }
   var SHORT = { 'Rec. principal': 'Rec. 1', 'Medio baño': '½ B', 'Lavado': 'Lav.', 'Estancia · comedor · cocina': 'Estancia' };
   function unitRooms(p) {
@@ -139,8 +215,11 @@
     if (on.arq) o.push(furniture(lv.cells, X, Y, s, p, r));
     // Muros interiores
     o.push('<g fill="none" stroke="' + (faint ? '#9AA3B2' : INK) + '" stroke-linecap="square">');
+    var segs = wallSegments(lv), offs = segs.filter(function (e) { return e.off; });
     lv.cells.forEach(function (c) {
-      o.push('<rect x="' + X(c.x) + '" y="' + Y(c.y) + '" width="' + f(c.w * s) + '" height="' + f(c.h * s) + '" stroke-width="' + (c.k === 'ext' ? 1 : 2.6) + '"' + (c.k === 'ext' ? ' stroke-dasharray="4 3"' : '') + '/>');
+      var attr = ' stroke-width="' + (c.k === 'ext' ? 1 : 2.6) + '"' + (c.k === 'ext' ? ' stroke-dasharray="4 3"' : '');
+      if (!offs.length) o.push('<rect x="' + X(c.x) + '" y="' + Y(c.y) + '" width="' + f(c.w * s) + '" height="' + f(c.h * s) + '"' + attr + '/>');
+      else sideLines(c, offs).forEach(function (q) { o.push('<line x1="' + X(q[0]) + '" y1="' + Y(q[1]) + '" x2="' + X(q[2]) + '" y2="' + Y(q[3]) + '"' + attr + '/>'); });
       if (c.sub) c.sub.forEach(function (u) { o.push('<rect x="' + X(u.x) + '" y="' + Y(u.y) + '" width="' + f(u.w * s) + '" height="' + f(u.h * s) + '" stroke-width="1.2"/>'); });
     });
     o.push('<rect x="' + f(x0) + '" y="' + f(y0) + '" width="' + f(W) + '" height="' + f(D) + '" stroke-width="5.5"/></g>');
@@ -186,6 +265,19 @@
     o.push(north(VW - 60, 62));
     o.push(scaleBar(s));
     o.push(legend(on));
+    // Capa para tocar y arrastrar muros (solo en «Planos por nivel»)
+    if (on.edit) {
+      o.push('<g class="es-walls" data-s="' + f(s) + '" fill="none">');
+      segs.forEach(function (e) {
+        var rg = wallRange(lv, e), x1 = e.o === 'v' ? X(e.c) : X(e.lo), y1 = e.o === 'v' ? Y(e.lo) : Y(e.c), x2 = e.o === 'v' ? X(e.c) : X(e.hi), y2 = e.o === 'v' ? Y(e.hi) : Y(e.c);
+        var nm = function (C) { return C.k === 'ext' ? C.n : (p.rooms && p.rooms[C.id] && p.rooms[C.id].n) || C.n; };
+        o.push('<g data-wall="' + esc(e.a + '|' + e.b) + '" data-o="' + e.o + '" data-len="' + f(e.hi - e.lo) + '" data-min="' + f(rg.min) + '" data-max="' + f(rg.max) + '" data-na="' + esc(nm(e.A)) + '" data-nb="' + esc(nm(e.B)) + '"' + (e.off ? ' data-off="1"' : '') + '>' +
+          (e.off ? '<line class="wl-off" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="#9AA3B2" stroke-width="1.2" stroke-dasharray="5 4"/>' : '') +
+          '<line class="wl-mark" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="transparent" stroke-width="7" stroke-linecap="round"/>' +
+          '<line class="wl-hit" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="transparent" stroke-width="22" pointer-events="stroke"/></g>');
+      });
+      o.push('</g>');
+    }
     return o.join('');
   }
   function legend(on) {
@@ -272,6 +364,7 @@
     return o.join('');
   }
   function openings(lv, X, Y, s, li, r, p) {
+    var offs = wallSegments(lv).filter(function (e) { return e.off; });
     var o = [], dw = Math.min(0.9 * s, 30);
     lv.cells.forEach(function (c) {
       if (c.k === 'ext') return;
@@ -280,6 +373,8 @@
       if (c.w * s < dw * 1.6) return;
       var dx = X(c.x + c.w / 2) - dw / 2, dir = c.band === 'front' ? 1 : -1;
       if (c.k === 'coch' || c.k === 'alm' || (c.k === 'com' && li === 0)) return;
+      var mx = c.x + c.w / 2;
+      if (offs.some(function (e) { return e.o === 'h' && Math.abs(e.c - towardMid) < WEPS && mx > e.lo && mx < e.hi; })) return;
       o.push('<rect x="' + f(dx) + '" y="' + f(dy - 3) + '" width="' + f(dw) + '" height="6" fill="#fff"/>');
       o.push('<path d="M' + f(dx) + ' ' + f(dy) + ' v' + f(dir * dw) + ' A' + f(dw) + ' ' + f(dw) + ' 0 0 ' + (dir > 0 ? 0 : 1) + ' ' + f(dx + dw) + ' ' + f(dy) + '" fill="none" stroke="' + MUTED + '" stroke-width="1"/>');
     });
@@ -569,5 +664,5 @@
     var rear = p.depth * 0.03, setback = p.depth - r.D - rear, surf = setback >= 5 ? Math.floor((p.front - 1) / 2.5) : 0;
     return { surface: surf };
   }
-  window.RinovaPlanos = { build: build, parkingCapacity: parkingCapacity, heights: heights, layoutLevels: layoutLevels, siteSheet: function (p, r) { return siteSheet({ p: p, r: r }); }, frame: frame, VW: VW, VH: VH, TB: TB };
+  window.RinovaPlanos = { build: build, parkingCapacity: parkingCapacity, heights: heights, layoutLevels: layoutLevels, wallSegments: wallSegments, siteSheet: function (p, r) { return siteSheet({ p: p, r: r }); }, frame: frame, VW: VW, VH: VH, TB: TB };
 })();

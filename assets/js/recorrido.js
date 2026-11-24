@@ -757,10 +757,10 @@
       var rooms = [], id = 0;
       lv.cells.forEach(function (c) {
         if (c.sub && c.sub.length) c.sub.forEach(function (s) { rooms.push({ id: id++, n: niceName(s.n), unit: c.n, k: s.k, x: s.x, y: s.y, w: s.w, h: s.h, use: s.use, fx: s.fx }); });
-        else rooms.push({ id: id++, n: c.n, k: c.k, x: c.x, y: c.y, w: c.w, h: c.h, cars: c.cars, use: c.use, fx: c.fx });
+        else rooms.push({ id: id++, n: c.n, k: c.k, x: c.x, y: c.y, w: c.w, h: c.h, cars: c.cars, use: c.use, fx: c.fx, wk: c.wk });
       });
       rooms.forEach(function (r) { r.ext = r.k === 'ext'; r.area = r.w * r.h; r.label = r.unit ? r.unit + ' · ' + r.n : r.n; });
-      return { index: li, rooms: rooms, H: hs[li], Hc: Math.max(2.4, hs[li] - (type === 'bodega' && li === 0 ? 0.6 : 0.28)), base: hs.slice(0, li).reduce(function (a, b) { return a + b; }, 0) };
+      return { index: li, rooms: rooms, removed: lv.removed || [], H: hs[li], Hc: Math.max(2.4, hs[li] - (type === 'bodega' && li === 0 ? 0.6 : 0.28)), base: hs.slice(0, li).reduce(function (a, b) { return a + b; }, 0) };
     });
   }
   // Aristas compartidas entre espacios (y con el exterior)
@@ -795,7 +795,8 @@
     var rooms = L.rooms, edges = L.edges, ints = rooms.filter(isInt);
     function shared(e) { return e.hi - e.lo; }
     function isKitchen(R) { return /Cocina/.test(R.n); }
-    function isOpen(a, b) { if ((a.unit || b.unit) && a.unit !== b.unit) return false; return (a.k === 'soc' && b.k === 'soc' && !/Estudio|usos/.test(a.n + b.n)) || ((a.k === 'soc' && isKitchen(b)) || (b.k === 'soc' && isKitchen(a))) || ((a.k === 'circ' && b.k === 'soc' && !/Escalera/.test(a.n)) || (b.k === 'circ' && a.k === 'soc' && !/Escalera/.test(b.n))); }
+    function cut(a, b) { return (L.removed || []).some(function (x) { return a.wk && b.wk && ((x.a === a.wk && x.b === b.wk) || (x.a === b.wk && x.b === a.wk)); }); }
+    function isOpen(a, b) { if (cut(a, b)) return true; if ((a.unit || b.unit) && a.unit !== b.unit) return false; return (a.k === 'soc' && b.k === 'soc' && !/Estudio|usos/.test(a.n + b.n)) || ((a.k === 'soc' && isKitchen(b)) || (b.k === 'soc' && isKitchen(a))) || ((a.k === 'circ' && b.k === 'soc' && !/Escalera/.test(a.n)) || (b.k === 'circ' && a.k === 'soc' && !/Escalera/.test(b.n))); }
     function cost(from, to, e) {
       var c = 10 - Math.min(shared(e), 4) * 0.5;
       if (from.k === 'bano') c += 200; if (from.k === 'coch') c += 25; if (from.k === 'serv' && !isKitchen(from)) c += 18;
@@ -840,6 +841,8 @@
         e.open.push({ lo: pos - dw / 2, hi: pos + dw / 2, y0: 0, y1: 2.15, kind: 'door', into: t.to });
       }
     });
+    // Muros quitados por el usuario: el tramo queda libre de piso a techo
+    edges.forEach(function (e) { if (e.A && e.B && cut(e.A, e.B)) e.open = [{ lo: e.lo, hi: e.hi, y0: 0, y1: 99, kind: 'none' }]; });
     L.reached = reached;
     // Jardín / terraza: cancel corredizo desde el mejor espacio interior
     rooms.filter(function (R) { return R.ext; }).forEach(function (X) {
