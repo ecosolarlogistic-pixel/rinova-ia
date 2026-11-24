@@ -41,7 +41,7 @@
 <!-- /App instalable -->
 <link rel="preload" href="assets/fonts/montserrat.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/rinova.css?v=20261128">
+<link rel="stylesheet" href="assets/css/rinova.css?v=20261129">
 <style>.auth-wait body{visibility:hidden}</style>
 <style>
 body{background:var(--mist)}
@@ -319,6 +319,15 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
 .es-svg{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}.es-svg svg{display:block;width:100%;height:auto}
 .es-svg svg *{pointer-events:none}.es-svg svg rect[data-rid]{pointer-events:all;cursor:pointer;transition:fill .15s}
 .es-svg svg rect[data-rid]:hover{fill:#FFF6DA}.es-svg svg rect.es-on{fill:#F7E7B0 !important;stroke:#D4AF37;stroke-width:4}
+.es-svg svg .wl-hit{pointer-events:stroke;stroke-width:26px;vector-effect:non-scaling-stroke}
+.es-svg svg [data-o="v"] .wl-hit{cursor:ew-resize}.es-svg svg [data-o="h"] .wl-hit{cursor:ns-resize}
+.es-svg svg .wl-mark{stroke-width:7px;vector-effect:non-scaling-stroke}
+.es-svg svg [data-wall]:hover .wl-mark{stroke:rgba(212,175,55,.5)}.es-svg svg [data-wall].on .wl-mark{stroke:#D4AF37}
+.es-wbar{margin-top:10px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;display:grid;gap:8px}
+.es-wbar:has(.es-wtt){border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-glow)}
+.es-wtt{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 10px}.es-wtt small{color:var(--muted)}
+.es-wbtns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.es-whint{margin:0;font-size:13px;color:var(--muted)}
 .es-side{display:grid;gap:12px;max-height:none}
 .es-ttl{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.es-ttl h4{margin:0}.es-ttl small{color:var(--muted)}
 .es-list{display:grid;gap:8px}
@@ -693,7 +702,7 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
                     <span class="chip" id="esInfo">—</span>
                   </div>
                   <div class="es-grid">
-                    <div class="es-plan"><div class="es-svg" id="esPlan"></div><p class="note" style="margin:8px 2px 0">El plano se actualiza mientras ajustas. Toca un espacio en el plano para editarlo.</p></div>
+                    <div class="es-plan"><div class="es-svg" id="esPlan"></div><p class="note" style="margin:8px 2px 0">El plano se actualiza mientras ajustas. Toca un espacio para editarlo o un muro para moverlo o quitarlo.</p></div>
                     <div class="panel es-side" id="esSide"></div>
                   </div>
                 </div>
@@ -1000,21 +1009,21 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
   // RINOVAIA AI: función de Supabase (supabase/functions/rinova-ia). Si no está desplegada, la app usa el análisis por reglas.
   window.RINOVA_IA = { endpoint: 'https://evjoqaphylggvojthezj.supabase.co/functions/v1/rinova-ia', key: 'sb_publishable_ll_SpxeCPe8VEFVVX1KpMg_s6DfoWkX' };
 </script>
-<script src="assets/js/facade.js?v=20261128"></script>
-<script src="assets/js/proyecto.js?v=20261128"></script>
-<script src="assets/js/planos.js?v=20261128"></script>
-<script src="assets/js/fachada.js?v=20261128"></script>
-<script src="assets/js/estudio.js?v=20261128"></script>
-<script src="assets/js/render3d.js?v=20261128"></script>
-<script src="assets/js/fachada-ui.js?v=20261128"></script>
-<script src="assets/js/recorrido.js?v=20261128"></script>
-<script src="assets/js/recorrido-ui.js?v=20261128"></script>
-<script src="assets/js/espacios.js?v=20261128"></script>
-<script src="assets/js/croquis.js?v=20261128"></script>
-<script src="assets/js/plataforma.js?v=20261128"></script>
+<script src="assets/js/facade.js?v=20261129"></script>
+<script src="assets/js/proyecto.js?v=20261129"></script>
+<script src="assets/js/planos.js?v=20261129"></script>
+<script src="assets/js/fachada.js?v=20261129"></script>
+<script src="assets/js/estudio.js?v=20261129"></script>
+<script src="assets/js/render3d.js?v=20261129"></script>
+<script src="assets/js/fachada-ui.js?v=20261129"></script>
+<script src="assets/js/recorrido.js?v=20261129"></script>
+<script src="assets/js/recorrido-ui.js?v=20261129"></script>
+<script src="assets/js/espacios.js?v=20261129"></script>
+<script src="assets/js/croquis.js?v=20261129"></script>
+<script src="assets/js/plataforma.js?v=20261129"></script>
 <script src="assets/js/vendor/supabase-2.58.0.min.js?v=20261126"></script>
-<script src="assets/js/sesion.js?v=20261128"></script>
-<script src="assets/js/nube.js?v=20261128"></script>
-<script src="pwa.js?v=20261128" defer></script>
+<script src="assets/js/sesion.js?v=20261129"></script>
+<script src="assets/js/nube.js?v=20261129"></script>
+<script src="pwa.js?v=20261129" defer></script>
 </body>
 </html>

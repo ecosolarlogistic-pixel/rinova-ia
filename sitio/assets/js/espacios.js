@@ -64,7 +64,7 @@
   }
   elLv.addEventListener('click', function (e) {
     var b = e.target.closest('button[data-l]'); if (!b) return;
-    lvl = b.dataset.l === 'jardin' ? 'jardin' : +b.dataset.l; sel = null; sideSig = ''; draw();
+    lvl = b.dataset.l === 'jardin' ? 'jardin' : +b.dataset.l; sel = null; wsel = null; sideSig = ''; draw();
   });
 
   /* ---------- Plano en vivo ---------- */
@@ -73,14 +73,102 @@
     var sh = lvl === 'jardin' ? s.sheets.filter(function (x) { return x.kind === 'site'; })[0]
       : s.sheets.filter(function (x) { return x.kind === 'plan' && x.level === lvl; })[0];
     if (!sh) { elPlan.innerHTML = ''; return; }
-    elPlan.innerHTML = sh.render(sh.kind === 'plan' ? { arq: true, cot: true } : null);
+    elPlan.innerHTML = sh.render(sh.kind === 'plan' ? { arq: true, cot: true, edit: true } : null);
     if (sel) $$('[data-rid="' + cssEsc(sel) + '"]', elPlan).forEach(function (r) { r.classList.add('es-on'); });
+    var g = wsel && wsel.l === lvl ? $('[data-wall="' + cssEsc(wsel.k) + '"]', elPlan) : null;
+    if (wsel && !g) wsel = null;
+    if (g) g.classList.add('on');
+    drawWallBar(g);
   }
   function cssEsc(s) { return String(s).replace(/["\\]/g, '\\$&'); }
   elPlan.addEventListener('click', function (e) {
-    var r = e.target.closest('[data-rid]'); if (!r) return;
+    if (dragJustEnded) { dragJustEnded = false; return; }
+    if (e.target.closest('[data-wall]')) return; // lo resuelve pointerup (en celular no llega el clic)
+    var r = e.target.closest('[data-rid]'); if (!r) { if (wsel) { wsel = null; drawPlan(); } return; }
+    wsel = null;
     selectRoom(r.getAttribute('data-rid'), true);
   });
+
+  /* ---------- Muros: tocar para seleccionar, arrastrar para mover, quitar o volver a poner ---------- */
+  var wsel = null, drag = null, dragJustEnded = false;
+  var elWall = document.createElement('div'); elWall.className = 'es-wbar'; elWall.id = 'esWall'; elWall.hidden = true;
+  elPlan.insertAdjacentElement('afterend', elWall);
+  function W() { var q = p(); if (!q.walls) q.walls = { m: [], x: [] }; return q.walls; }
+  function pairOf(k) { var i = k.indexOf('|'); return { a: k.slice(0, i), b: k.slice(i + 1) }; }
+  function same(x, l, pr) { return x.l === l && ((x.a === pr.a && x.b === pr.b) || (x.a === pr.b && x.b === pr.a)); }
+  function moveBy(k, d) {
+    var pr = pairOf(k), w = W(), m = w.m.filter(function (x) { return same(x, lvl, pr); })[0];
+    if (m) m.d = Math.round((m.d + d) * 100) / 100; else w.m.push({ l: lvl, a: pr.a, b: pr.b, d: Math.round(d * 100) / 100 });
+    w.m = w.m.filter(function (x) { return Math.abs(x.d) > 0.001; });
+    touch();
+  }
+  function wallOff(k) { var pr = pairOf(k); return W().x.some(function (x) { return same(x, lvl, pr); }); }
+  function toggleWall(k) {
+    var pr = pairOf(k), w = W();
+    if (wallOff(k)) w.x = w.x.filter(function (x) { return !same(x, lvl, pr); }); else w.x.push({ l: lvl, a: pr.a, b: pr.b });
+    touch();
+  }
+  function resetWall(k) { var pr = pairOf(k), w = W(); w.m = w.m.filter(function (x) { return !same(x, lvl, pr); }); w.x = w.x.filter(function (x) { return !same(x, lvl, pr); }); touch(); }
+  function dist(d) { var a = Math.abs(d), t = a < 1 ? Math.round(a * 100) + ' cm' : (Math.round(a * 100) / 100).toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' m'; return (d < 0 ? '−' : '+') + t; }
+  function levelEdits() { var w = W(); return w.m.filter(function (x) { return x.l === lvl; }).length + w.x.filter(function (x) { return x.l === lvl; }).length; }
+  function drawWallBar(g) {
+    if (lvl === 'jardin') { elWall.hidden = true; return; }
+    var n = levelEdits();
+    if (!g) {
+      elWall.hidden = false;
+      elWall.innerHTML = '<p class="es-whint">Toca un muro del plano para seleccionarlo. Luego arrástralo para moverlo, o quítalo para integrar los dos espacios.</p>' +
+        (n ? '<button type="button" class="btn-text" data-wact="resetlvl">Restablecer los ' + n + ' cambio(s) de muros de esta planta</button>' : '');
+      return;
+    }
+    var v = g.dataset.o === 'v', off = !!g.dataset.off, len = +g.dataset.len, mn = +g.dataset.min, mx = +g.dataset.max;
+    var pr = pairOf(g.dataset.wall), m = W().m.filter(function (x) { return same(x, lvl, pr); })[0];
+    var neg = v ? '← Izquierda' : '↑ Hacia el fondo', pos = v ? 'Derecha →' : 'Hacia la calle ↓';
+    elWall.hidden = false;
+    elWall.innerHTML = '<div class="es-wtt"><b>Muro entre ' + esc(g.dataset.na) + ' y ' + esc(g.dataset.nb) + '</b><small>' + m1(len) + ' m de largo' + (m ? ' · movido ' + dist(m.d) : '') + (off ? ' · quitado' : '') + '</small></div>' +
+      '<div class="es-wbtns">' +
+      '<button type="button" class="btn btn-ghost btn-sm" data-wact="mv" data-d="-0.25"' + (mn > -0.05 ? ' disabled' : '') + '>' + neg + ' 25 cm</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" data-wact="mv" data-d="0.25"' + (mx < 0.05 ? ' disabled' : '') + '>' + pos + ' 25 cm</button>' +
+      '<button type="button" class="btn btn-sm ' + (off ? 'btn-gold' : 'btn-danger') + '" data-wact="off">' + (off ? 'Volver a poner el muro' : 'Quitar muro') + '</button>' +
+      (m || off ? '<button type="button" class="btn-text" data-wact="reset">Deshacer cambios de este muro</button>' : '') +
+      '<button type="button" class="btn-text" data-wact="done">Listo</button></div>' +
+      '<p class="es-whint">También puedes arrastrar el muro en el plano. Se puede mover ' + m1(-mn) + ' m hacia ' + (v ? 'la izquierda' : 'el fondo') + ' y ' + m1(mx) + ' m hacia ' + (v ? 'la derecha' : 'la calle') + ' sin que un espacio quede de menos de 1.2 m.</p>';
+  }
+  elWall.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-wact]'); if (!b) return;
+    var a = b.dataset.wact;
+    if (a === 'resetlvl') { var w = W(); w.m = w.m.filter(function (x) { return x.l !== lvl; }); w.x = w.x.filter(function (x) { return x.l !== lvl; }); wsel = null; return touch(); }
+    if (!wsel) return;
+    if (a === 'mv') { var g = $('[data-wall="' + cssEsc(wsel.k) + '"]', elPlan), d = +b.dataset.d; if (g) d = Math.max(+g.dataset.min, Math.min(+g.dataset.max, d)); if (Math.abs(d) > 0.01) moveBy(wsel.k, d); return; }
+    if (a === 'off') return toggleWall(wsel.k);
+    if (a === 'reset') return resetWall(wsel.k);
+    if (a === 'done') { wsel = null; drawPlan(); }
+  });
+  // Arrastre (ratón, pluma o dedo). En celular el muro no deja que la página se desplace mientras se arrastra.
+  function svgPoint(svg, ev) { var pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+  elPlan.addEventListener('touchstart', function (e) { if (e.target.closest && e.target.closest('[data-wall]')) e.preventDefault(); }, { passive: false });
+  elPlan.addEventListener('pointerdown', function (e) {
+    var g = e.target.closest('[data-wall]'); if (!g || e.button > 0) return;
+    var svg = g.ownerSVGElement, grp = g.closest('.es-walls'); if (!svg || !grp) return;
+    drag = { g: g, svg: svg, s: +grp.dataset.s, v: g.dataset.o === 'v', p0: svgPoint(svg, e), d: 0, moved: false, id: e.pointerId, min: +g.dataset.min, max: +g.dataset.max };
+  });
+  elPlan.addEventListener('pointermove', function (e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    var pt = svgPoint(drag.svg, e), px = drag.v ? pt.x - drag.p0.x : pt.y - drag.p0.y, d = px / drag.s;
+    if (!drag.moved && Math.abs(px) < 6) return;
+    if (!drag.moved) { drag.moved = true; try { elPlan.setPointerCapture(e.pointerId); } catch (x) { /* sin captura */ } wsel = { l: lvl, k: drag.g.dataset.wall }; $$('[data-wall].on', elPlan).forEach(function (x) { x.classList.toggle('on', false); }); drag.g.classList.add('on', 'drag'); }
+    d = Math.max(drag.min, Math.min(drag.max, Math.round(d * 20) / 20)); drag.d = d;
+    drag.g.setAttribute('transform', drag.v ? 'translate(' + (d * drag.s) + ' 0)' : 'translate(0 ' + (d * drag.s) + ')');
+    var t = $('.es-wtt small', elWall); if (t) t.textContent = 'Moviendo ' + dist(d);
+  });
+  function endDrag(e) {
+    if (!drag || (e && e.pointerId !== drag.id)) return;
+    var d = drag, moved = d.moved; drag = null;
+    if (!moved) { var k = d.g.dataset.wall; wsel = wsel && wsel.k === k && wsel.l === lvl ? null : { l: lvl, k: k }; drawPlan(); return; }
+    dragJustEnded = true; setTimeout(function () { dragJustEnded = false; }, 350);
+    if (Math.abs(d.d) >= 0.05) moveBy(d.g.dataset.wall, d.d); else drawPlan();
+  }
+  elPlan.addEventListener('pointerup', endDrag);
+  elPlan.addEventListener('pointercancel', endDrag);
   function selectRoom(id, scroll) {
     sel = sel === id && !scroll ? null : id; sideSig = ''; draw();
     if (scroll) { var row = $('.es-room[data-rid="' + cssEsc(id) + '"]', elSide); if (!row) return;

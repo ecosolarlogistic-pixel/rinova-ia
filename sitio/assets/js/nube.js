@@ -134,7 +134,7 @@
       var d = r.data.data || {};
       d.name = r.data.name;
       // proyectos anteriores no traen espacios ni jardín: que no hereden los del proyecto abierto antes
-      d.rooms = d.rooms || {}; d.extra = d.extra || []; d.garden = d.garden || [];
+      d.rooms = d.rooms || {}; d.extra = d.extra || []; d.garden = d.garden || []; d.walls = d.walls || { m: [], x: [] };
       E.apply(d); E.refresh(); E.showView('studio');
       setCode(r.data); markClean(); toast('Abriste ' + r.data.name);
     });
