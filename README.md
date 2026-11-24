@@ -34,7 +34,7 @@ sitio/                      ← lo único que se publica en public_html
   assets/js/render3d.js           render 3D con giro 360°, captura y video (three.js en assets/js/vendor, MIT)
   assets/js/fachada-ui.js         vistas Mejorar fachada y Render 3D dentro de Planos
   assets/js/recorrido.js          recorrido virtual del interior por planta: muros, puertas, ventanas, escalera y mobiliario PBR
-  assets/js/recorrido-ui.js       vista Recorrido virtual dentro de Planos (planta, espacios, hora, recorrido guiado, foto)
+  assets/js/recorrido-ui.js       vista Recorrido virtual dentro de Planos (fachada, planta, jardín, espacios, hora, recorrido guiado, foto)
   assets/js/catalogo.js           catálogo de conceptos, insumos, presupuestos por obra y exportación PDF
   assets/js/xlsx-lite.js          generador de Excel (.xlsx) sin dependencias
   assets/js/plataforma.js         Obra, archivos de planos y RINOVAIA AI
