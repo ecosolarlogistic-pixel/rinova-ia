@@ -12,13 +12,13 @@
 | Render 3D 360° | `assets/js/render3d.js` arma un modelo volumétrico con los mismos datos (frente, fondo, alturas por nivel, crujías, cochera y la fachada elegida) usando three.js autoalojado, cargado solo al abrir la vista. Gira solo, se arrastra para girar, pellizco o rueda para acercar, vistas fijas, día/atardecer/noche, imagen PNG y video de una vuelta completa (MP4 o WebM según el navegador). |
 | Recorrido virtual | `assets/js/recorrido.js` levanta cada planta con la distribución del juego de planos (espacios por nivel): muros con puertas, vanos, ventanas, cancel al jardín, portón de cochera y escalera en U. Amuebla cada espacio según su uso (sala, comedor, cocina con isla, recámaras con closet, vestidor, baños con regadera y tina, estudio, lavado, cochera, jardín y terraza) con cuadros, lámparas, cortinas, tapetes, plantas y accesorios. Materiales PBR y texturas procedurales (madera, mármol, tela, azulejo) generadas en el navegador, sin archivos de terceros. Luz de entorno, sol con sombras por las ventanas, luces interiores por espacio y oclusión simulada. Exterior caminable en planta baja: empieza en la fachada (banqueta y calle, andador y cochera), entra por la puerta principal, sale al jardín posterior por el cancel (lo agrega si la planta no tiene salida directa) y rodea por los laterales; las demás plantas se ven por fuera con sus ventanas y pretil, y el terreno, las bardas y las piezas del jardín (alberca, palapa, asador…) coinciden con el render 3D. Primera persona en escritorio (arrastrar, W A S D, clic en el piso) y celular (joystick, tocar el piso), plano de ubicación, recorrido guiado, día/atardecer/noche y foto. |
 | Análisis experto | Motor de reglas: áreas mínimas por espacio, relación baños/recámaras, COS, CUS, área libre, cajones requeridos, asoleamiento por latitud, clima, sismo, suelo, costo. Da una calificación de 0 a 100 y prioridades. |
-| Croquis | Se sube foto o PDF. Sin IA, la app estima la proporción frente/fondo a partir del trazo y pide confirmar los datos; con ellos genera todo el juego y agrega el croquis como lámina A-00. |
+| Croquis, planos y fachada | Se suben uno o varios archivos (fotos o PDF, hasta 4 páginas por PDF). Sin IA, `assets/js/lectura-plano.js` detecta en el navegador el contorno y los espacios que encierran muros, puertas y ventanas, y pide las cotas (frente y fondo construidos); los nombres de los espacios son estimados. La distribución se guarda en el proyecto (`p.sk`) y todo el juego de planos se dibuja con ella a escala. El primer plano queda como lámina A-00 y una foto de fachada pasa a «Mejorar fachada». |
 
 ## Qué se activa con la función `rinova-ia`
 
 Con la función desplegada, Claude (modelo `claude-opus-5-5`) además:
 
-* **Lee el croquis**: tipo de inmueble, medidas (por cotas o por proporción), niveles, recámaras, baños, cajones, distribución y la lista de espacios con su área. Los datos llenan el formulario y el usuario los confirma antes de generar los planos.
+* **Lee cada plano** (acción `plano`, una imagen por solicitud): si es planta o fachada, el nivel, las cotas (13000 mm = 13 m), cada espacio como rectángulo en metros con su nombre y tipo, las puertas y el lado de la calle. Con eso los planos reproducen la distribución del archivo, con los nombres correctos. Si es fachada, propone estilo, material y mejoras.
 * **Redacta el dictamen** en la pestaña *Análisis experto* ("Pedir dictamen con IA"): veredicto, fortalezas, riesgos, normativa y siguientes pasos, a partir de los datos del proyecto, los cálculos y la revisión por reglas.
 
 Mientras la función no exista, la app lo indica y sigue funcionando con el motor de reglas.
@@ -31,7 +31,7 @@ supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 supabase functions deploy rinova-ia --no-verify-jwt
 ```
 
-* `--no-verify-jwt` es necesario porque la app llama con la clave publicable (`sb_publishable_...`), que no es un JWT. La función se protege con lista de orígenes permitidos (`RINOVA_ORIGENES`, por defecto rinovaia.com) y un límite de 12 solicitudes por IP cada 10 minutos.
+* `--no-verify-jwt` es necesario porque la app llama con la clave publicable (`sb_publishable_...`), que no es un JWT. La función se protege con lista de orígenes permitidos (`RINOVA_ORIGENES`, por defecto rinovaia.com) y un límite de 24 solicitudes por IP cada 10 minutos.
 * Opcional: `RINOVA_MODELO` para cambiar de modelo.
 * Costo aproximado por uso: una lectura de croquis o un dictamen consume del orden de 5 a 15 mil tokens.
 

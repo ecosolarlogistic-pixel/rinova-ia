@@ -29,6 +29,7 @@
     cells.forEach(function (c) {
       (c.sub || [c]).forEach(function (u) {
         if (!u.id || seen[u.id] || u.k === 'circ' || u.k === 'coch' || u.k === 'ext') return;
+        if (u.g) { if (seen[u.g]) return; seen[u.g] = true; }
         seen[u.id] = true; out.push(u);
       });
     });
@@ -201,10 +202,12 @@
     var tags = fx.length ? '<div class="es-tags">' + fx.map(function (x) { return '<span class="chip gold">' + esc(PR.EQUIPO[x].n) + '</span>'; }).join('') + '</div>' : '';
     if (!on) return '<div class="es-room" data-rid="' + esc(c.id) + '">' + head + tags + '</div>';
     var fxOpts = kindFx(c);
-    var body = labelField(c) +
+    // Espacio leído de un plano subido: sus medidas son las del dibujo (se cambian moviendo muros en el plano)
+    var sized = /^sk/.test(c.id) ? '<p class="hint">Medidas tomadas de tu plano: <b class="es-dim2">' + m1(c.w) + ' × ' + m1(c.h) + ' m (' + m1(c.m2) + ' m²)</b>. Para cambiarlas, toca y arrastra un muro en el plano.</p>' :
       '<div class="range"><div class="lb"><label>Tamaño objetivo</label><output class="num"><span data-out="a">' + m1(a) + '</span> m²</output></div>' +
       '<input type="range" data-act="area" min="' + lim.min + '" max="' + lim.max + '" step="0.5" value="' + a + '" aria-label="Área de ' + esc(o.n || c.n) + ' en m²"></div>' +
-      '<p class="hint">En planos queda de <b class="es-dim2">' + m1(c.w) + ' × ' + m1(c.h) + ' m (' + m1(c.m2) + ' m²)</b>. Las medidas se ajustan al reparto de la planta; si creces un espacio, los demás se acomodan.</p>' +
+      '<p class="hint">En planos queda de <b class="es-dim2">' + m1(c.w) + ' × ' + m1(c.h) + ' m (' + m1(c.m2) + ' m²)</b>. Las medidas se ajustan al reparto de la planta; si creces un espacio, los demás se acomodan.</p>';
+    var body = labelField(c) + sized +
       (fxOpts.length ? '<div class="field"><label>Equipamiento</label><div class="es-fx">' + fxOpts.map(function (x) {
         var Q = PR.EQUIPO[x], pr = fx.indexOf(x) > -1;
         return '<button type="button" class="es-tog" data-act="fx" data-fx="' + x + '" aria-pressed="' + pr + '">' + (pr ? '✓ ' : '+ ') + esc(Q.n) + '<small>+' + m1(Q.a) + ' m²</small></button>';

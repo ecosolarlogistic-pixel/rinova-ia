@@ -1,5 +1,6 @@
 // RINOVAIA AI — función de Supabase (Deno) que usa Claude para:
 //   action "croquis":  leer un croquis (foto o PDF) y devolver tipo de inmueble, medidas, niveles y programa.
+//   action "plano":    leer una planta (medidas por cotas, espacios con posición, puertas, nivel) o una fachada.
 //   action "fachada":  leer la foto o PDF de una fachada existente y proponer estilo, material y elementos.
 //   action "analisis": redactar el dictamen de arquitecto a partir de los datos y cálculos del Estudio.
 //
@@ -28,7 +29,7 @@ function json(body: unknown, status: number, origin: string | null) {
 
 // Límite sencillo por IP para que un tercero no consuma la cuenta de la API (memoria de la instancia).
 const hits = new Map<string, number[]>();
-function limited(ip: string, max = 12, windowMs = 10 * 60 * 1000) {
+function limited(ip: string, max = 24, windowMs = 10 * 60 * 1000) {
   const now = Date.now();
   const list = (hits.get(ip) ?? []).filter((t) => now - t < windowMs);
   list.push(now);
@@ -96,6 +97,118 @@ async function leerCroquis(archivo: { tipo: string; media_type: string; datos: s
           type: "text",
           text: `Lee este croquis arquitectónico (${archivo.nombre ?? "sin nombre"}). Identifica el tipo de inmueble, las medidas (usa las cotas si existen; si no, estima con proporciones y tamaños típicos de muebles y puertas), el número de niveles, recámaras, baños completos, medios baños, cajones de estacionamiento, unidades por piso y el tipo de distribución.
 Enlista cada espacio con su nivel (0 = planta baja) y área aproximada. En observaciones anota lo que no se alcanza a leer, supuestos y problemas de diseño que detectes (máximo 6, frases cortas).`,
+        },
+      ],
+    }],
+  } as never) as unknown as { content: Array<{ type: string; text?: string }>; stop_reason: string; model: string };
+  if (msg.stop_reason === "refusal") throw new Error("rechazo");
+  return { lectura: JSON.parse(texto(msg)), modelo: msg.model };
+}
+
+// Lectura geométrica de un plano, croquis o fachada (una imagen por solicitud).
+const TIPOS_ESPACIO = ["sala", "comedor", "sala_comedor", "cocina", "recamara", "recamara_principal", "bano", "medio_bano", "estudio", "estancia",
+  "pasillo", "vestibulo", "escalera", "closet", "vestidor", "lavado", "cochera", "terraza", "balcon", "jardin", "patio", "bodega", "local", "oficina", "otro"];
+const ESQUEMA_PLANO = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    clase: { type: "string", enum: ["planta", "fachada", "corte", "otro"], description: "Qué muestra la imagen" },
+    nivel: { type: "integer", description: "0 = planta baja, 1 = primer piso / planta alta…" },
+    tipo: { type: "string", enum: ["casa", "deptos", "comercial", "bodega"] },
+    frente_m: { type: "number", description: "Ancho exterior del contorno construido en metros (eje x del dibujo)" },
+    fondo_m: { type: "number", description: "Profundidad exterior del contorno construido en metros (eje y del dibujo)" },
+    cotas_leidas: { type: "boolean", description: "true si frente y fondo salen de cotas escritas en el plano" },
+    calle: { type: "string", enum: ["abajo", "arriba", "izquierda", "derecha", "desconocida"], description: "Lado del dibujo donde está la calle o el acceso principal" },
+    espacios: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          nombre: { type: "string", description: "En español de México: Sala, Comedor, Cocina, Recámara 1, Baño 1, Estudio, Estancia familiar, Escalera, Balcón…" },
+          tipo: { type: "string", enum: TIPOS_ESPACIO },
+          x: { type: "number", description: "Metros desde el borde izquierdo exterior del contorno" },
+          y: { type: "number", description: "Metros desde el borde superior exterior del contorno" },
+          ancho: { type: "number" },
+          fondo: { type: "number" },
+          grupo: { type: "integer", description: "0 si el espacio es un solo rectángulo; un mismo número > 0 para los rectángulos de un espacio en L" },
+        },
+        required: ["nombre", "tipo", "x", "y", "ancho", "fondo", "grupo"],
+      },
+    },
+    puertas: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          x: { type: "number", description: "Metros; inicio del vano" },
+          y: { type: "number" },
+          orientacion: { type: "string", enum: ["h", "v"], description: "h: en un muro horizontal (el vano corre en x); v: en un muro vertical (corre en y)" },
+          ancho: { type: "number" },
+          principal: { type: "boolean", description: "true solo para el acceso principal desde la calle" },
+        },
+        required: ["x", "y", "orientacion", "ancho", "principal"],
+      },
+    },
+    fachada: {
+      type: "object",
+      additionalProperties: false,
+      description: "Solo si clase = fachada; si no, valores por omisión",
+      properties: {
+        descripcion: { type: "string" },
+        niveles: { type: "integer" },
+        estilo_sugerido: { type: "string", enum: ["contemporaneo", "minimalista", "industrial", "tropical", "mediterraneo", "colonial"] },
+        material_principal: { type: "string", enum: ["concreto", "aplanado", "piedra", "ladrillo", "cantera", "travertino", "ocre", "grafito", "madera"] },
+        elementos: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            volado: { type: "boolean" }, celosia: { type: "boolean" }, balcones: { type: "boolean" }, pergola: { type: "boolean" },
+            jardineras: { type: "boolean" }, basamento: { type: "boolean" }, iluminacion: { type: "boolean" },
+          },
+          required: ["volado", "celosia", "balcones", "pergola", "jardineras", "basamento", "iluminacion"],
+        },
+        mejoras: { type: "array", items: { type: "string" } },
+      },
+      required: ["descripcion", "niveles", "estilo_sugerido", "material_principal", "elementos", "mejoras"],
+    },
+    observaciones: { type: "array", items: { type: "string" } },
+    confianza: { type: "number", description: "0 a 1" },
+  },
+  required: ["clase", "nivel", "tipo", "frente_m", "fondo_m", "cotas_leidas", "calle", "espacios", "puertas", "fachada", "observaciones", "confianza"],
+};
+
+async function leerPlano(archivo: { tipo: string; media_type: string; datos: string; nombre?: string }) {
+  if (!archivo?.datos || archivo.datos.length > 14_000_000) throw new Error("archivo_invalido");
+  const bloque = archivo.tipo === "pdf"
+    ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: archivo.datos } }
+    : { type: "image", source: { type: "base64", media_type: archivo.media_type || "image/jpeg", data: archivo.datos } };
+  const msg = await client.beta.messages.create({
+    model: MODEL,
+    max_tokens: 16000,
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+    system: SISTEMA_ARQ,
+    output_config: { effort: "medium", format: { type: "json_schema", schema: ESQUEMA_PLANO } },
+    messages: [{
+      role: "user",
+      content: [
+        bloque,
+        {
+          type: "text",
+          text: `Archivo: ${archivo.nombre ?? "sin nombre"}. Vas a convertir este dibujo en datos para redibujar el plano a escala.
+
+1. clase: "planta" si es una planta arquitectónica o croquis en planta; "fachada" si es una foto, render o alzado de fachada; "corte" u "otro" en los demás casos.
+2. Si es planta:
+   - frente_m y fondo_m: medidas EXTERIORES del contorno construido. Usa las cotas escritas (13000 en milímetros = 13 m; 1300 en centímetros = 13 m). Si no hay cotas, estima con puertas de 0.90 m, camas matrimoniales de 1.40 × 1.90 m y escusados de 0.40 × 0.70 m, y pon cotas_leidas = false.
+   - nivel: deduce de títulos como "planta baja", "ground floor", "planta alta", "second floor", "primer nivel" (planta baja = 0; "second floor" en inglés = 1). Si no hay pistas y hay escalera con cocina y sala, 0.
+   - espacios: TODOS los espacios como rectángulos en metros, con el origen en la esquina superior izquierda EXTERIOR del contorno, x hacia la derecha y y hacia abajo, tal como se ve en el dibujo (no lo gires). Los rectángulos deben cubrir el contorno completo sin traslaparse: incluye pasillos, vestíbulos, escalera, clósets grandes, terrazas y balcones dentro del contorno. Ajusta sus lados a los ejes de los muros que ves, de modo que dos espacios vecinos compartan exactamente el mismo borde. Un espacio en L o abierto a otro (por ejemplo estancia que rodea la escalera) se divide en rectángulos con el mismo número de grupo. Traduce los nombres al español de México y numera recámaras y baños.
+   - puertas: cada puerta o vano con su posición en metros (el punto donde empieza el vano), orientación y ancho; marca principal = true solo en el acceso desde la calle.
+   - calle: lado donde está el acceso principal o la calle (en una planta alta, el lado del balcón o de la fachada principal).
+3. Si es fachada: llena "fachada" (descripción breve, niveles, estilo y material más parecidos, elementos presentes y de 4 a 8 mejoras concretas con su porqué) y deja espacios y puertas vacíos, frente_m y fondo_m en 0.
+4. Para planta, llena fachada con valores neutros (descripcion vacía, niveles 0, contemporaneo, aplanado, elementos en false, mejoras vacío).
+5. observaciones: máximo 6 frases cortas sobre lo que no se lee, supuestos y problemas de diseño (áreas mínimas, ventilación, circulación).`,
         },
       ],
     }],
@@ -200,6 +313,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
+    if (body.action === "plano") return json(await leerPlano(body.archivo), 200, origin);
     if (body.action === "croquis") return json(await leerCroquis(body.archivo), 200, origin);
     if (body.action === "fachada") return json(await leerFachada(body.archivo), 200, origin);
     if (body.action === "analisis") return json(await analizar(body.datos), 200, origin);

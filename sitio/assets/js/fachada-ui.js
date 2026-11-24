@@ -130,12 +130,12 @@
     sg.why.slice(1).forEach(function (t) { why.push(t); });
     return { fx: f, why: why };
   }
-  function handleUp(file) {
-    if (!file) return;
+  function handleUp(file, opts) {
+    if (!file) return; opts = opts || {};
     var isPdf = /pdf$/i.test(file.type) || /\.pdf$/i.test(file.name), isImg = /^image\//.test(file.type) || /\.(jpe?g|png|webp|heic)$/i.test(file.name);
     if (!isPdf && !isImg) { E.toast('Sube la fachada en JPG, PNG o PDF.'); return; }
     if (file.size > 25 * 1024 * 1024) { E.toast('El archivo pesa más de 25 MB. Prueba con uno más ligero.'); return; }
-    if (view !== 'fachada') showPv('fachada');
+    if (view !== 'fachada' && !opts.quiet) showPv('fachada');
     var ld = document.createElement('div'); ld.className = 'fx-up-load'; ld.textContent = 'Leyendo la fachada…'; $('#fxStage').appendChild(ld);
     var bufCopy = null;
     var cp = isPdf ? readAs(file, 'readAsArrayBuffer').then(function (buf) { bufCopy = buf.slice(0); return pdfPage(buf); })
@@ -148,9 +148,9 @@
       proj().fx = sg.fx; why = sg.why;
       $('#fxCompare').checked = true;
       commit();
-      E.toast('Fachada subida: la propuesta parte de tu fachada. Desliza para comparar.');
-      // Con RINOVAIA AI activa, se afina la lectura (estilo, niveles, elementos)
-      var ai = window.RinovaIA && window.RinovaIA.readFacade;
+      if (!opts.quiet) E.toast('Fachada subida: la propuesta parte de tu fachada. Desliza para comparar.');
+      // Con RINOVAIA AI activa, se afina la lectura (estilo, niveles, elementos); si ya viene leída, se usa tal cual
+      var ai = opts.ai ? function () { return Promise.resolve({ lectura: opts.ai }); } : window.RinovaIA && window.RinovaIA.readFacade;
       if (!ai) return;
       var payload = isPdf && bufCopy && file.size < 7 * 1024 * 1024 ? { tipo: 'pdf', media_type: 'application/pdf', datos: b64(bufCopy), nombre: file.name } : { tipo: 'imagen', media_type: 'image/jpeg', datos: v.img.split(',')[1], nombre: file.name };
       return ai(payload).then(function (j) {
@@ -161,7 +161,7 @@
         why = (L.mejoras || []).slice(0, 8);
         if (L.descripcion) why.unshift('Lectura de tu fachada: ' + L.descripcion);
         foto.by = 'RINOVAIA AI'; foto.ai = L; saveFoto(foto);
-        commit(); E.toast('RINOVAIA AI leyó tu fachada y afinó la propuesta');
+        commit(); if (!opts.quiet) E.toast('RINOVAIA AI leyó tu fachada y afinó la propuesta');
       }).catch(function () { /* sin IA activa: se queda la lectura del navegador */ });
     }).catch(function () {
       E.toast(isPdf ? 'No se pudo abrir el PDF. Prueba con una foto JPG de la fachada.' : 'No se pudo leer la imagen. Prueba con otra foto en JPG.');
@@ -169,6 +169,7 @@
   }
   function b64(buf) { var s = '', b = new Uint8Array(buf), i, ch = 0x8000; for (i = 0; i < b.length; i += ch) s += String.fromCharCode.apply(null, b.subarray(i, i + ch)); return btoa(s); }
   $('#fxUp').addEventListener('change', function (e) { handleUp(e.target.files[0]); e.target.value = ''; });
+  window.RinovaFachadaUp = handleUp;
   $('#fxFileDel').addEventListener('click', function () { saveFoto(null); why = []; commit(); E.toast('Fachada subida retirada'); });
   // Arrastrar y soltar sobre el visor
   $('#fxStage').addEventListener('dragover', function (e) { e.preventDefault(); });
