@@ -630,6 +630,14 @@
     return o.join('');
   }
 
+  function photoSheet(c) {
+    var o = [];
+    o.push('<rect x="40" y="40" width="' + (VW - 80) + '" height="' + (VH - TB - 110) + '" fill="#F3F5F7"/>');
+    o.push('<image href="' + c.img + '" x="50" y="50" width="' + (VW - 100) + '" height="' + (VH - TB - 130) + '" preserveAspectRatio="xMidYMid meet"/>');
+    o.push('<text x="60" y="' + (VH - TB - 34) + '" font-size="11" fill="' + MUTED + '"><tspan font-weight="700" fill="' + INK + '">FACHADA EXISTENTE</tspan>  ·  ' + esc(c.name) + (c.by ? ' · lectura: ' + esc(c.by) : '') + '</text>');
+    return o.join('');
+  }
+
   /* ---------- API ---------- */
   function build(p, r, opts) {
     opts = opts || {};
@@ -646,6 +654,7 @@
     });
     var nA = 2 + levels.length;
     sheets.push({ code: 'A-' + String(nA).padStart(2, '0'), name: 'Fachada principal', kind: 'elev', render: function () { return frame(facadeSheet(ctx), meta('A-' + String(nA).padStart(2, '0'), 'Fachada principal', 'Alzado sur / a calle')); } });
+    if (opts.fachadaFoto) sheets.push({ code: 'R-00', name: 'Fachada existente', kind: 'img', render: function () { return frame(photoSheet(opts.fachadaFoto), meta('R-00', 'Fachada existente', 'Base para la mejora de fachada')); } });
     if (opts.fachada) sheets.push({ code: 'R-01', name: 'Fachada mejorada', kind: 'render', render: function () { return frame(fxSheet(opts.fachada), meta('R-01', 'Fachada mejorada · render', 'Estilo ' + opts.fachada.name.toLowerCase())); } });
     sheets.push({ code: 'A-' + String(nA + 1).padStart(2, '0'), name: 'Corte longitudinal', kind: 'sect', render: function () { return frame(sectionSheet(ctx), meta('A-' + String(nA + 1).padStart(2, '0'), 'Corte longitudinal A-A\'', 'Niveles y alturas')); } });
     sheets.push({ code: 'E-01', name: 'Estructural y cimentación', kind: 'struct', render: function () { return frame(structSheet(ctx), meta('E-01', 'Estructural y cimentación', 'Prediseño · ' + r.city.zone)); } });
