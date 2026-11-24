@@ -1,4 +1,4 @@
-/* VozChat v2 (skill-voz-portal): voz gratis del navegador para cualquier chat.
+/* VozChat v2.1 (skill-voz-portal; permiso de micrófono): voz gratis del navegador para cualquier chat.
    Usa la Web Speech API: SpeechRecognition para dictar y speechSynthesis para leer las respuestas.
    Sin servicios de pago ni llaves. Dos formas de usar el chat, con botones grandes con icono:
      "voz"   -> Chat de voz: hablas (o escribes) y el asistente te contesta en voz; manos libres.
@@ -36,7 +36,9 @@
 .vz-st.err{color:#a1261b;font-weight:700}
 .vz-stop{display:inline-flex;align-items:center;gap:5px;margin:0;border:1px solid var(--vz-line,var(--line,#dfe6dc));border-radius:999px;padding:5px 10px;background:#fff;color:var(--vz-ink,var(--ink,#0b3b2e));font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer}
 .vz-stop svg{width:11px;height:11px}
-.vz-stop[hidden],.vz-mic[hidden],.vz-lz [hidden]{display:none}
+.vz-act{display:inline-flex;align-items:center;gap:6px;margin:0;border:0;border-radius:999px;padding:7px 13px 7px 9px;background:linear-gradient(135deg,#d93b30,#f0663c);color:#fff;font-family:inherit;font-size:12.5px;font-weight:800;cursor:pointer;animation:vzPulso 1.6s infinite}
+.vz-act svg{width:15px;height:15px}
+.vz-act[hidden],.vz-stop[hidden],.vz-mic[hidden],.vz-lz [hidden]{display:none}
 .vz-mic{flex:none;width:var(--vz-mic,46px);height:var(--vz-mic,46px);margin:0;padding:0;border:0;border-radius:var(--vz-mic-r,14px);background:linear-gradient(135deg,#d93b30,#f0663c);color:#fff;display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 16px -6px #d93b30aa}
 .vz-mic svg{width:22px;height:22px}
 .vz-mic:hover{filter:brightness(1.06)}
@@ -131,6 +133,7 @@
     bar.innerHTML='<div class="vz-seg" role="radiogroup" aria-label="Cómo quieres usar el chat">'+lista.map(m=>`<button type="button" role="radio" data-m="${m}" title="${MODOS[m][2]}">${MODOS[m][1]}${MODOS[m][0]}</button>`).join('')+'</div><span class="vz-st" aria-live="polite"></span><button type="button" class="vz-stop" hidden>'+ICO.stop+'Callar</button>';
     if(o.after)o.after.insertAdjacentElement('afterend',bar);else raiz.prepend(bar);
     const seg=bar.querySelector('.vz-seg'),est=bar.querySelector('.vz-st'),callar=bar.querySelector('.vz-stop');
+    const actMic=document.createElement('button');actMic.type='button';actMic.className='vz-act';actMic.hidden=true;actMic.innerHTML=ICO.mic+'Activar micrófono';est.insertAdjacentElement('afterend',actMic);
     const mic=document.createElement('button');mic.type='button';mic.className='vz-mic';mic.innerHTML=ICO.mic;
     if(o.sendBtn)o.sendBtn.insertAdjacentElement('beforebegin',mic);else if(o.form)o.form.appendChild(mic);
 
@@ -142,10 +145,40 @@
       mic.setAttribute('aria-label',st.escucha?'Dejar de escuchar':'Hablar');mic.title=st.escucha?'Toca para dejar de escuchar':'Toca y habla';
       callar.hidden=!st.habla;
       est.classList.remove('err');
+      actMic.hidden=true;
+      if(modo==='voz'&&SR&&typeof micOk==='string'&&!st.escucha&&!st.habla){
+        if(micOk==='denied'&&micIntentos<2){est.textContent='Para hablar con el asistente, activa el micrófono.';actMic.hidden=false;return}
+        est.textContent=MIC_MSG[micOk];est.classList.add('err');actMic.hidden=micOk==='blocked';return}
       est.textContent=st.escucha?'Escuchando… habla ahora':st.habla?'Leyendo la respuesta…':modo==='voz'?(SR?'Toca el micrófono y habla, o escribe':'Te leo las respuestas (aquí no se puede dictar)'):modo==='texto-voz'?'Te leo cada respuesta':'Sin sonido';
     }
     // iOS solo deja hablar si la primera lectura sale de un toque: se "desbloquea" con uno silencioso.
     function desbloquear(){if(!TTS||desbloqueado)return;desbloqueado=true;try{if(!speechSynthesis.speaking){const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}}catch(_){}}
+
+    // Permiso del micrófono: se pide una sola vez (getUserMedia muestra el aviso del navegador) y se recuerda.
+    // micOk: true = permitido; null = sin saber; 'denied' | 'blocked' | 'nomic' = no se puede dictar.
+    let micOk=null,micP=null,micIntentos=0;
+    const IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+    const MIC_MSG={
+      denied:IOS?'Micrófono bloqueado. En iPhone: Ajustes › Safari › Micrófono › Permitir, y recarga. Mientras, escribe y te leo las respuestas.':'Micrófono bloqueado. Toca el candado junto a la dirección › Micrófono › Permitir, y recarga. Mientras, escribe y te leo las respuestas.',
+      blocked:'Esta página aún no tiene permiso para usar el micrófono. Escribe y te leo las respuestas.',
+      nomic:'No encontré micrófono en este equipo. Escribe y te leo las respuestas.'};
+    const politicaBloquea=()=>{try{const fp=document.permissionsPolicy||document.featurePolicy;return !!(fp&&fp.allowsFeature&&!fp.allowsFeature('microphone'))}catch(_){return false}};
+    try{navigator.permissions&&navigator.permissions.query({name:'microphone'}).then(ps=>{
+      const ver=()=>{if(ps.state==='granted'){micOk=true}else if(ps.state==='denied'&&micOk!=='blocked'){micOk=politicaBloquea()?'blocked':'denied'}else if(micOk!==true)micOk=null;pintar()};
+      ver();ps.onchange=ver}).catch(()=>{})}catch(_){}
+    function micMal(r){micIntentos++;micOk=r;st.ciclo=false;dejarDeEscuchar();pintar()}
+    function pedirMic(){
+      if(micOk===true)return Promise.resolve(true);
+      if(politicaBloquea()){micMal('blocked');return Promise.resolve(false)}
+      if(micP)return micP;
+      const md=navigator.mediaDevices;
+      if(!md||!md.getUserMedia){micOk=true;return Promise.resolve(true)}
+      micP=md.getUserMedia({audio:true}).then(str=>{try{str.getTracks().forEach(t=>t.stop())}catch(_){}micOk=true;return true},
+        e=>{const n=e&&e.name;if(n==='NotAllowedError'||n==='SecurityError'||n==='PermissionDeniedError'){micMal(politicaBloquea()?'blocked':'denied');return false}
+          if(n==='NotFoundError'||n==='DevicesNotFoundError'){micMal('nomic');return false}
+          micOk=true;return true}).then(r=>{micP=null;pintar();return r});
+      return micP;
+    }
 
     function callarYa(){turno++;clearInterval(vigia);if(st.habla&&TTS){try{speechSynthesis.cancel()}catch(_){}}st.habla=false;pintar()}
     function hablar(texto,alTerminar){
@@ -164,7 +197,9 @@
 
     function dejarDeEscuchar(){if(rec){rec._cancelado=true;try{rec.abort()}catch(_){}rec=null}if(st.escucha){st.escucha=false;pintar()}}
     function escuchar(){
-      if(!SR||st.escucha)return;callarYa();
+      if(!SR||st.escucha)return;
+      if(micOk!==true){if(typeof micOk==='string')return;pedirMic().then(ok=>{if(ok&&modo==='voz'&&st.ciclo&&(!o.isOpen||o.isOpen()))escuchar()});return}
+      callarYa();
       let r;try{r=new SR()}catch(_){aviso('Tu navegador no permite dictar.',true);return}
       rec=r;r.lang=lang;r.interimResults=true;r.continuous=false;r.maxAlternatives=1;
       let final='',error='';const inp=o.input;
@@ -174,9 +209,9 @@
       r.onend=()=>{
         if(rec===r)rec=null;st.escucha=false;pintar();if(r._cancelado)return;
         const t=(final||(inp&&inp.value)||'').trim();
-        if(error==='not-allowed'||error==='service-not-allowed'){st.ciclo=false;aviso('Permite el micrófono: toca el candado junto a la dirección de la página.',true);return}
+        if(error==='not-allowed'||error==='service-not-allowed'){micMal(politicaBloquea()?'blocked':'denied');return}
         if(error==='network'){st.ciclo=false;aviso('El dictado necesita internet. Intenta de nuevo o escribe.',true);return}
-        if(error==='audio-capture'){st.ciclo=false;aviso('No encontré micrófono en este equipo.',true);return}
+        if(error==='audio-capture'){micMal('nomic');return}
         if(!t){st.ciclo=false;aviso('No te escuché. Toca el micrófono para hablar.');return}
         if(inp){inp.value='';inp.dispatchEvent(new Event('input',{bubbles:true}))}
         o.onSend&&o.onSend(t);
@@ -192,6 +227,7 @@
       if(m!=='voz'){st.ciclo=false;dejarDeEscuchar()}
       pintar();
       if(porToque&&m!=='texto')desbloquear();
+      if(porToque&&m==='voz'&&SR&&micOk!==true&&typeof micOk!=='string')pedirMic();
       if(m==='voz'&&porToque&&(escucharYa===undefined?antes!=='voz':escucharYa)){st.ciclo=true;if(SR)escuchar()}
       else if(m==='voz'&&porToque)st.ciclo=true;
       if(m==='voz'&&!SR&&porToque)aviso('Aquí no se puede dictar (usa Chrome, Edge o Safari). Escribe y te leo las respuestas.');
@@ -199,7 +235,8 @@
     }
     seg.addEventListener('click',e=>{const b=e.target.closest('button[data-m]');if(b)ponerModo(b.dataset.m,true)});
     seg.addEventListener('keydown',e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;e.preventDefault();const ms=lista.filter(puede);let i=ms.indexOf(modo)+(e.key==='ArrowRight'?1:-1);i=(i+ms.length)%ms.length;ponerModo(ms[i],true);seg.querySelector(`[data-m="${ms[i]}"]`).focus()});
-    mic.addEventListener('click',()=>{desbloquear();if(st.escucha){st.ciclo=false;dejarDeEscuchar();return}st.ciclo=true;escuchar()});
+    mic.addEventListener('click',()=>{desbloquear();if(st.escucha){st.ciclo=false;dejarDeEscuchar();return}if(typeof micOk==='string')micOk=null;st.ciclo=true;escuchar()});
+    actMic.addEventListener('click',()=>{desbloquear();micOk=null;st.ciclo=true;escuchar()});
     callar.addEventListener('click',()=>{st.ciclo=false;callarYa()});
     if(o.input)o.input.addEventListener('keydown',e=>{if(e.isTrusted&&st.habla){callarYa()}});
     if(o.form)o.form.addEventListener('submit',()=>{if(modo!=='texto'){desbloquear();if(modo==='voz')st.ciclo=!!SR&&st.ciclo}},true);
