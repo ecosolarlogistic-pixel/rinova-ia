@@ -1,4 +1,4 @@
-/* VozChat v2.1 (skill-voz-portal; permiso de micrófono): voz gratis del navegador para cualquier chat.
+/* VozChat v2.2 (skill-voz-portal; permiso de micrófono, iPhone): voz gratis del navegador para cualquier chat.
    Usa la Web Speech API: SpeechRecognition para dictar y speechSynthesis para leer las respuestas.
    Sin servicios de pago ni llaves. Dos formas de usar el chat, con botones grandes con icono:
      "voz"   -> Chat de voz: hablas (o escribes) y el asistente te contesta en voz; manos libres.
@@ -148,7 +148,7 @@
       actMic.hidden=true;
       if(modo==='voz'&&SR&&typeof micOk==='string'&&!st.escucha&&!st.habla){
         if(micOk==='denied'&&micIntentos<2){est.textContent='Para hablar con el asistente, activa el micrófono.';actMic.hidden=false;return}
-        est.textContent=MIC_MSG[micOk];est.classList.add('err');actMic.hidden=micOk==='blocked';return}
+        est.textContent=MIC_MSG[micOk]||MIC_MSG.denied;est.classList.add('err');actMic.hidden=micOk==='blocked'||micOk==='dictado';return}
       est.textContent=st.escucha?'Escuchando… habla ahora':st.habla?'Leyendo la respuesta…':modo==='voz'?(SR?'Toca el micrófono y habla, o escribe':'Te leo las respuestas (aquí no se puede dictar)'):modo==='texto-voz'?'Te leo cada respuesta':'Sin sonido';
     }
     // iOS solo deja hablar si la primera lectura sale de un toque: se "desbloquea" con uno silencioso.
@@ -156,12 +156,15 @@
 
     // Permiso del micrófono: se pide una sola vez (getUserMedia muestra el aviso del navegador) y se recuerda.
     // micOk: true = permitido; null = sin saber; 'denied' | 'blocked' | 'nomic' = no se puede dictar.
-    let micOk=null,micP=null,micIntentos=0;
+    let micOk=null,micP=null,micIntentos=0,ultimoToque=0;
+    document.addEventListener('pointerdown',()=>{ultimoToque=Date.now()},true);document.addEventListener('touchend',()=>{ultimoToque=Date.now()},true);
     const IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
     const MIC_MSG={
       denied:IOS?'Micrófono bloqueado. En iPhone: Ajustes › Safari › Micrófono › Permitir, y recarga. Mientras, escribe y te leo las respuestas.':'Micrófono bloqueado. Toca el candado junto a la dirección › Micrófono › Permitir, y recarga. Mientras, escribe y te leo las respuestas.',
       blocked:'Esta página aún no tiene permiso para usar el micrófono. Escribe y te leo las respuestas.',
-      nomic:'No encontré micrófono en este equipo. Escribe y te leo las respuestas.'};
+      nomic:'No encontré micrófono en este equipo. Escribe y te leo las respuestas.',
+      busy:'El micrófono está ocupado (¿estás en una llamada o lo usa otra app?). Termina y toca «Activar micrófono», o escribe y te leo las respuestas.',
+      dictado:IOS?'Para dictar en iPhone activa el dictado: Ajustes › General › Teclado › Activar dictado (y Siri, si lo pide). Mientras, escribe y te leo las respuestas.':'Este navegador no deja dictar aquí. Escribe y te leo las respuestas.'};
     const politicaBloquea=()=>{try{const fp=document.permissionsPolicy||document.featurePolicy;return !!(fp&&fp.allowsFeature&&!fp.allowsFeature('microphone'))}catch(_){return false}};
     try{navigator.permissions&&navigator.permissions.query({name:'microphone'}).then(ps=>{
       const ver=()=>{if(ps.state==='granted'){micOk=true}else if(ps.state==='denied'&&micOk!=='blocked'){micOk=politicaBloquea()?'blocked':'denied'}else if(micOk!==true)micOk=null;pintar()};
@@ -172,10 +175,12 @@
       if(politicaBloquea()){micMal('blocked');return Promise.resolve(false)}
       if(micP)return micP;
       const md=navigator.mediaDevices;
-      if(!md||!md.getUserMedia){micOk=true;return Promise.resolve(true)}
+      // En iPhone/iPad el propio dictado pide el permiso; abrir antes getUserMedia puede dejar el micrófono ocupado.
+      if(IOS||!md||!md.getUserMedia){micOk=true;return Promise.resolve(true)}
       micP=md.getUserMedia({audio:true}).then(str=>{try{str.getTracks().forEach(t=>t.stop())}catch(_){}micOk=true;return true},
         e=>{const n=e&&e.name;if(n==='NotAllowedError'||n==='SecurityError'||n==='PermissionDeniedError'){micMal(politicaBloquea()?'blocked':'denied');return false}
           if(n==='NotFoundError'||n==='DevicesNotFoundError'){micMal('nomic');return false}
+          if(n==='NotReadableError'||n==='TrackStartError'||n==='AbortError'){micMal('busy');return false}
           micOk=true;return true}).then(r=>{micP=null;pintar();return r});
       return micP;
     }
@@ -198,6 +203,7 @@
     function dejarDeEscuchar(){if(rec){rec._cancelado=true;try{rec.abort()}catch(_){}rec=null}if(st.escucha){st.escucha=false;pintar()}}
     function escuchar(){
       if(!SR||st.escucha)return;
+      if(IOS&&micOk===null)micOk=true; // iPhone: el dictado pide el permiso solo y debe arrancar en este mismo toque
       if(micOk!==true){if(typeof micOk==='string')return;pedirMic().then(ok=>{if(ok&&modo==='voz'&&st.ciclo&&(!o.isOpen||o.isOpen()))escuchar()});return}
       callarYa();
       let r;try{r=new SR()}catch(_){aviso('Tu navegador no permite dictar.',true);return}
@@ -209,9 +215,12 @@
       r.onend=()=>{
         if(rec===r)rec=null;st.escucha=false;pintar();if(r._cancelado)return;
         const t=(final||(inp&&inp.value)||'').trim();
-        if(error==='not-allowed'||error==='service-not-allowed'){micMal(politicaBloquea()?'blocked':'denied');return}
+        // iPhone a veces no deja abrir el micrófono solo (sin un toque reciente): no es un bloqueo, basta tocar.
+        if(error==='not-allowed'&&IOS&&Date.now()-ultimoToque>2000){st.ciclo=false;aviso('Toca el micrófono para responder.');return}
+        if(error==='not-allowed'){micMal(politicaBloquea()?'blocked':'denied');return}
+        if(error==='service-not-allowed'){micMal(IOS?'dictado':(politicaBloquea()?'blocked':'denied'));return}
         if(error==='network'){st.ciclo=false;aviso('El dictado necesita internet. Intenta de nuevo o escribe.',true);return}
-        if(error==='audio-capture'){micMal('nomic');return}
+        if(error==='audio-capture'){micMal('busy');return}
         if(!t){st.ciclo=false;aviso('No te escuché. Toca el micrófono para hablar.');return}
         if(inp){inp.value='';inp.dispatchEvent(new Event('input',{bubbles:true}))}
         o.onSend&&o.onSend(t);
@@ -228,7 +237,8 @@
       pintar();
       if(porToque&&m!=='texto')desbloquear();
       if(porToque&&m==='voz'&&SR&&micOk!==true&&typeof micOk!=='string')pedirMic();
-      if(m==='voz'&&porToque&&(escucharYa===undefined?antes!=='voz':escucharYa)){st.ciclo=true;if(SR)escuchar()}
+      // En iPhone el dictado debe arrancar dentro del mismo toque: escucha de inmediato (el saludo queda escrito).
+      if(m==='voz'&&porToque&&(IOS&&SR||(escucharYa===undefined?antes!=='voz':escucharYa))){st.ciclo=true;if(SR)escuchar()}
       else if(m==='voz'&&porToque)st.ciclo=true;
       if(m==='voz'&&!SR&&porToque)aviso('Aquí no se puede dictar (usa Chrome, Edge o Safari). Escribe y te leo las respuestas.');
       o.onMode&&o.onMode(m);return true;
