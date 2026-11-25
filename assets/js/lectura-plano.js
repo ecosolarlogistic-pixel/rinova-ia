@@ -262,23 +262,90 @@
 
   /* ---------- Lectura de RINOVAIA AI → formato de la app ---------- */
   var KIND = { sala: 'soc', comedor: 'soc', sala_comedor: 'soc', estancia: 'soc', estudio: 'soc', oficina: 'ofi', cocina: 'serv', lavado: 'serv', closet: 'serv', vestidor: 'rec', bodega: 'alm',
-    recamara: 'rec', recamara_principal: 'rec', bano: 'bano', medio_bano: 'bano', pasillo: 'circ', vestibulo: 'circ', escalera: 'circ', cochera: 'coch', terraza: 'ext', balcon: 'ext', jardin: 'ext', patio: 'ext', local: 'com', otro: 'soc' };
-  function fromAI(L) {
-    var W = +L.frente_m, D = +L.fondo_m;
+    recamara: 'rec', recamara_principal: 'rec', bano: 'bano', medio_bano: 'bano', pasillo: 'circ', vestibulo: 'circ', escalera: 'circ', cochera: 'coch', terraza: 'ext', balcon: 'ext', jardin: 'ext', patio: 'ext',
+    local: 'com', cuarto_servicio: 'rec', doble_altura: 'circ', otro: 'soc' };
+  // P: una planta de la lectura (L.plantas[i]) o la lectura antigua con los campos en el nivel superior
+  function fromAI(P) {
+    var W = +P.frente_m, D = +P.fondo_m;
     if (!(W > 1 && D > 1)) return null;
-    var rooms = (L.espacios || []).map(function (e) {
+    var rooms = (P.espacios || []).map(function (e) {
       var k = KIND[e.tipo] || 'soc', n = String(e.nombre || '').slice(0, 40) || 'Espacio';
       if (e.tipo === 'escalera' && !/^Escalera/i.test(n)) n = 'Escalera';
       if (e.tipo === 'medio_bano' && !/medio/i.test(n)) n = 'Medio baño';
+      if (e.tipo === 'doble_altura' && !/doble|vac/i.test(n)) n = 'Doble altura';
       return { n: n, k: k, x: +e.x || 0, y: +e.y || 0, w: +e.ancho || 0, h: +e.fondo || 0, g: e.grupo > 0 ? e.grupo : null, t: e.tipo };
     }).filter(function (q) { return q.w > 0.2 && q.h > 0.2; });
-    var doors = (L.puertas || []).map(function (d) { return { x: +d.x || 0, y: +d.y || 0, o: d.orientacion === 'v' ? 'v' : 'h', w: Math.max(0.6, Math.min(3, +d.ancho || 0.9)), main: !!d.principal }; });
-    var g = rotate({ W: W, D: D, rooms: rooms, doors: doors }, L.calle);
-    g.rooms.forEach(function (q) { // dentro del contorno
-      q.x = clamp(q.x, 0, g.W - 0.3); q.y = clamp(q.y, 0, g.D - 0.3); q.w = Math.min(q.w, g.W - q.x); q.h = Math.min(q.h, g.D - q.y);
-      q.x = r2(q.x); q.y = r2(q.y); q.w = r2(q.w); q.h = r2(q.h);
-    });
+    var doors = (P.puertas || []).map(function (d) { return { x: +d.x || 0, y: +d.y || 0, o: d.orientacion === 'v' ? 'v' : 'h', w: Math.max(0.6, Math.min(3, +d.ancho || 0.9)), main: !!d.principal }; });
+    var fix = repair(rooms, doors, W, D, P.ejes_x, P.ejes_y);
+    var g = rotate({ W: W, D: D, rooms: fix.rooms, doors: fix.doors }, P.calle);
+    g.rooms.forEach(function (q) { q.x = r2(q.x); q.y = r2(q.y); q.w = r2(q.w); q.h = r2(q.h); });
+    g.quality = fix.quality;
     return g;
+  }
+
+  /* Corrige la geometría leída: lados sobre los ejes de cotas, muros compartidos entre vecinos,
+     sin traslapes y dentro del contorno. Devuelve también qué tan completa quedó la planta. */
+  function repair(rooms, doors, W, D, ex, ey) {
+    var tol = Math.max(0.12, Math.min(0.3, 0.02 * Math.max(W, D)));
+    function axes(list, L) { var a = [0, L]; (list || []).forEach(function (v) { v = +v; if (v > 0.05 && v < L - 0.05) a.push(v); }); return a.sort(function (p, q) { return p - q; }); }
+    var AX = axes(ex, W), AY = axes(ey, D);
+    rooms.forEach(function (q) { // dentro del contorno
+      q.x = clamp(q.x, 0, W - 0.3); q.y = clamp(q.y, 0, D - 0.3); q.x1 = Math.min(W, q.x + q.w); q.y1 = Math.min(D, q.y + q.h);
+    });
+    // 1) a los ejes de cotas
+    function toAxis(v, A) { var best = v, bd = tol; A.forEach(function (a) { var d = Math.abs(a - v); if (d < bd) { bd = d; best = a; } }); return best; }
+    rooms.forEach(function (q) { q.x = toAxis(q.x, AX); q.x1 = toAxis(q.x1, AX); q.y = toAxis(q.y, AY); q.y1 = toAxis(q.y1, AY); });
+    // 2) bordes casi iguales de espacios vecinos → un solo muro
+    function cluster(keyA, keyB, fixed) {
+      var vals = [];
+      rooms.forEach(function (q, i) { vals.push({ v: q[keyA], i: i, k: keyA }, { v: q[keyB], i: i, k: keyB }); });
+      vals.sort(function (p, q) { return p.v - q.v; });
+      var grp = [];
+      function flush() {
+        if (grp.length > 1) {
+          var pin = null; grp.forEach(function (o) { fixed.forEach(function (a) { if (Math.abs(o.v - a) < 1e-6) pin = a; }); });
+          var m = pin != null ? pin : grp.reduce(function (s, o) { return s + o.v; }, 0) / grp.length;
+          grp.forEach(function (o) { rooms[o.i][o.k] = m; });
+        }
+        grp = [];
+      }
+      vals.forEach(function (o) { if (grp.length && o.v - grp[0].v > 0.15) flush(); grp.push(o); });
+      flush();
+    }
+    cluster('x', 'x1', AX); cluster('y', 'y1', AY);
+    // 3) traslapes: el espacio menor cede la franja más angosta
+    var fixes = 0;
+    for (var pass = 0; pass < 2; pass++) rooms.forEach(function (a, i) {
+      rooms.forEach(function (b, j) {
+        if (j <= i) return;
+        var ox = Math.min(a.x1, b.x1) - Math.max(a.x, b.x), oy = Math.min(a.y1, b.y1) - Math.max(a.y, b.y);
+        if (ox <= 0.05 || oy <= 0.05) return;
+        if (a.g && a.g === b.g) return; // partes del mismo espacio: se resuelve abajo
+        var s = (a.x1 - a.x) * (a.y1 - a.y) <= (b.x1 - b.x) * (b.y1 - b.y) ? a : b, o = s === a ? b : a;
+        if (ox <= oy) { if (s.x < o.x) s.x1 = o.x; else s.x = o.x1; }
+        else { if (s.y < o.y) s.y1 = o.y; else s.y = o.y1; }
+        fixes++;
+      });
+    });
+    var out = rooms.filter(function (q) { return q.x1 - q.x > 0.3 && q.y1 - q.y > 0.3; }).map(function (q) {
+      return { n: q.n, k: q.k, x: q.x, y: q.y, w: q.x1 - q.x, h: q.y1 - q.y, g: q.g, t: q.t };
+    });
+    // 4) puertas sobre el muro más cercano
+    var ws = { h: [0, D], v: [0, W] };
+    out.forEach(function (q) { ws.h.push(q.y, q.y + q.h); ws.v.push(q.x, q.x + q.w); });
+    doors.forEach(function (d) {
+      var L = d.o === 'h' ? ws.h : ws.v, c = d.o === 'h' ? d.y : d.x, best = c, bd = 0.6;
+      L.forEach(function (v) { var dd = Math.abs(v - c); if (dd < bd) { bd = dd; best = v; } });
+      if (d.o === 'h') { d.y = best; d.x = clamp(d.x, 0, W - d.w); } else { d.x = best; d.y = clamp(d.y, 0, D - d.w); }
+    });
+    // 5) cobertura del rectángulo envolvente (malla de 10 cm)
+    var nx = Math.max(1, Math.round(W * 10)), ny = Math.max(1, Math.round(D * 10)), cells = new Uint8Array(nx * ny), cov = 0;
+    out.forEach(function (q) {
+      for (var yy = Math.floor(q.y * 10); yy < Math.min(ny, Math.ceil((q.y + q.h) * 10)); yy++)
+        for (var xx = Math.floor(q.x * 10); xx < Math.min(nx, Math.ceil((q.x + q.w) * 10)); xx++) cells[yy * nx + xx] = 1;
+    });
+    for (var c = 0; c < cells.length; c++) cov += cells[c];
+    return { rooms: out, doors: doors, quality: { coverage: cov / cells.length, overlapsFixed: fixes, axes: AX.length + AY.length - 4 } };
   }
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
   // Gira la lectura para que la calle quede abajo
@@ -314,5 +381,22 @@
     return c;
   }
 
-  window.RinovaLecturaPlano = { detect: detect, looksLikeFacade: looksLikeFacade, classify: classify, fromAI: fromAI, rotate: rotate, counts: counts };
+  /* Varias plantas: todas en el mismo marco (el mayor). Si dos niveles tienen escalera, se alinean por ella;
+     si no, la planta menor se apoya al frente (abajo, la calle) y centrada. Escribe ox, oy en cada lectura. */
+  function align(gs) {
+    var W = 0, D = 0; gs.forEach(function (g) { W = Math.max(W, g.W); D = Math.max(D, g.D); });
+    var base = gs.filter(function (g) { return g.W >= W - 0.05 && g.D >= D - 0.05; })[0] || gs[0];
+    function stair(g) { return g.rooms.filter(function (q) { return q.t === 'escalera' || /^Escalera/.test(q.n); })[0]; }
+    var sb = base && stair(base);
+    gs.forEach(function (g) {
+      g.ox = 0; g.oy = 0;
+      if (g === base || (g.W >= W - 0.05 && g.D >= D - 0.05)) return;
+      var s = stair(g);
+      if (sb && s) { g.ox = sb.x - s.x; g.oy = sb.y - s.y; }
+      else { g.ox = (W - g.W) / 2; g.oy = D - g.D; }
+      g.ox = clamp(g.ox, 0, W - g.W); g.oy = clamp(g.oy, 0, D - g.D);
+    });
+    return { W: W, D: D };
+  }
+  window.RinovaLecturaPlano = { detect: detect, looksLikeFacade: looksLikeFacade, classify: classify, fromAI: fromAI, repair: repair, rotate: rotate, counts: counts, align: align };
 })();
