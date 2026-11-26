@@ -2445,6 +2445,14 @@
         tour = { list: order, i: 0, wait: 0, t: 0 }; nextTour();
       },
       setHora: function (h) { hora = h; updateSun(); renderer.shadowMap.needsUpdate = true; dirty = true; },
+      // Colores de la fachada (los mismos de la propuesta y del render 3D): muro, cancelería y portón
+      setFacade: function (fc) {
+        if (!fc) return;
+        if (fc.muro) M.facade.color.set(fc.muro);
+        if (fc.cancel) M.alu.color.set(fc.cancel);
+        if (fc.porton) M.garage.color.set(fc.porton);
+        dirty = true;
+      },
       resize: resize,
       start: function () { if (running) return; running = true; lastT = 0; dirty = true; raf = requestAnimationFrame(frame); },
       stop: function () { running = false; keys = {}; if (raf) cancelAnimationFrame(raf); raf = 0; },

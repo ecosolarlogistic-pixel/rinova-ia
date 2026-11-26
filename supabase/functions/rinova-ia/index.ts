@@ -270,8 +270,36 @@ const ESQUEMA_FACHADA = {
       required: ["volado", "celosia", "balcones", "pergola", "jardineras", "basamento", "iluminacion"],
     },
     mejoras: { type: "array", items: { type: "string" } },
+    replica: {
+      type: "object",
+      additionalProperties: false,
+      description: "La fachada tal como se ve, para reproducirla sobre el proyecto del cliente",
+      properties: {
+        muro_hex: { type: "string", description: "Color dominante del muro como #RRGGBB (blanco cálido, gris, etc.), corrigiendo sombras y la luz del atardecer" },
+        acento_hex: { type: "string", description: "Color de un volumen o franja de acento vertical (#RRGGBB) o cadena vacía si no hay" },
+        cancel_hex: { type: "string", description: "Color de la cancelería / marcos de ventana (#RRGGBB)" },
+        puerta_hex: { type: "string", description: "Color de la puerta principal (#RRGGBB)" },
+        porche_hex: { type: "string", description: "Color del fondo del acceso o porche remetido (#RRGGBB)" },
+        textura: { type: "string", enum: ["concreto", "aplanado", "piedra", "ladrillo", "cantera", "travertino", "ocre", "grafito", "madera"] },
+        ventanas: { type: "string", enum: ["cuadricula", "lisa", "franja", "arco", "marco"], description: "cuadricula: ventanales divididos por perfiles en paños" },
+        travesano: { type: "boolean", description: "true si las ventanas o la puerta tienen un paño horizontal alto (travesaño / fijo superior)" },
+        ventana_alta: { type: "boolean", description: "true si las ventanas van de piso a techo" },
+        puerta_lado: { type: "string", enum: ["izq", "centro", "der"] },
+        puerta_doble: { type: "boolean" },
+        porche: { type: "boolean", description: "true si el acceso está remetido bajo una losa o volumen, con fondo de otro color" },
+        losa_volada: { type: "boolean", description: "true si hay una losa o volado sobre el acceso" },
+        balcon: { type: "string", enum: ["vidrio", "herreria", "ninguno"] },
+        balcon_lado: { type: "string", enum: ["izq", "centro", "der", "todos"] },
+        acento_lado: { type: "string", enum: ["izq", "der", "ninguno"] },
+        acento_ancho: { type: "number", description: "Fracción del frente que ocupa el acento, 0.2 a 0.6" },
+        acento_desde: { type: "integer", description: "0 si el acento baja hasta el suelo, 1 si empieza en la planta alta" },
+        cubierta: { type: "string", enum: ["plano", "teja"] },
+        cochera: { type: "boolean", description: "true si se ve un portón de cochera" },
+      },
+      required: ["muro_hex", "acento_hex", "cancel_hex", "puerta_hex", "porche_hex", "textura", "ventanas", "travesano", "ventana_alta", "puerta_lado", "puerta_doble", "porche", "losa_volada", "balcon", "balcon_lado", "acento_lado", "acento_ancho", "acento_desde", "cubierta", "cochera"],
+    },
   },
-  required: ["descripcion", "niveles", "estilo_actual", "estilo_sugerido", "material_principal", "elementos", "mejoras"],
+  required: ["descripcion", "niveles", "estilo_actual", "estilo_sugerido", "material_principal", "elementos", "mejoras", "replica"],
 };
 
 async function leerFachada(archivo: { tipo: string; media_type: string; datos: string; nombre?: string }) {
@@ -292,9 +320,10 @@ async function leerFachada(archivo: { tipo: string; media_type: string; datos: s
         bloque,
         {
           type: "text",
-          text: `Esta es la fachada actual de un inmueble (${archivo.nombre ?? "sin nombre"}), en foto, render o plano.
-Describe en una frase lo que ves (niveles, material, cubierta, vanos). Indica su estilo actual y el material principal más parecido.
-Propón el estilo que mejor la renueva sin perder su carácter y qué elementos agregar. En "mejoras" da de 4 a 8 frases cortas y concretas, cada una con su porqué (clima, luz, privacidad, mantenimiento o valor).`,
+          text: `Esta es la fachada de referencia (${archivo.nombre ?? "sin nombre"}), en foto, render o plano: el cliente quiere que la fachada de su proyecto se vea igual.
+Describe en una frase lo que ves (niveles, material, cubierta, vanos). Indica su estilo y el material principal más parecido.
+En "replica" describe la fachada TAL COMO SE VE para reproducirla: colores reales en #RRGGBB (corrige la luz cálida del atardecer y las sombras: un muro blanco es blanco), tipo de ventanas, travesaño, lado y tipo de la puerta, porche remetido, losa volada, balcón y su lado, volumen de acento y cubierta. Los lados se dicen mirando la fachada de frente.
+En "elementos" marca lo que tiene la referencia. En "mejoras" da de 3 a 6 frases cortas sobre cómo adaptar esa fachada al proyecto, cada una con su porqué (clima, luz, privacidad, mantenimiento o valor).`,
         },
       ],
     }],
