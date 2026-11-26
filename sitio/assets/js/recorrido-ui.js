@@ -21,7 +21,7 @@
   function show() {
     open = true;
     if (!RV.webgl()) { $('#rvLoad').textContent = 'Tu navegador no tiene WebGL activo; el recorrido virtual necesita aceleración gráfica.'; return; }
-    if (ctl) { if (stale) rebuild(true); ctl.resize(); ctl.start(); return; }
+    if (ctl) { if (stale || facSig() !== lastFac) rebuild(true); ctl.resize(); ctl.start(); return; }
     if (busy) return; busy = true;
     $('#rvLoad').hidden = false; $('#rvLoad').textContent = 'Amueblando los espacios…';
     RV.load().then(function () {
@@ -44,11 +44,15 @@
       if (window.console) console.error(err);
     }).then(function () { busy = false; });
   }
+  // la fachada mejorada cambia el frente del recorrido: si cambió desde la última vez, se reconstruye
+  var lastFac = '';
+  function facSig() { try { var FU = window.RinovaFachadaUI, f = FU && FU.facade && FU.facade(); if (!f) return ''; var sp = f.spec || {}; return JSON.stringify([f.muro, f.cancel, f.puerta, sp.ops, sp.volado, sp.porch, sp.accent, sp.pv && sp.pv.length]); } catch (e) { return ''; } }
   function hide() { open = false; if (ctl) ctl.stop(); setTour(false); }
   function rebuild(keep) {
     var d = data(); stale = false; nLevels = d.levels.length;
     var FU = window.RinovaFachadaUI;
     if (FU && FU.facade) ctl.setFacade(FU.facade());
+    lastFac = facSig();
     ctl.setModel(d.levels, d.W, d.D, keep, d.site);
     $('#rvLevels').innerHTML = d.levels.map(function (L, i) { return '<button type="button" data-l="' + i + '" aria-pressed="false">' + lvName(i) + '</button>'; }).join('');
     $('#rvLevels').style.display = d.levels.length > 1 ? '' : 'none';
