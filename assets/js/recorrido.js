@@ -814,6 +814,8 @@
       if (to.k === 'rec' && !/Vestidor/.test(to.n)) c += from.k === 'circ' ? -4 : from.k === 'soc' ? 2 : 30;
       if (isOpen(from, to)) c -= 6;
       if (from.unit && to.unit && from.unit !== to.unit) c += 400;
+      // la escalera no reparte a recámaras, baños ni servicios: su puerta caería sobre el tramo o el hueco
+      if (/Escalera/.test(from.n + to.n) && !/elevador/i.test(from.n + to.n) && !((from.k === 'soc' || from.k === 'circ') && (to.k === 'soc' || to.k === 'circ'))) c += 150;
       return c;
     }
     // acceso
