@@ -899,9 +899,12 @@
     var ints = L.rooms.filter(isInt), fz = 0;
     ints.forEach(function (R) { fz = Math.max(fz, R.y + R.h); });
     return L.edges.filter(function (e) {
-      if (e.axis !== 'x' || e.c < fz - 1.3) return false;
+      if (e.axis !== 'x') return false;
       var R = isInt(e.A) && !isInt(e.B) ? e.A : isInt(e.B) && !isInt(e.A) ? e.B : null;
       if (!R || Math.abs(e.c - (R.y + R.h)) > 0.03) return false;
+      // el muro remetido detrás de un pórtico o porche abierto a la calle también es fachada
+      var X = other(e, R);
+      if (e.c < fz - 1.3 && !(X && X.ext && X.y + X.h > fz - 0.05 && e.c > fz - 4)) return false;
       e.fR = R; return true;
     });
   }
@@ -955,6 +958,8 @@
       e.open = keep.concat(add);
       if (li === 0) add.forEach(function (q) { if (q.kind === 'entry') { L.entry = e; L.start = e.fR; } });
     });
+    // la puerta de la fachada es el acceso: el acceso calculado en otro muro (un lateral) se quita
+    if (li === 0 && facDoor) L.edges.forEach(function (e) { if (fe.indexOf(e) < 0) e.open = e.open.filter(function (h) { return h.kind !== 'entry'; }); });
   }
   // Lados de un espacio (para amueblar): puertas, ventanas y si hay muro
   function sidesOf(R, edges) {
