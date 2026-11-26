@@ -561,7 +561,15 @@
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
     toast('Lámina ' + currentSheet().code + ' exportada en SVG.');
   }
-  $$('[data-export]').forEach(function (b) { b.addEventListener('click', function () { if (!$('#p-planos').classList.contains('on')) { selectTab('planos'); } exportSheet(); }); });
+  // «Exportar plano» abre la ventana de exportación: SVG automático y conversión a AutoCAD (DXF) y Revit (IFC)
+  $$('[data-export]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (!$('#p-planos').classList.contains('on')) { selectTab('planos'); }
+      if (!plans) return;
+      var ok = window.RinovaExport && window.RinovaExport.open({ sheets: plans.sheets, current: currentSheet().code, layers: layersOn(), levels: plans.levels, r: last || compute(), p: p, slug: fileSlug(), heights: PL.heights(p).hs, wallSegments: PL.wallSegments, toast: toast });
+      if (!ok) exportSheet();
+    });
+  });
   // Juego completo: una lámina por página, listo para "Guardar como PDF"
   function printSet() {
     if (!plans) return;

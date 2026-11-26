@@ -1,11 +1,11 @@
 /* RINOVAIA — service worker. Cada cambio de este archivo sube VERSION. */
-const VERSION = 'rinovaia-v26';
+const VERSION = 'rinovaia-v27';
 // Debe coincidir con el ?v= de los HTML: la CDN de Hostinger guarda JS y CSS 30 días por URL.
-const V = '?v=20261207';
+const V = '?v=20261208';
 const PRECACHE = [
   './', 'index.html', 'app.html', 'distribuidores.html', 'instalar.html', 'offline.html',
   'manifest.webmanifest', 'favicon.ico',
-  'assets/css/rinova.css' + V, 'assets/js/facade.js' + V, 'assets/js/proyecto.js' + V, 'assets/js/planos.js' + V, 'assets/js/estudio.js' + V, 'assets/js/lectura-plano.js' + V, 'assets/js/croquis.js' + V, 'assets/js/fachada.js' + V, 'assets/js/fachada-ui.js' + V, 'assets/js/render3d.js' + V, 'assets/js/recorrido.js' + V, 'assets/js/recorrido-ui.js' + V, 'assets/js/espacios.js' + V,
+  'assets/css/rinova.css' + V, 'assets/js/facade.js' + V, 'assets/js/proyecto.js' + V, 'assets/js/planos.js' + V, 'assets/js/estudio.js' + V, 'assets/js/svg-multiformato.js' + V, 'assets/js/exportar-plano.js' + V, 'assets/js/lectura-plano.js' + V, 'assets/js/croquis.js' + V, 'assets/js/fachada.js' + V, 'assets/js/fachada-ui.js' + V, 'assets/js/render3d.js' + V, 'assets/js/recorrido.js' + V, 'assets/js/recorrido-ui.js' + V, 'assets/js/espacios.js' + V,
   'assets/js/plataforma.js' + V, 'pwa.js' + V,
   'assets/fonts/montserrat.woff2', 'assets/fonts/inter.woff2',
   'assets/img/logo-mark.svg', 'assets/img/isotipo.svg', 'assets/img/logo-circular.svg', 'assets/img/hero-residencia.svg',
