@@ -455,6 +455,6 @@
     show: showPv, spec: specNow,
     hora: function () { return fx().hora; },
     // Colores que el recorrido virtual toma de la misma fachada que dibujan la propuesta y el 3D
-    facade: function () { var s = specNow(); return { muro: s.M.c, cancel: s.C.c, porton: s.ref ? s.ref.puerta : null }; }
+    facade: function () { var s = specNow(); return { muro: s.M.c, cancel: s.C.c, porton: s.ref ? s.ref.puerta : null, puerta: s.doorC || null, spec: s }; }
   };
 })();

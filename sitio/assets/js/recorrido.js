@@ -308,6 +308,7 @@
     M.tail = std({ color: '#5A0B0B', emissive: '#C0201A', emissiveIntensity: 0.6 });
     // Exterior: vidrio de niveles vistos desde fuera, asfalto y bardas
     M.garage = std({ color: '#C4C7CC', metalness: 0.35, roughness: 0.45 });
+    M.frontDoor = std({ color: '#4A3626', roughness: 0.5 });
     M.shellGlass = std({ color: '#4A5868', metalness: 0.45, roughness: 0.06, emissive: '#FFC98A', emissiveIntensity: 0 }, 1.5);
     M.asphalt = std({ color: '#5A5E66', map: cn.map, normalMap: cn.normalMap, roughness: 0.96 });
     M.barda = std({ color: '#D9D4CB', map: pl.map, normalMap: pl.normalMap, normalScale: new T.Vector2(0.4, 0.4), roughness: 0.95 });
@@ -887,6 +888,70 @@
       if (bano) { var bw = Math.min(1.0, len * 0.5), bm = (e.lo + e.hi) / 2; e.open.push({ lo: bm - bw / 2, hi: bm + bw / 2, y0: 1.6, y1: 2.2, kind: 'win' }); return; }
       var n = len > 5 ? 2 : 1, ww = n === 1 ? Math.min(len * 0.62, 2.4) : Math.min((len - 1.4) / 2, 2.2), sill = isKitchen(R) ? 1.05 : R.k === 'soc' ? 0.45 : 0.9;
       for (var i = 0; i < n; i++) { var mm = e.lo + len * (i + 0.5) / n; e.open.push({ lo: mm - ww / 2, hi: mm + ww / 2, y0: sill, y1: 2.3, kind: 'win' }); }
+    });    if (FAC) facadeOpenings(L, li, FAC);
+  }
+  /* Fachada principal según la fachada mejorada (RinovaFachada.spec): sus vanos sustituyen las ventanas
+     calculadas del lado de la calle, con la misma posición, altura, cancelería, puerta y balcones. */
+  var FAC = null;
+  function frontEdges(L) {
+    var ints = L.rooms.filter(isInt), fz = 0;
+    ints.forEach(function (R) { fz = Math.max(fz, R.y + R.h); });
+    return L.edges.filter(function (e) {
+      if (e.axis !== 'x' || e.c < fz - 1.3) return false;
+      var R = isInt(e.A) && !isInt(e.B) ? e.A : isInt(e.B) && !isInt(e.A) ? e.B : null;
+      if (!R || Math.abs(e.c - (R.y + R.h)) > 0.03) return false;
+      e.fR = R; return true;
+    });
+  }
+  function facadeOpenings(L, li, F) {
+    if (!F || !F.ops || !F.levels || li >= F.levels.length) return;
+    var sc = L.H / (F.levels[li].h || L.H), ops = F.ops.filter(function (o) { return o.lvl === li && !o.transomOnly; });
+    var tr = F.ops.filter(function (o) { return o.lvl === li && o.transomOnly; })[0];
+    var fe = frontEdges(L);
+    // la puerta de la fachada no debe abrir a una recámara, baño o cochera: se recorre a la estancia o el vestíbulo más cercano
+    var dop = ops.filter(function (o) { return o.kind === 'door'; })[0];
+    L.facDx = 0;
+    if (li === 0 && dop) {
+      var cx = dop.x + dop.w / 2, here = fe.filter(function (e) { return cx > e.lo && cx < e.hi; })[0];
+      var okR = function (R) { return R.k === 'soc' || (R.k === 'circ' && !/Escalera/.test(R.n)); };
+      if (here && !okR(here.fR)) {
+        var best = null, bd = 1e9;
+        fe.forEach(function (e) { if (!okR(e.fR) || e.hi - e.lo < dop.w + 0.4) return; var x = clamp(cx, e.lo + dop.w / 2 + 0.15, e.hi - dop.w / 2 - 0.15), d = Math.abs(x - cx); if (d < bd) { bd = d; best = x; } });
+        if (best != null) {
+          var dx = best - cx, d0 = best - dop.w / 2 - 0.25, d1 = best + dop.w / 2 + 0.25, sw = ops.filter(function (o) { return o.kind === 'win' && !o.balcony; })[0], out = [];
+          ops.forEach(function (o) {
+            if (o === dop) { out.push(Object.assign({}, o, { x: o.x + dx })); return; }
+            if (o.kind === 'win' && o.x < d1 && o.x + o.w > d0) { // el ventanal se parte alrededor de la puerta
+              if (d0 - o.x >= 0.6) out.push(Object.assign({}, o, { w: d0 - o.x }));
+              if (o.x + o.w - d1 >= 0.6) out.push(Object.assign({}, o, { x: d1, w: o.x + o.w - d1 }));
+              return;
+            }
+            out.push(o);
+          });
+          if (sw) out.push(Object.assign({}, sw, { x: dop.x - 0.2, w: dop.w + 0.4 })); // donde estaba la puerta queda ventana
+          ops = out; if (tr) tr = Object.assign({}, tr, { x: tr.x + dx }); L.facDx = dx;
+        }
+      }
+    }
+    var adds = fe.map(function (e) {
+      var R = e.fR, add = [];
+      ops.forEach(function (o) {
+        var a = Math.max(o.x, e.lo + 0.08), b = Math.min(o.x + o.w, e.hi - 0.08); if (b - a < 0.45) return;
+        var kind = o.kind === 'door' ? 'entry' : o.kind === 'garage' || o.kind === 'roll' ? 'gdoor' : 'win';
+        if (kind === 'entry' && (li > 0 || R.k === 'bano')) kind = 'win';
+        var h = { lo: a, hi: b, y0: kind === 'win' ? Math.max(0.02, o.y * sc) : 0, y1: Math.min(L.H - 0.12, (o.y + o.h) * sc), kind: kind, fac: o };
+        if (kind === 'entry' && tr) { h.tr = h.y1; h.y1 = Math.min(L.H - 0.15, (tr.y + tr.h) * sc); }
+        add.push(h);
+      });
+      return add;
+    });
+    function has(k) { return adds.some(function (ad) { return ad.some(function (h) { return h.kind === k; }); }); }
+    var facDoor = has('entry'), facGar = has('gdoor'); // una sola puerta principal y un solo portón
+    fe.forEach(function (e, i) {
+      var keep = e.open.filter(function (h) { return h.kind === 'none' || h.kind === 'open' || h.kind === 'door' || (h.kind === 'entry' && !facDoor) || (h.kind === 'gdoor' && !facGar); });
+      var add = adds[i].filter(function (q) { return !keep.some(function (h) { return q.lo < h.hi + 0.1 && q.hi > h.lo - 0.1; }); });
+      e.open = keep.concat(add);
+      if (li === 0) add.forEach(function (q) { if (q.kind === 'entry') { L.entry = e; L.start = e.fR; } });
     });
   }
   // Lados de un espacio (para amueblar): puertas, ventanas y si hay muro
@@ -964,6 +1029,74 @@
         [[b.x0 - 7.6, lot.z0 + 1, 7, 6.5, LD - 2.5], [b.x1 + 0.6, lot.z0 + 1, 7, 6.5, LD - 2.5], [cx - 8, lot.z0 - 7, 16, 7, 6]].forEach(function (q) { var m = new T.Mesh(new T.BoxGeometry(q[2], q[3], q[4]), M.facade); m.position.set(q[0] + q[2] / 2, q[3] / 2, q[1] + q[4] / 2); m.receiveShadow = m.castShadow = true; outdoor.add(m); });
       } else {
         [[-12, 0.5, 7, 6.5, D * 0.8], [W + 5, 0.5, 7, 6.5, D * 0.8], [W / 2 - 8, -16, 16, 7, 6]].forEach(function (q) { var m = new T.Mesh(new T.BoxGeometry(q[2], q[3], q[4]), M.facade); m.position.set(q[0] + q[2] / 2, q[3] / 2, q[1] + (q[1] < 0 ? 0 : q[4] / 2)); m.receiveShadow = true; outdoor.add(m); });
+      }
+      facadeDecor();
+    }
+    // Elementos de la fachada mejorada en el frente: volado, porche, acento, balcones, jardineras y paneles
+    function facadeDecor() {
+      var F = FAC; if (!F || !model || !model.length) return;
+      var g = new T.Group(); outdoor.add(g);
+      var fe0 = frontEdges(model[0]); if (!fe0.length) return;
+      var fz = Math.max.apply(null, fe0.map(function (e) { return e.c; })) + 0.12;
+      function lvOf(i) { return model[Math.min(i, model.length - 1)]; }
+      function scl(i) { var Lk = lvOf(i); return F.levels[i] ? Lk.H / F.levels[i].h : 1; }
+      function mat(c, r) { return new T.MeshStandardMaterial({ color: c, roughness: r || 0.8 }); }
+      // paneles sobre el muro (sin tapar vanos) entre x0 y x1, de la planta k0 a la k1, hasta yTop en la última
+      function wallPanels(x0, x1, k0, k1, m, yTop) {
+        for (var k = k0; k <= k1 && k < model.length; k++) {
+          var Lk = model[k], top = k === k1 && yTop != null ? yTop : Lk.H;
+          frontEdges(Lk).forEach(function (e) {
+            var a = Math.max(x0, e.lo - 0.12), b = Math.min(x1, e.hi + 0.12); if (b - a < 0.05) return;
+            var hs = e.open.filter(function (h) { return h.kind !== 'none' && h.hi > a && h.lo < b; }), cuts = [a, b];
+            hs.forEach(function (h) { cuts.push(clamp(h.lo, a, b), clamp(h.hi, a, b)); });
+            cuts = cuts.filter(function (v, i, arr) { return arr.indexOf(v) === i; }).sort(function (p2, q2) { return p2 - q2; });
+            for (var i = 0; i + 1 < cuts.length; i++) {
+              var c0 = cuts[i], c1 = cuts[i + 1]; if (c1 - c0 < 0.01) continue;
+              var cov = hs.filter(function (h) { return h.lo <= c0 + 0.001 && h.hi >= c1 - 0.001; }).map(function (h) { return [h.y0, Math.min(h.y1, Lk.H)]; }).sort(function (p2, q2) { return p2[0] - q2[0]; });
+              var y = 0;
+              cov.concat([[top, top]]).forEach(function (r) { var y1 = Math.min(r[0], top); if (y1 - y > 0.01) K.box(g, c1 - c0, y1 - y, 0.03, m, (c0 + c1) / 2, Lk.base + y, e.c + 0.135, { noShadow: true }); y = Math.max(y, r[1]); });
+            }
+          });
+        }
+      }
+      var top = model.length - 1;
+      if (F.accent) wallPanels(F.accent.x0, F.accent.x1, F.accent.from, top, mat(F.A && F.A.c || '#3A3D43', 0.7));
+      var fdx = model[0].facDx || 0;
+      if (F.porch) wallPanels(F.porch.x0 + fdx, F.porch.x1 + fdx, 0, 0, mat(F.porch.c, 0.75), F.volado ? F.volado.y * scl(0) : null);
+      if (F.volado) {
+        var v = F.volado, vt = v.t || 0.22, vy = v.y * scl(0), mv = v.c ? mat(v.c, 0.7) : M.white || mat('#F1F0EC');
+        K.box(g, v.w, vt, v.depth, mv, v.x + fdx + v.w / 2, vy, fz + v.depth / 2 - 0.12);
+        if (v.lights) for (var lp = v.x + fdx + v.w / 6; lp < v.x + fdx + v.w; lp += v.w / 3) K.box(g, 0.14, 0.015, 0.14, M.led, lp, vy - 0.012, fz + v.depth * 0.45 - 0.12, { noShadow: true });
+      }
+      F.ops.forEach(function (o) {
+        if (!o.balcony || !o.lvl || o.lvl >= model.length) return;
+        var Lk = model[o.lvl], bw2 = o.w + 0.5, bd = 1.2, x = o.x + o.w / 2, yb = Lk.base, z0 = fz - 0.12, v2 = F.volado;
+        // sobre la losa volada del acceso, el balcón usa esa losa como piso
+        if (o.lvl === 1 && v2 && x > v2.x + fdx && x < v2.x + fdx + v2.w) { bd = Math.min(bd, v2.depth); yb = Math.max(yb, v2.y * scl(0) + (v2.t || 0.22)); }
+        else K.box(g, bw2, 0.2, bd, M.white || mat('#F1F0EC'), x, yb - 0.18, z0 + bd / 2);
+        if (o.rail === 'herreria') { for (var hb = -bw2 / 2; hb <= bw2 / 2 + 0.01; hb += 0.12) K.box(g, 0.02, 0.95, 0.02, M.alu, x + hb, yb + 0.02, z0 + bd - 0.03); K.box(g, bw2, 0.04, 0.04, M.alu, x, yb + 0.97, z0 + bd - 0.03); }
+        else {
+          K.box(g, bw2, 1.0, 0.02, M.glass, x, yb + 0.02, z0 + bd - 0.03, { noShadow: true });
+          [-1, 1].forEach(function (sg) { K.box(g, 0.02, 1.0, bd, M.glass, x + sg * bw2 / 2, yb + 0.02, z0 + bd / 2, { noShadow: true }); });
+          K.box(g, bw2, 0.05, 0.05, M.alu, x, yb + 1.02, z0 + bd - 0.03);
+        }
+      });
+      // jardineras al pie de la fachada, sin tapar puerta ni portón
+      if (F.fx && F.fx.opts && F.fx.opts.jardineras) {
+        var gx0 = 0, segs = [], mPl = mat('#CFCAC0', 0.9);
+        F.ops.filter(function (o) { return o.lvl === 0 && /garage|door|roll/.test(o.kind); })
+          .map(function (o) { return o.kind === 'door' ? { x: o.x + fdx, w: o.w } : o; }).sort(function (p2, q2) { return p2.x - q2.x; })
+          .forEach(function (b2) { if (b2.x - 0.3 - gx0 > 0.9) segs.push([gx0 + 0.15, b2.x - 0.3]); gx0 = b2.x + b2.w + 0.3; });
+        if (W - gx0 > 0.9) segs.push([gx0, W - 0.15]);
+        segs.forEach(function (sg) {
+          K.box(g, sg[1] - sg[0], 0.5, 0.6, mPl, (sg[0] + sg[1]) / 2, 0, fz + 0.32);
+          for (var bxp = sg[0] + 0.3; bxp < sg[1] - 0.1; bxp += 0.5) { var sh = new T.Mesh(new T.IcosahedronGeometry(0.3, 1), M.leaf || mat('#4F7A3E', 0.9)); sh.position.set(bxp, 0.68, fz + 0.32); sh.castShadow = true; g.add(sh); }
+        });
+      }
+      // paneles solares en la azotea
+      if (F.pv) {
+        var Lt = model[top], pvY = Lt.base + Lt.H + 0.75, mPV = new T.MeshStandardMaterial({ color: '#2E5A96', roughness: 0.18, metalness: 0.35 });
+        F.pv.forEach(function (q) { var pm = new T.Mesh(new T.BoxGeometry(q.w, 0.04, q.h), mPV); pm.position.set(q.x + q.w / 2, pvY, q.y + q.h / 2); pm.rotation.x = -0.17; pm.castShadow = true; g.add(pm); });
       }
     }
     // Límites caminables: el terreno completo en planta baja, la huella del edificio en los niveles
@@ -1081,7 +1214,7 @@
       scene.add(shellGroup);
     }
     function showShells() { Object.keys(shellParts).forEach(function (k) { shellParts[k].visible = +k !== li && +k !== shownNb; }); }
-    function extEdge(e) { var iA = isInt(e.A), iB = isInt(e.B); return iA !== iB ? (iA ? 1 : -1) : 0; }
+    function extEdge(e) { var iA = !!isInt(e.A), iB = !!isInt(e.B); return iA !== iB ? (iA ? 1 : -1) : 0; } // !!: un balcón sin vecino (null) no es muro
     function shell(Lk, k, g) {
       var Hc = Lk.Hc, Hl = Lk.H, to = 0.12;
       Lk.rooms.forEach(function (R) {
@@ -1106,7 +1239,10 @@
             piece(g, e, h.lo, h.hi, h.y0, y1, out * 0.03, 0.03, h.kind === 'gdoor' ? M.garage : M.shellGlass, true);
             piece(g, e, h.lo, h.hi, y1 - 0.05, y1, out * 0.05, 0.1, M.alu, true); piece(g, e, h.lo, h.hi, h.y0, h.y0 + 0.04, out * 0.06, 0.12, h.y0 > 0 ? M.travertine : M.alu, true);
             piece(g, e, h.lo, h.lo + 0.05, h.y0, y1, out * 0.05, 0.1, M.alu, true); piece(g, e, h.hi - 0.05, h.hi, h.y0, y1, out * 0.05, 0.1, M.alu, true);
-            if (h.hi - h.lo > 1.4 && h.kind !== 'gdoor') piece(g, e, (h.lo + h.hi) / 2 - 0.02, (h.lo + h.hi) / 2 + 0.02, h.y0, y1, out * 0.05, 0.08, M.alu, true);
+            var np = h.kind === 'gdoor' ? 1 : facPanes(h) || (h.hi - h.lo > 1.4 ? 2 : 1);
+            for (var mi = 1; mi < np; mi++) { var mx = h.lo + (h.hi - h.lo) * mi / np; piece(g, e, mx - 0.02, mx + 0.02, h.y0, y1, out * 0.05, 0.08, M.alu, true); }
+            if (h.fac && (h.fac.transom || h.fac.grid)) (h.fac.grid ? [1 / 3, 2 / 3] : [0.78]).forEach(function (t) { var yy = h.y0 + (y1 - h.y0) * t; piece(g, e, h.lo, h.hi, yy, yy + 0.04, out * 0.05, 0.08, M.alu, true); });
+            if (h.tr) piece(g, e, h.lo, h.hi, h.tr, h.tr + 0.05, out * 0.05, 0.1, M.alu, true);
           }
           cur = h.hi;
         });
@@ -1338,6 +1474,7 @@
       holes.forEach(function (h) { joinery(raw, e, h, Hc); });
     }
     function seg(e, a, b, th) { return e.axis === 'x' ? { x0: a, z0: e.c, x1: b, z1: e.c, t: th / 2 } : { x0: e.c, z0: a, x1: e.c, z1: b, t: th / 2 }; }
+    function facPanes(h) { var o = h.fac, w = h.hi - h.lo; if (!o) return 0; return o.grid ? Math.max(2, Math.round(w / 0.6)) : o.mull ? Math.max(2, Math.round(w / 0.95)) : o.strip ? Math.max(2, Math.round(w / 1.6)) : o.dbl ? 2 : 0; }
     function piece(g, e, a, b, y0, y1, off, th, mat, noShadow) {
       var L2 = b - a, h = y1 - y0; if (L2 < 0.005 || h < 0.005) return;
       return e.axis === 'x' ? K.box(g, L2, h, th, mat, (a + b) / 2, y0, e.c + off, { noShadow: noShadow }) : K.box(g, th, h, L2, mat, e.c + off, y0, (a + b) / 2, { noShadow: noShadow });
@@ -1368,14 +1505,17 @@
         if (h.kind === 'entry') {
           // puerta pivotante de madera entreabierta hacia el vestíbulo
           var st = L.start, inw = st === e.A ? -e.out : e.out, dw = w - 0.1, pv = at(h.lo + 0.3, 0), leaf = new T.Group();
-          K.box(leaf, dw, y1 - 0.06, 0.06, M.walnut, dw / 2 - 0.3, 0.02, 0);
-          for (var s = 0; s < 6; s++) K.box(leaf, 0.012, y1 - 0.4, 0.01, M.black, -0.3 + 0.15 + s * (dw - 0.3) / 5, 0.2, 0.035, { noShadow: true });
+          var ly = h.tr || y1; // con travesaño: la hoja llega al travesaño y arriba queda vidrio fijo
+          if (h.tr) { bx(w, fw, 0.1, M.alu, mid, 0, h.tr); bx(w - 2 * fw, y1 - h.tr - fw * 2, 0.012, M.glass, mid, 0, h.tr + fw, { noShadow: true }); }
+          K.box(leaf, dw, ly - 0.06, 0.06, h.fac ? M.frontDoor : M.walnut, dw / 2 - 0.3, 0.02, 0);
+          for (var s = 0; s < 6; s++) K.box(leaf, 0.012, ly - 0.4, 0.01, M.black, -0.3 + 0.15 + s * (dw - 0.3) / 5, 0.2, 0.035, { noShadow: true });
           K.box(leaf, 0.03, 1.1, 0.05, M.brass, dw - 0.45, 0.6, 0.06);
           var th0 = X ? (inw > 0 ? -1.1 : 1.1) : (inw > 0 ? 1.1 : -1.1);
           leaf.position.set(pv[0], 0, pv[1]); leaf.rotation.y = (X ? 0 : -Math.PI / 2) + th0; g.add(leaf);
           return;
         }
-        var panes = h.kind === 'slide' ? 2 : w > 1.4 ? 2 : 1;
+        var panes = h.kind === 'slide' ? 2 : facPanes(h) || (w > 1.4 ? 2 : 1);
+        if (h.fac && (h.fac.transom || h.fac.grid)) [h.fac.grid ? [1 / 3, 2 / 3] : [0.78]][0].forEach(function (t) { bx(w, 0.04, 0.06, M.alu, mid, 0, y0 + (y1 - y0) * t); });
         for (var i = 0; i < panes; i++) {
           var a = h.lo + fw + i * (w - 2 * fw) / panes, b = a + (w - 2 * fw) / panes, off = h.kind === 'slide' ? (i ? 0.025 : -0.025) : 0, sh = h.kind === 'slide' && i === 1 ? -(b - a) * 0.75 : 0;
           bx(b - a, y1 - y0 - fw, 0.012, M.glass, (a + b) / 2 + sh, off, y0 + 0.015, { noShadow: true });
@@ -2451,6 +2591,8 @@
         if (fc.muro) M.facade.color.set(fc.muro);
         if (fc.cancel) M.alu.color.set(fc.cancel);
         if (fc.porton) M.garage.color.set(fc.porton);
+        FAC = fc.spec && fc.spec.ops ? fc.spec : null;
+        if (fc.puerta) M.frontDoor.color.set(fc.puerta);
         dirty = true;
       },
       resize: resize,
@@ -2459,6 +2601,7 @@
       snapshot: function () { camera.position.set(pos.x, L.base + hNow + eye, pos.z); camera.rotation.set(pitch, yaw, 0, 'YXZ'); renderer.render(scene, camera); return canvas.toDataURL('image/jpeg', 0.92); },
       setStick: function (x, y) { stick.x = x; stick.y = y; if (x || y) { tour = null; hideHint(); } },
       state: function () { var u = Math.abs(hNow) < 0.3 ? nearStair(1, 2.6) : null, dn = Math.abs(hNow) < 0.3 ? nearStair(-1, 2.6) : null; return { x: pos.x, z: pos.z, yaw: yaw, level: li, room: curRoom, L: L, W: W, D: D, B: bounds(), h: hNow, near: { up: u ? li + 1 : null, down: dn ? li - 1 : null }, stairs: TR.length }; },
+      view: function (x, z, yaw, p) { teleport(x, z, yaw); pitch = p || 0; pitchTo = null; dirty = true; },
       stairPlan: function () { return TR.map(function (Tt) { return { k: Tt.k, type: Tt.type, score: +Tt.score.toFixed(1), t: Tt.t, fw: Tt.fw, nR: Tt.nR, box: Tt.box, start: Tt.start, exit: Tt.exit, A: Tt.A, B: Tt.B, from: (roomAtL(model[Tt.k], Tt.start.x, Tt.start.z) || {}).n, to: (roomAtL(model[Tt.k + 1], Tt.exit.x, Tt.exit.z) || {}).n }; }); },
       stats: function () { return renderer.info; }
     };
