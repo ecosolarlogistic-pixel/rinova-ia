@@ -143,7 +143,7 @@
     mods.forEach(function (m, i) { if (m[k]) { if (cur) cur[1] = xs[i][1]; else { cur = [xs[i][0], xs[i][1]]; out.push(cur); } } else cur = null; });
     return out;
   }
-  var SAL = 0.45;
+  var SAL = 0.45, MIN_VANO = 1.0;
   function specMods(p, r, fx, R, E, W, levels) {
     var mods = R.modulos, xs = [], x = 0, ops = [], slats = [], panels = [], gH = levels[0].h, door = null;
     mods.forEach(function (m) { xs.push([x, x + m.ancho * W]); x += m.ancho * W; });
@@ -179,6 +179,8 @@
         }
         if (lv.i === 0 && t === 'cochera' && p.type === 'casa') { var gw = Math.min(mw - 0.4, 5.4); ops.push({ x: r1(x0 + (mw - gw) / 2), w: r1(gw), y: 0, h: Math.min(2.5, gH - 0.6), lvl: 0, kind: 'garage', z: z }); return; }
         if (p.type === 'comercial' && lv.i === 0) { ops.push({ x: r1(x0 + 0.12), w: r1(mw - 0.24), y: 0.15, h: r1(gH - 0.75), lvl: 0, kind: 'shop', z: z }); return; }
+        // Una franja angosta (pilar, borde o canto) nunca lleva ventana: queda como muro, igual que en la referencia
+        if (mw < MIN_VANO) return;
         ops.push(winOp(t === 'puerta' || t === 'puerta_doble' || t === 'cochera' ? 'ventana' : t, x0, mw, lv, z));
       });
     });
