@@ -28,7 +28,7 @@
       return new Promise(function (res) { setTimeout(res, 30); }); // deja pintar el aviso de carga
     }).then(function () {
       ctl = RV.create($('#rvCanvas'), {
-        onRoom: onRoom, onLevel: onLevel, onMove: drawMap,
+        onRoom: onRoom, onLevel: onLevel, onMove: function () { drawMap(); stairButtons(); },
         onInteract: function () { $('#rvHint').classList.add('off'); },
         onTour: function (on) { setTour(on); }
       });
@@ -57,22 +57,24 @@
   function onLevel(L) {
     if (!L) return; level = L.index;
     $$('#rvLevels button').forEach(function (b) { b.setAttribute('aria-pressed', +b.dataset.l === L.index); });
-    var rooms = L.rooms.filter(function (R) { return (!R.ext || R.reachable) && !R.side; }).sort(function (a, b) { return (a.outer === 'front' ? -1 : 0) - (b.outer === 'front' ? -1 : 0); });
+    var seenL = {}, rooms = L.rooms.filter(function (R) { return (!R.ext || R.reachable) && !R.side; }).sort(function (a, b) { return b.area - a.area; }).filter(function (R) { if (seenL[R.label]) return false; seenL[R.label] = true; return true; }).sort(function (a, b) { return a.id - b.id; }).sort(function (a, b) { return (a.outer === 'front' ? -1 : 0) - (b.outer === 'front' ? -1 : 0); });
     $('#rvRoom').innerHTML = '<option value="">Ir a un espacio…</option>' + rooms.map(function (R) { return '<option value="' + R.id + '">' + esc(R.label) + '</option>'; }).join('');
     mapBase = null; drawMap();
   }
   function onRoom(R, L) {
     $('#rvChip').textContent = lvName(L.index) + (R ? ' · ' + R.label : '');
-    var st = $('#rvStairs'), h = '';
-    if (R && /Escalera/.test(R.n) && ctl) {
-      var n = nLevels;
-      if (R.stairUp && L.index < n - 1) h += '<button type="button" data-go="' + (L.index + 1) + '">Subir a <b>' + lvName(L.index + 1) + '</b></button>';
-      if (L.index > 0) h += '<button type="button" data-go="' + (L.index - 1) + '">Bajar a <b>' + lvName(L.index - 1) + '</b></button>';
-    }
-    st.innerHTML = h;
     if ($('#rvRoom').value && R && +$('#rvRoom').value !== R.id) $('#rvRoom').value = '';
   }
   function setTour(on) { var b = $('#rvTour'); b.setAttribute('aria-pressed', !!on); $('span', b).textContent = on ? 'Detener recorrido' : 'Recorrido guiado'; }
+
+  // Botones «Subir a / Bajar a» cuando estás junto al arranque o la llegada de una escalera
+  var stairKey = '';
+  function stairButtons() {
+    if (!ctl) return; var n = ctl.state().near || {}, key = n.up + '/' + n.down; if (key === stairKey) return; stairKey = key; var h = '';
+    if (n.up != null) h += '<button type="button" data-dir="1">Subir a <b>' + lvName(n.up) + '</b></button>';
+    if (n.down != null) h += '<button type="button" data-dir="-1">Bajar a <b>' + lvName(n.down) + '</b></button>';
+    $('#rvStairs').innerHTML = h;
+  }
 
   /* ---------- Plano de ubicación ---------- */
   function drawMap() {
@@ -102,7 +104,7 @@
 
   /* ---------- Controles ---------- */
   $('#rvLevels').addEventListener('click', function (e) { var b = e.target.closest('button[data-l]'); if (b && ctl) { ctl.level(+b.dataset.l); setTour(false); } });
-  $('#rvStairs').addEventListener('click', function (e) { var b = e.target.closest('button[data-go]'); if (b && ctl) ctl.level(+b.dataset.go, true); });
+  $('#rvStairs').addEventListener('click', function (e) { var b = e.target.closest('button[data-dir]'); if (b && ctl) { ctl.climb(+b.dataset.dir); setTour(false); } });
   $('#rvRoom').addEventListener('change', function (e) { if (ctl && e.target.value !== '') { ctl.gotoRoom(+e.target.value, false); setTour(false); } });
   $('#rvHora').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-v]'); if (!b) return; hora = b.dataset.v;
