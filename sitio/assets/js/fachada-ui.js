@@ -77,7 +77,6 @@
     E.toast('Fachada mejorada: ' + FX.ESTILOS[sg.fx.estilo].n.toLowerCase() + ' con ' + Object.keys(sg.fx.opts).filter(function (k) { return sg.fx.opts[k]; }).length + ' elementos');
   });
   $('#fxCompare').addEventListener('change', renderFx);
-  $('#fxCmp').addEventListener('input', function () { $('#fxBefore').style.clipPath = 'inset(0 ' + (100 - this.value) + '% 0 0)'; $('#fxStage').style.setProperty('--cmp', this.value + '%'); });
 
   /* ---------- Fachada existente subida (foto o PDF) ---------- */
   var FKEY = 'rinova.estudio.v2.fachadaFoto', foto = null;
@@ -338,7 +337,7 @@
       $('#fxAfter').innerHTML = originalHtml(p, r, f);
       $('#fxTagA').textContent = foto ? 'Fachada de referencia' : 'Fachada actual';
       $('#fxLegend').innerHTML = '<li class="fx-empty">Pulsa <b>Mejorar fachada</b>, elige un estilo o <b>sube tu fachada</b> en PDF o JPG para generar la propuesta.</li>';
-      $('#fxBefore').hidden = true; $('#fxCmp').hidden = true; $('#fxTagB').hidden = true; $('#fxCompare').disabled = true;
+      $('#fxPaneB').hidden = true; $('#fxStage').classList.remove('is-cmp'); $('#fxCompare').disabled = true;
       $('#fxWhy').innerHTML = '<li class="muted">Aún no hay mejoras aplicadas.</li>'; $('#fxCost').innerHTML = '<p class="muted" style="margin:0">—</p>';
       return;
     }
@@ -347,11 +346,9 @@
     $('#fxTagA').textContent = 'Propuesta · ' + FX.ESTILOS[f.estilo].n;
     $('#fxLegend').innerHTML = out.marks.map(function (m, i) { return '<li><span class="n">' + (i + 1) + '</span>' + esc(m.t) + '</li>'; }).join('');
     var cmp = $('#fxCompare').checked; $('#fxCompare').disabled = false;
-    $('#fxBefore').hidden = !cmp; $('#fxCmp').hidden = !cmp; $('#fxTagB').hidden = !cmp;
-    if (cmp) {
-      $('#fxBefore').innerHTML = originalHtml(p, r, f);
-      $('#fxBefore').style.clipPath = 'inset(0 ' + (100 - $('#fxCmp').value) + '% 0 0)';
-    }
+    /* Comparación: las dos fachadas completas, lado a lado (una arriba de otra en celular). */
+    $('#fxPaneB').hidden = !cmp; $('#fxStage').classList.toggle('is-cmp', cmp);
+    $('#fxBefore').innerHTML = cmp ? originalHtml(p, r, f) : '';
     // Mejoras y por qué
     var list = why.length ? why : describe(out.spec);
     $('#fxWhy').innerHTML = list.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
