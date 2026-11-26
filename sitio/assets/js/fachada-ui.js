@@ -55,7 +55,24 @@
   $$('.fx-hora').forEach(function (g) {
     g.addEventListener('click', function (e) { var b = e.target.closest('button[data-v]'); if (!b) return; fx().hora = b.dataset.v; syncFxForm(); E.refresh(); });
   });
+  /* Con una fachada subida, «Mejorar fachada» la conserva y le suma mejoras (no la cambia por un estilo prefijado). */
+  function improveRef() {
+    var p = proj(), r = res(), f = fx(), R = Object.assign({}, f.ref), hot = r.city.lat < 21.5, extra = [];
+    f.on = true; f.estilo = 'referencia';
+    if (!f.opts.jardineras) { f.opts.jardineras = true; extra.push('Jardineras al pie de la fachada: suavizan el muro y separan la casa de la banqueta.'); }
+    if (!f.opts.iluminacion) { f.opts.iluminacion = true; extra.push('Iluminación arquitectónica cálida para que la fachada luzca de noche.'); }
+    if (!R.losaVolada && !R.porche) { R.losaVolada = true; extra.push('Losa volada sobre el acceso con luminarias empotradas: protege la entrada de la lluvia y la marca.'); }
+    if (p.floors > 1 && R.balcon === 'ninguno') { R.balcon = R.cubierta === 'teja' ? 'herreria' : 'vidrio'; R.balconLado = R.puertaLado; extra.push('Balcón en planta alta sobre el acceso: gana terraza y vista sin cerrar la fachada.'); }
+    if (R.ventanas === 'lisa' && R.cubierta !== 'teja') { R.ventanas = 'cuadricula'; R.travesano = true; extra.push('Ventanales con retícula y travesaño alto: más luz y una fachada más ordenada.'); }
+    if (hot && !f.opts.celosia) { f.opts.celosia = true; extra.push('Celosía de parteluces en clima cálido (' + r.city.name + '): baja la ganancia solar y el gasto de aire acondicionado.'); }
+    if (p.floors >= 2 && R.cubierta === 'plano' && !f.opts.pergola) { f.opts.pergola = true; extra.push('Pérgola en azotea para convertirla en terraza habitable.'); }
+    f.ref = FX.normRef(R); f.opts.volado = f.ref.losaVolada; f.opts.balcones = f.ref.balcon !== 'ninguno';
+    why = refWhy(f.ref).concat(extra.length ? extra : ['Tu fachada ya tiene los elementos que se proponen; se conserva tal cual.']);
+    commit();
+    E.toast(extra.length ? 'Tu fachada se mejoró con ' + extra.length + ' cambio' + (extra.length > 1 ? 's' : '') + ' sin perder su estilo' : 'Tu fachada ya tiene las mejoras propuestas');
+  }
   $('#fxAuto').addEventListener('click', function () {
+    if (fx().ref && foto) { improveRef(); return; }
     var sg = FX.suggest(proj(), res()); proj().fx = sg.fx; why = sg.why; commit();
     E.toast('Fachada mejorada: ' + FX.ESTILOS[sg.fx.estilo].n.toLowerCase() + ' con ' + Object.keys(sg.fx.opts).filter(function (k) { return sg.fx.opts[k]; }).length + ' elementos');
   });
