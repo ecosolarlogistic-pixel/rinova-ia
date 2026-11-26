@@ -182,10 +182,10 @@
     var o = [];
     o.push('<svg class="plan-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + VW + ' ' + VH + '" font-family="Inter,system-ui,sans-serif" data-sheet="' + esc(meta.code) + '">');
     o.push('<rect width="' + VW + '" height="' + VH + '" fill="#FFFFFF"/>');
-    o.push('<rect x="10" y="10" width="' + (VW - 20) + '" height="' + (VH - 20) + '" fill="none" stroke="' + INK + '" stroke-width="1.2"/>');
+    o.push('<rect data-cad-layer="R-CUADRO" x="10" y="10" width="' + (VW - 20) + '" height="' + (VH - 20) + '" fill="none" stroke="' + INK + '" stroke-width="1.2"/>');
     o.push(body);
     var y = VH - 10 - TB, x = 10;
-    o.push('<g font-size="11" fill="' + MUTED + '">');
+    o.push('<g font-size="11" fill="' + MUTED + '" data-cad-layer="R-CUADRO">');
     o.push('<rect x="' + x + '" y="' + y + '" width="' + (VW - 20) + '" height="' + TB + '" fill="#FBFCFD" stroke="' + INK + '" stroke-width="1.2"/>');
     o.push('<rect x="' + x + '" y="' + y + '" width="190" height="' + TB + '" fill="' + NAVY + '"/>');
     o.push('<text x="' + (x + 20) + '" y="' + (y + 32) + '" font-family="Montserrat,Inter,sans-serif" font-size="17" font-weight="600" letter-spacing="4" fill="#FFFFFF">RINOVAIA</text>');
@@ -204,10 +204,10 @@
     return o.join('');
   }
   function clip(s, n) { s = String(s || ''); return s.length > n ? s.slice(0, Math.max(3, n - 1)) + '…' : s; }
-  function north(x, y) { return '<g transform="translate(' + x + ' ' + y + ')"><circle r="18" fill="#fff" stroke="' + INK + '"/><path d="M0 -15 L7 10 L0 5 L-7 10Z" fill="' + INK + '"/><text y="-22" text-anchor="middle" font-size="11" font-weight="700" fill="' + INK + '">N</text></g>'; }
+  function north(x, y) { return '<g data-cad-layer="A-NORTE" transform="translate(' + x + ' ' + y + ')"><circle r="18" fill="#fff" stroke="' + INK + '"/><path d="M0 -15 L7 10 L0 5 L-7 10Z" fill="' + INK + '"/><text y="-22" text-anchor="middle" font-size="11" font-weight="700" fill="' + INK + '">N</text></g>'; }
   function scaleBar(s) { // s px/m, alineada a la derecha sobre el cuadro de datos
     var step = [1, 2, 5, 10, 20, 50].filter(function (v) { return v * s >= 28; })[0] || 50, w = 4 * step * s, x = VW - 30 - w, y = VH - TB - 30;
-    var o = ['<g font-size="9" fill="' + MUTED + '">'];
+    var o = ['<g font-size="9" fill="' + MUTED + '" data-cad-layer="A-ESCALA" data-pxm="' + f(s * 100) / 100 + '">'];
     for (var i = 0; i < 4; i++) o.push('<rect x="' + f(x + i * step * s) + '" y="' + y + '" width="' + f(step * s) + '" height="5" fill="' + (i % 2 ? '#fff' : INK) + '" stroke="' + INK + '" stroke-width=".6"/>');
     o.push('<text x="' + f(x) + '" y="' + (y + 16) + '">0</text><text x="' + f(x + w) + '" y="' + (y + 16) + '" text-anchor="end">' + 4 * step + ' m</text></g>');
     return o.join('');
@@ -225,10 +225,10 @@
 
     // Ejes y columnas
     if (on.arq || on.est) {
-      o.push('<g stroke="' + SILVER + '" stroke-width=".8" stroke-dasharray="10 4 2 4">');
+      o.push('<g stroke="' + SILVER + '" stroke-width=".8" stroke-dasharray="10 4 2 4" data-cad-layer="A-EJES">');
       for (i = 0; i <= p.bays; i++) o.push('<line x1="' + X(bx * i) + '" y1="' + f(y0 - 36) + '" x2="' + X(bx * i) + '" y2="' + f(y0 + D + 14) + '"/>');
       for (j = 0; j <= r.rows; j++) o.push('<line x1="' + f(x0 - 36) + '" y1="' + Y(r.D / r.rows * j) + '" x2="' + f(x0 + W + 14) + '" y2="' + Y(r.D / r.rows * j) + '"/>');
-      o.push('</g><g font-size="10.5" font-weight="700" fill="' + TECH + '" text-anchor="middle">');
+      o.push('</g><g font-size="10.5" font-weight="700" fill="' + TECH + '" text-anchor="middle" data-cad-layer="A-EJES-REF">');
       for (i = 0; i <= p.bays; i++) o.push('<circle cx="' + X(bx * i) + '" cy="' + f(y0 - 48) + '" r="10.5" fill="#fff" stroke="' + TECH + '"/><text x="' + X(bx * i) + '" y="' + f(y0 - 44.5) + '">' + (i + 1) + '</text>');
       for (j = 0; j <= r.rows; j++) o.push('<circle cx="' + f(x0 - 48) + '" cy="' + Y(r.D / r.rows * j) + '" r="10.5" fill="#fff" stroke="' + TECH + '"/><text x="' + f(x0 - 48) + '" y="' + f(y0 + r.D / r.rows * j * s + 3.5) + '">' + String.fromCharCode(65 + j) + '</text>');
       o.push('</g>');
@@ -242,9 +242,9 @@
     });
     o.push('</g>');
     // Mobiliario
-    if (on.arq) o.push(furniture(lv.cells, X, Y, s, p, r));
+    if (on.arq) o.push('<g data-cad-layer="A-MOBILIARIO">' + furniture(lv.cells, X, Y, s, p, r) + '</g>');
     // Muros interiores
-    o.push('<g fill="none" stroke="' + (faint ? '#9AA3B2' : INK) + '" stroke-linecap="square">');
+    o.push('<g fill="none" stroke="' + (faint ? '#9AA3B2' : INK) + '" stroke-linecap="square" data-cad-layer="A-MUROS">');
     var segs = wallSegments(lv), offs = segs.filter(function (e) { return e.off; });
     lv.cells.forEach(function (c) {
       var attr = ' stroke-width="' + (c.k === 'ext' ? 1 : 2.6) + '"' + (c.k === 'ext' ? ' stroke-dasharray="4 3"' : '');
@@ -256,14 +256,14 @@
     // Columnas
     if (on.arq || on.est) {
       var cs = Math.max(6, Math.min(14, (r.col.s[0] / 100) * s));
-      o.push('<g fill="' + INK + '">');
+      o.push('<g fill="' + INK + '" data-cad-layer="E-COLUMNAS">');
       for (i = 0; i <= p.bays; i++) for (j = 0; j <= r.rows; j++) o.push('<rect x="' + f(X(bx * i) - cs / 2) + '" y="' + f(Y(r.D / r.rows * j) - cs / 2) + '" width="' + f(cs) + '" height="' + f(cs) + '"/>');
       o.push('</g>');
     }
     // Puertas y ventanas
-    if (on.arq) o.push(openings(lv, X, Y, s, li, r, p));
+    if (on.arq) o.push('<g data-cad-layer="A-PUERTAS-VENTANAS">' + openings(lv, X, Y, s, li, r, p) + '</g>');
     // Rótulos
-    o.push('<g text-anchor="middle" fill="' + INK + '">');
+    o.push('<g text-anchor="middle" fill="' + INK + '" data-cad-layer="A-TEXTO">');
     // un espacio en L (varios rectángulos del mismo grupo) lleva un solo rótulo, en su tramo mayor, con el área total
     var gArea = {}, gMain = {};
     lv.cells.forEach(function (c) { if (!c.g) return; gArea[c.g] = (gArea[c.g] || 0) + c.m2; if (!gMain[c.g] || c.m2 > gMain[c.g].m2) gMain[c.g] = c; });
@@ -280,11 +280,11 @@
       o.push('<text x="' + cx + '" y="' + f(cy + fs + 1) + '" font-size="' + (fs - 2) + '" fill="' + MUTED + '">' + n1(c.g ? gArea[c.g] : c.m2) + ' m²</text>');
     });
     o.push('</g>');
-    if (on.ele) o.push(electric(lv, X, Y, s, li, x0, y0, D));
-    if (on.hid) o.push(hydraulic(lv, X, Y, s, x0, y0, W, D));
+    if (on.ele) o.push('<g data-cad-layer="IE-ELECTRICA">' + electric(lv, X, Y, s, li, x0, y0, D) + '</g>');
+    if (on.hid) o.push('<g data-cad-layer="IH-HIDROSANITARIA">' + hydraulic(lv, X, Y, s, x0, y0, W, D) + '</g>');
     // Cotas
     if (on.cot) {
-      o.push('<g stroke="' + GOLD + '" fill="' + GOLD + '" font-size="11.5" font-weight="600" stroke-width="1">');
+      o.push('<g stroke="' + GOLD + '" fill="' + GOLD + '" font-size="11.5" font-weight="600" stroke-width="1" data-cad-layer="A-COTAS">');
       var cy2 = y0 + D + 40;
       o.push('<line x1="' + f(x0) + '" y1="' + f(cy2) + '" x2="' + f(x0 + W) + '" y2="' + f(cy2) + '"/>');
       for (i = 0; i <= p.bays; i++) o.push('<line x1="' + X(bx * i) + '" y1="' + f(cy2 - 5) + '" x2="' + X(bx * i) + '" y2="' + f(cy2 + 5) + '"/>');
@@ -679,7 +679,7 @@
     var areaW = VW - 400, areaH = VH - TB - 130, s = Math.min(areaW / r.W, areaH / r.D);
     var W = r.W * s, D = r.D * s, x0 = 100 + (areaW - W) / 2, y0 = 70 + (areaH - D) / 2, bx = r.W / p.bays, i, j;
     var losa = r.elements.filter(function (e) { return /Losa de cimentación/.test(e.name); })[0], zap = r.elements.filter(function (e) { return /Zapata/.test(e.name); })[0];
-    o.push('<g stroke="' + SILVER + '" stroke-width=".8" stroke-dasharray="10 4 2 4">');
+    o.push('<g stroke="' + SILVER + '" stroke-width=".8" stroke-dasharray="10 4 2 4" data-cad-layer="A-EJES">');
     for (i = 0; i <= p.bays; i++) o.push('<line x1="' + f(x0 + bx * i * s) + '" y1="' + f(y0 - 34) + '" x2="' + f(x0 + bx * i * s) + '" y2="' + f(y0 + D + 14) + '"/>');
     for (j = 0; j <= r.rows; j++) o.push('<line x1="' + f(x0 - 34) + '" y1="' + f(y0 + D / r.rows * j) + '" x2="' + f(x0 + W + 14) + '" y2="' + f(y0 + D / r.rows * j) + '"/>');
     o.push('</g>');
