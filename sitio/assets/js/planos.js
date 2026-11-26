@@ -76,14 +76,33 @@
   function layoutLevels(p, r) {
     if (hasSketch(p)) return sketchLevels(p, r);
     var prog = PR.program(p), levels = [];
+    // Núcleo de escalera: el mismo cubo en todas las plantas, pegado a un lado, con vestíbulo o pasillo
+    // al frente y al fondo; así la escalera arranca y llega a una circulación, nunca a la puerta de una recámara.
+    var isStair = function (x) { return /^Escalera$/.test(x.n); };
+    var core = null;
+    if (prog.length > 1 && /casa|comercial|bodega/.test(p.type) && prog.every(function (lv) { return lv.front.concat(lv.back).some(isStair); }) && r.W - 2.6 >= 5.5 && r.D >= 7) {
+      var lv0 = prog[0], fa0 = lv0.front.reduce(function (s, x) { return s + (x.flex ? 30 * (x.w || 1) : x.a); }, 0), ba0 = lv0.back.filter(function (x) { return !isStair(x); }).reduce(function (s, x) { return s + (x.flex ? 30 * (x.w || 1) : x.a); }, 0);
+      var hB0 = r.D - Math.max(0.36, Math.min(0.68, fa0 / Math.max(1, fa0 + ba0))) * r.D, sh = Math.min(3.9, r.D - 2.4);
+      var s0 = Math.max(0, Math.min(r.D - sh, hB0 - sh / 2));
+      if (s0 < 1.1) s0 = 0; if (r.D - (s0 + sh) < 1.1) sh = r.D - s0;
+      core = { w: 2.6, y0: s0, y1: s0 + sh };
+    }
     prog.forEach(function (lv, li) {
+      var X0 = 0, cells = [], W = r.W, D = r.D;
+      if (core) {
+        var st = lv.front.concat(lv.back).filter(isStair)[0];
+        lv = { front: lv.front.filter(function (x) { return !isStair(x); }), back: lv.back.filter(function (x) { return !isStair(x); }), note: lv.note };
+        cells.push(Object.assign({}, st, { x: 0, y: core.y0, w: core.w, h: core.y1 - core.y0, area: core.w * (core.y1 - core.y0) }));
+        if (core.y0 > 0.01) cells.push({ n: 'Pasillo', k: 'circ', id: 'pasillo-n' + li + '-fondo', x: 0, y: 0, w: core.w, h: core.y0, area: core.w * core.y0 });
+        if (D - core.y1 > 0.01) cells.push({ n: li === 0 ? 'Vestíbulo' : 'Pasillo', k: 'circ', id: (li === 0 ? 'vestibulo' : 'pasillo-n' + li + '-frente'), x: 0, y: core.y1, w: core.w, h: D - core.y1, area: core.w * (D - core.y1) });
+        X0 = core.w; W = r.W - core.w;
+      }
       var fa = lv.front.reduce(function (s, x) { return s + (x.flex ? 30 * (x.w || 1) : x.a); }, 0);
       var ba = lv.back.reduce(function (s, x) { return s + (x.flex ? 30 * (x.w || 1) : x.a); }, 0);
-      var W = r.W, D = r.D, cells = [];
       var hF = !ba ? D : !fa ? 0 : Math.max(0.36, Math.min(0.68, fa / (fa + ba))) * D, hB = D - hF;
       var top = li === 0 ? (p.type === 'casa' ? 'Jardín' : 'Área común') : 'Terraza';
-      squarify(fit(lv.back, W * hB, { n: top }), 0, 0, W, hB, cells);
-      squarify(fit(lv.front, W * hF, { n: li === 0 ? (p.type === 'casa' ? 'Jardín frontal' : 'Plaza de acceso') : 'Terraza' }), 0, hB, W, hF, cells);
+      squarify(fit(lv.back, W * hB, { n: top }), X0, 0, W, hB, cells);
+      squarify(fit(lv.front, W * hF, { n: li === 0 ? (p.type === 'casa' ? 'Jardín frontal' : 'Plaza de acceso') : 'Terraza' }), X0, hB, W, hF, cells);
       cells.forEach(function (c) { c.band = c.y < hB - 0.01 ? 'back' : 'front'; c.wk = c.id || 'k:' + c.n + ':' + c.band; });
       var removed = applyWalls(p, li, cells, W, D);
       cells.forEach(function (c) {

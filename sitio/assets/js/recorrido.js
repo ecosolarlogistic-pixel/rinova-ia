@@ -1995,6 +1995,32 @@
         Bs.forEach(function (B) { if (!used[B.id] && !As.length) pairs.push([null, B]); });
         pairs.forEach(function (pr) { var T = planOne(k, L0, L1, Hl, pr[0], pr[1]); if (T) TR.push(T); });
       }
+      // las puertas de recámaras y baños no quedan en el descanso de la escalera: se recorren sobre su muro
+      TR.forEach(function (Tt) {
+        [[model[Tt.k], [Tt.start.x, Tt.start.z]], [model[Tt.k + 1], [Tt.exit.x, Tt.exit.z]]].forEach(function (pair) { clearDoors(pair[0], pair[1], Tt.box); });
+      });
+    }
+    function clearDoors(Lk, q, box) {
+      var moved = false;
+      Lk.edges.forEach(function (e) {
+        e.open.forEach(function (o) {
+          if (o.kind !== 'door') return;
+          var w = o.hi - o.lo;
+          function bad(m) {
+            var px = e.axis === 'x' ? m : e.c, pz = e.axis === 'x' ? e.c : m, d = Math.hypot(px - q[0], pz - q[1]);
+            var inBox = [0.5, -0.5].some(function (dd) { return inRect(box, e.axis === 'x' ? m : e.c + dd, e.axis === 'x' ? e.c + dd : m, 0.05); });
+            return d < 1.15 || inBox ? 1 + (1.15 - Math.min(d, 1.15)) : 0;
+          }
+          var m0 = (o.lo + o.hi) / 2; if (!bad(m0)) return;
+          var best = null, bs = Infinity;
+          for (var m = e.lo + 0.15 + w / 2; m <= e.hi - 0.15 - w / 2 + 1e-6; m += 0.05) {
+            var b = bad(m), others = e.open.some(function (h) { return h !== o && m - w / 2 < h.hi + 0.1 && m + w / 2 > h.lo - 0.1; });
+            if (others) continue; var sc = b * 10 + Math.abs(m - m0) * 0.01; if (sc < bs) { bs = sc; best = m; }
+          }
+          if (best != null && !bad(best)) { o.lo = best - w / 2; o.hi = best + w / 2; moved = true; }
+        });
+      });
+      if (moved) Lk.wsegs = null;
     }
     function rectOfR(R) { return { x0: R.x, z0: R.y, x1: R.x + R.w, z1: R.y + R.h }; }
     function planOne(k, L0, L1, Hl, A, B) {
@@ -2122,6 +2148,11 @@
       c.Hl0 = L0.H; sc -= doorsBlocked(L0, false) + doorsBlocked(L1, true);
       // se llega y se sale por estancias o circulaciones, no por recámaras, baños o cochera
       function kindSc(Lk, q) { var R = roomAtL(Lk, q[0], q[1]); if (!R || /Escalera/.test(R.n)) return 0; if (R.unit) return -9; return R.k === 'soc' || R.k === 'circ' ? 3 : -5; }
+      // nunca se arranca ni se llega dentro de una recámara, baño, cochera o servicio
+      function privSc(Lk, a, b) { var n = 0; [a, b].forEach(function (q) { var R = roomAtL(Lk, q[0], q[1]); if (R && !R.ext && !/Escalera/.test(R.n) && /rec|bano|coch|serv/.test(R.k)) n++; }); return n ? -18 - 6 * (n - 1) : 0; }
+      sc += privSc(L0, e.sOut, e.sFar) + privSc(L1, e.eOut, e.eFar);
+      function outSc(Lk, q) { var R = roomAtL(Lk, q[0], q[1]); return !R || R.ext ? -40 : 0; } // ni arranque ni llegada fuera de la casa
+      sc += outSc(L0, e.sOut) + outSc(L1, e.eOut);
       sc += kindSc(L0, e.sOut) + kindSc(L1, e.eOut);
       sc -= 7 * wallsCross(L0, box) + 7 * wallsCross(L1, box);
       if (box.x0 < -0.01 || box.z0 < -0.01 || box.x1 > W + 0.01 || box.z1 > D + 0.01) sc -= 50;
