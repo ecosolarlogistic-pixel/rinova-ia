@@ -46,7 +46,7 @@
   }
   // la fachada mejorada cambia el frente del recorrido: si cambió desde la última vez, se reconstruye
   var lastFac = '';
-  function facSig() { try { var FU = window.RinovaFachadaUI, f = FU && FU.facade && FU.facade(); if (!f) return ''; var sp = f.spec || {}; return JSON.stringify([f.muro, f.cancel, f.puerta, sp.ops, sp.volado, sp.porch, sp.accent, sp.pv && sp.pv.length]); } catch (e) { return ''; } }
+  function facSig() { try { var FU = window.RinovaFachadaUI, f = FU && FU.facade && FU.facade(); if (!f) return ''; var sp = f.spec || {}; return JSON.stringify([f.muro, f.cancel, f.puerta, sp.ops, sp.volado, sp.porch, sp.accent, sp.slats, sp.alero, sp.pv && sp.pv.length]); } catch (e) { return ''; } }
   function hide() { open = false; if (ctl) ctl.stop(); setTour(false); }
   function rebuild(keep) {
     var d = data(); stale = false; nLevels = d.levels.length;

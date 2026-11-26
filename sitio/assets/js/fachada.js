@@ -116,7 +116,88 @@
     R.acentoDesde = R.acentoDesde === 1 ? 1 : 0;
     ['travesano', 'ventanaAlta', 'puertaDoble', 'losaVolada', 'porche', 'cochera'].forEach(function (k) { R[k] = !!R[k]; });
     if (!R.acento) R.acentoLado = 'ninguno';
+    if (!isHex(R.listones)) R.listones = R.acento || '#2E3238';
+    if (!isHex(R.plafon)) R.plafon = R.listones;
+    R.escalones = !!R.escalones;
+    R.modulos = normMods(R.modulos);
+    R.composicion = R.modulos && R.composicion !== 'reticula' ? 'modulos' : 'reticula';
     return R;
+  }
+  /* Composición de la referencia: franjas verticales de izquierda a derecha, cada una con su contenido en planta baja (pb)
+     y en plantas altas (pa), si sobresale del paño, si lleva balcón/losa volada y si tiene alero arriba. Así se copia
+     la composición real de cualquier fachada (simetría, volumen central, paneles de listones…) y no sólo sus colores. */
+  var TIPOS = ['macizo', 'ventanal', 'ventana', 'puerta', 'puerta_doble', 'listones', 'cochera'];
+  function normMods(L) {
+    if (!Array.isArray(L)) return null;
+    var out = L.filter(function (m) { return m && +m.ancho > 0; }).slice(0, 12).map(function (m) {
+      return { ancho: Math.max(0.03, +m.ancho), pb: TIPOS.indexOf(m.pb) > -1 ? m.pb : 'macizo', pa: TIPOS.indexOf(m.pa) > -1 && m.pa !== 'cochera' ? m.pa : (m.pa === 'cochera' ? 'ventana' : 'macizo'),
+        sal: !!m.sal, balcon: !!m.balcon, losa: !!(m.losa || m.balcon), alero: !!m.alero, mat: m.mat === 'acento' ? 'acento' : 'muro' };
+    });
+    if (out.length < 2) return null;
+    var t = out.reduce(function (a, m) { return a + m.ancho; }, 0);
+    out.forEach(function (m) { m.ancho = Math.round(m.ancho / t * 1000) / 1000; });
+    return out;
+  }
+  function runs(mods, xs, k) {
+    var out = [], cur = null;
+    mods.forEach(function (m, i) { if (m[k]) { if (cur) cur[1] = xs[i][1]; else { cur = [xs[i][0], xs[i][1]]; out.push(cur); } } else cur = null; });
+    return out;
+  }
+  var SAL = 0.45;
+  function specMods(p, r, fx, R, E, W, levels) {
+    var mods = R.modulos, xs = [], x = 0, ops = [], slats = [], panels = [], gH = levels[0].h, door = null;
+    mods.forEach(function (m) { xs.push([x, x + m.ancho * W]); x += m.ancho * W; });
+    xs[xs.length - 1][1] = W;
+    // Si la referencia no deja ver la puerta, el acceso va en la franja más ancha cercana al centro
+    if (!mods.some(function (m) { return m.pb === 'puerta' || m.pb === 'puerta_doble'; })) {
+      var best = -1, bs = -1;
+      mods.forEach(function (m, i) { var c = (xs[i][0] + xs[i][1]) / 2, sc = (xs[i][1] - xs[i][0]) - Math.abs(c - W / 2) * 0.3; if (m.pb !== 'cochera' && sc > bs) { bs = sc; best = i; } });
+      mods = mods.map(function (m, i) { return i === best ? Object.assign({}, m, { pb: R.puertaDoble ? 'puerta_doble' : 'puerta' }) : m; });
+    }
+    function winOp(t, x0, mw, lv, z) {
+      var o = { lvl: lv.i, kind: 'win', z: z }, w, yy, hh;
+      if (t === 'ventanal') { var pad = Math.min(0.15, mw * 0.06); w = mw - 2 * pad; yy = lv.i === 0 ? 0.08 : 0.12; hh = lv.h - yy - 0.32; if (R.ventanas !== 'lisa') o.mull = true; }
+      else if (R.ventanas === 'arco' || R.ventanas === 'marco') { w = Math.min(1.3, mw * 0.6); yy = 0.85; hh = lv.h - 1.3; o[R.ventanas === 'arco' ? 'arch' : 'frame'] = true; }
+      else { w = Math.min(mw * 0.72, 2.6); yy = 0.8; hh = lv.h - 1.25; if (R.ventanas === 'cuadricula') o.mull = true; }
+      if (R.travesano && !o.arch) o.transom = true;
+      return Object.assign({ x: r1(x0 + (mw - w) / 2), w: r1(w), y: r1(yy), h: r1(Math.max(0.6, hh)) }, o);
+    }
+    mods.forEach(function (m, i) {
+      var x0 = xs[i][0], x1 = xs[i][1], mw = x1 - x0, z = m.sal ? SAL : 0;
+      if (m.mat === 'acento' && R.acento) panels.push({ x0: x0, x1: x1, c: R.acento });
+      levels.forEach(function (lv) {
+        var t = lv.i === 0 ? m.pb : m.pa;
+        if (t === 'macizo') return;
+        if (t === 'listones') { slats.push({ x0: r1(x0 + 0.04), x1: r1(x1 - 0.04), y0: r1(lv.y + 0.02), y1: r1(lv.y + lv.h - 0.02), lvl: lv.i, z: z, c: R.listones }); return; }
+        if (lv.i === 0 && (t === 'puerta' || t === 'puerta_doble')) {
+          var dbl = t === 'puerta_doble', dw = Math.min(mw - 0.3, dbl ? 1.8 : 1.1), dh = Math.min(2.45, gH - (R.travesano ? 0.75 : 0.4));
+          var d = { x: r1(x0 + (mw - dw) / 2), w: r1(dw), y: 0, h: r1(dh), lvl: 0, kind: 'door', dbl: dbl, arch: R.ventanas === 'arco', z: z, bay: i };
+          if (door) { d.kind = 'win'; d.y = 0.1; } else door = d;
+          ops.push(d);
+          if (R.travesano && !d.arch) ops.push({ x: d.x, w: d.w, y: r1(dh + 0.08), h: r1(Math.min(0.55, gH - dh - 0.3)), lvl: 0, kind: 'win', transomOnly: true, z: z });
+          return;
+        }
+        if (lv.i === 0 && t === 'cochera' && p.type === 'casa') { var gw = Math.min(mw - 0.4, 5.4); ops.push({ x: r1(x0 + (mw - gw) / 2), w: r1(gw), y: 0, h: Math.min(2.5, gH - 0.6), lvl: 0, kind: 'garage', z: z }); return; }
+        if (p.type === 'comercial' && lv.i === 0) { ops.push({ x: r1(x0 + 0.12), w: r1(mw - 0.24), y: 0.15, h: r1(gH - 0.75), lvl: 0, kind: 'shop', z: z }); return; }
+        ops.push(winOp(t === 'puerta' || t === 'puerta_doble' || t === 'cochera' ? 'ventana' : t, x0, mw, lv, z));
+      });
+    });
+    function zAt(a, b) { var z = 0; mods.forEach(function (m, i) { if (m.sal && xs[i][1] > a + 0.01 && xs[i][0] < b - 0.01) z = SAL; }); return z; }
+    var sal = runs(mods, xs, 'sal').map(function (q) { return { x0: r1(q[0]), x1: r1(q[1]), depth: SAL }; });
+    var volado = null, slabC = shade(R.muro, -6);
+    var balc = levels.length > 1 && R.balcon !== 'ninguno' && fx.opts.balcones !== false ? runs(mods, xs, 'balcon') : [];
+    balc.forEach(function (q) {
+      var w0 = ops.filter(function (o) { return o.lvl === 1 && o.kind === 'win' && o.x + o.w > q[0] && o.x < q[1]; })[0];
+      if (w0) Object.assign(w0, { balcony: true, rail: R.balcon, bx0: r1(q[0] - 0.1), bx1: r1(q[1] + 0.1) });
+      if (!volado || q[1] - q[0] > volado.w) volado = { x: r1(q[0] - 0.15), w: r1(q[1] - q[0] + 0.3), y: r1(levels[1].y - 0.42), t: 0.55, depth: 1.5, c: slabC, soffit: R.plafon, lights: true, z: zAt(q[0], q[1]) };
+    });
+    if (!volado && (R.losaVolada || fx.opts.volado)) {
+      var ls = runs(mods, xs, 'losa'); if (!ls.length && door) ls = [[door.x - 0.6, door.x + door.w + 0.6]];
+      ls.forEach(function (q) { if (!volado || q[1] - q[0] > volado.w) volado = { x: r1(Math.max(-0.1, q[0] - 0.15)), w: r1(Math.min(W + 0.2, q[1] - q[0] + 0.3)), y: r1(Math.min(gH - 0.05, (door ? door.h : 2.4) + 0.55)), t: 0.38, depth: 1.4, c: slabC, soffit: R.plafon, lights: true, z: zAt(q[0], q[1]) }; });
+    }
+    var al = runs(mods, xs, 'alero'), alero = al.length ? al.map(function (q) { return { x0: r1(q[0]), x1: r1(q[1]), depth: 1.3, t: 0.6, c: slabC, soffit: R.plafon, z: zAt(q[0], q[1]) }; }) : null;
+    var steps = R.escalones && door ? { x0: r1(door.x - 0.7), x1: r1(door.x + door.w + 0.7), n: 2, z: door.z } : null;
+    return { ops: ops, slats: slats, panels: panels, sal: sal, volado: volado, alero: alero, steps: steps, door: door, slabC: slabC, bays: mods.length, bw: W / mods.length };
   }
   function specRef(p, r, fx) {
     var R = fx.ref, E = Object.assign({}, ESTILOS.referencia, { roof: R.cubierta, win: R.ventanas === 'arco' ? 'arco' : R.ventanas === 'marco' ? 'marco' : 'reticula' });
@@ -125,6 +206,22 @@
     var bays = Math.max(2, Math.min(p.bays, Math.round(W / 3.4))), bw = W / bays;
     hs.forEach(function (h, i) { levels.push({ i: i, y: y, h: h }); y += h; });
     var H = y, gH = levels[0].h, ops = [];
+    if (R.composicion === 'modulos' && R.modulos) {
+      var G = specMods(p, r, fx, R, E, W, levels), mtx = MATERIALES[R.textura];
+      var cel = fx.opts.celosia ? { x0: r1(W * 0.6), x1: W, from: levels.length > 1 ? 1 : 0, to: levels.length - 1 } : null;
+      if (cel && G.slats.length) cel = null; // la referencia ya trae sus propios listones
+      return {
+        p: p, fx: fx, E: E, W: W, D: D, H: H, bays: G.bays, bw: G.bw, levels: levels, parapet: R.cubierta === 'plano' ? 0.6 : 0.35, roof: R.cubierta,
+        ops: G.ops, accent: null, cant: 0, celosia: cel, volado: G.volado, pergola: fx.opts.pergola && R.cubierta === 'plano' ? { x0: r1(W * 0.08), x1: r1(W * 0.5), h: 2.6 } : null,
+        M: { n: 'Muro como tu fachada (' + mtx.n.toLowerCase() + ')', c: R.muro, c2: shade(R.muro, -22), k: mtx.k, tex: mtx.tex },
+        A: R.acento ? { n: 'Acento como tu fachada', c: R.acento, c2: shade(R.acento, -16), k: 2200, tex: 'liso' } : MATERIALES.grafito,
+        C: { n: 'Cancelería como tu fachada', c: R.cancel }, base: fx.opts.basamento ? MATERIALES.piedra : null,
+        ref: R, porch: null, doorC: R.puerta, slabC: G.slabC, slats: G.slats, panels: G.panels, sal: G.sal, alero: G.alero, steps: G.steps, mods: R.modulos,
+        pv: r.energy && r.energy.layout && r.energy.layout.length ? r.energy.layout : null,
+        yard: global.RinovaProyecto && global.RinovaProyecto.siteYard ? global.RinovaProyecto.siteYard(p, r) : null,
+        lot: lotOf(p, r, D)
+      };
+    }
     function bayOf(lado) { return lado === 'izq' ? 0 : lado === 'der' ? bays - 1 : Math.floor(bays / 2); }
     var di = bayOf(R.puertaLado), used = [di];
     // Acceso: puerta (sencilla o doble) con travesaño de vidrio arriba
@@ -352,6 +449,15 @@
     // Cuerpo principal
     wallRect(0, 0, s.W, bodyTop, 'url(#' + id + 'pM)');
     marks.push({ x: X(s.accent ? s.accent.x0 * 0.35 : s.W * 0.2), y: Y(top - (s.levels[s.levels.length - 1].h * 0.12)), t: s.M.n });
+    // Franjas de acento y volúmenes salientes de la composición de la referencia
+    (s.panels || []).forEach(function (q) { wallRect(q.x0, 0, q.x1 - q.x0, bodyTop, 'url(#' + id + 'pA)'); });
+    (s.sal || []).forEach(function (q, i) {
+      var sw = Math.max(3, L(0.14));
+      o.push('<rect x="' + X(q.x0) + '" y="' + Y(bodyTop) + '" width="' + sw + '" height="' + L(bodyTop) + '" fill="url(#' + id + 'side)" opacity=".9"/>');
+      o.push('<rect x="' + r1(X(q.x1) - sw) + '" y="' + Y(bodyTop) + '" width="' + sw + '" height="' + L(bodyTop) + '" fill="#000" opacity=".07"/>');
+      o.push('<path d="M' + X(q.x0) + ' ' + Y(0) + 'V' + Y(bodyTop) + 'M' + X(q.x1) + ' ' + Y(0) + 'V' + Y(bodyTop) + '" stroke="#000" stroke-opacity=".18" stroke-width="1"/>');
+      if (!i) marks.push({ x: X(q.x0 + (q.x1 - q.x0) * 0.5), y: Y(bodyTop - 0.5), t: 'Volumen saliente como tu fachada' });
+    });
     // Volumen de acento (volado)
     if (s.accent) {
       var a = s.accent, ay = s.levels[a.from].y;
@@ -383,6 +489,15 @@
       o.push('<rect x="' + X(pc.x0) + '" y="' + Y(ph) + '" width="' + L(pc.x1 - pc.x0) + '" height="' + L(ph) + '" fill="' + pc.c + '"/>');
       o.push('<rect x="' + X(pc.x0) + '" y="' + Y(ph) + '" width="' + L(pc.x1 - pc.x0) + '" height="' + L(0.5) + '" fill="url(#' + id + 'shade)"/>');
       marks.push({ x: X(pc.x0 + (pc.x1 - pc.x0) * 0.2), y: Y(ph * 0.55), t: 'Acceso remetido como tu fachada' });
+    }
+    // ----- paneles de listones de la referencia
+    if (s.slats && s.slats.length) {
+      s.slats.forEach(function (q) {
+        o.push('<rect x="' + X(q.x0) + '" y="' + Y(q.y1) + '" width="' + L(q.x1 - q.x0) + '" height="' + L(q.y1 - q.y0) + '" fill="' + shade(q.c, -10) + '"/>');
+        var sp = Math.max(0.09, (q.x1 - q.x0) / Math.max(3, Math.round((q.x1 - q.x0) / 0.11)));
+        for (var sx2 = q.x0 + sp / 2; sx2 < q.x1; sx2 += sp) o.push('<rect x="' + X(sx2 - sp * 0.3) + '" y="' + Y(q.y1) + '" width="' + Math.max(1, L(sp * 0.6)) + '" height="' + L(q.y1 - q.y0) + '" fill="' + shade(q.c, 8) + '"/>');
+      });
+      marks.push({ x: X((s.slats[0].x0 + s.slats[0].x1) / 2), y: Y((s.slats[0].y0 + s.slats[0].y1) / 2), t: 'Paneles de listones como tu fachada' });
     }
     // ----- vanos
     s.ops.forEach(function (op) {
@@ -430,7 +545,7 @@
       if (night && glow && op.kind !== 'door') o.push('<rect x="' + r1(x - 4) + '" y="' + r1(yTop - 4) + '" width="' + r1(w + 8) + '" height="' + r1(h + 8) + '" fill="' + glow + '" opacity=".1"/>');
       // balcón
       if (op.balcony) {
-        var by = lv.y, bxl = xa - 0.25, bwl = op.w + 0.5;
+        var by = lv.y, bxl = op.bx0 != null ? op.bx0 : xa - 0.25, bwl = op.bx0 != null ? op.bx1 - op.bx0 : op.w + 0.5;
         o.push('<rect x="' + X(bxl) + '" y="' + Y(by + 0.06) + '" width="' + L(bwl) + '" height="' + L(0.2) + '" fill="' + (s.slabC || '#E4E6EA') + '"/>');
         if (op.rail === 'herreria') {
           var hb2 = 'M' + X(bxl) + ' ' + Y(by + 1.0) + ' H' + X(bxl + bwl);
@@ -467,7 +582,21 @@
       o.push('<rect x="' + X(v.x) + '" y="' + Y(v.y) + '" width="' + L(v.w) + '" height="' + L(0.35) + '" fill="url(#' + id + 'shade)"/>');
       if (v.lights) for (var lp = v.x + v.w / 6; lp < v.x + v.w; lp += v.w / 3) o.push('<circle cx="' + X(lp) + '" cy="' + r1(Y(v.y) - 2) + '" r="' + Math.max(2, L(0.05)) + '" fill="#FFE9B8"/>' + (night || dusk ? '<path d="M' + X(lp) + ' ' + Y(v.y) + ' L' + X(lp - 0.5) + ' ' + Y(0) + ' H' + X(lp + 0.5) + 'Z" fill="url(#' + id + 'wash)" opacity=".5"/>' : ''));
       if (night) for (var dl = v.x + 0.6; dl < v.x + v.w; dl += 1.2) o.push('<path d="M' + X(dl) + ' ' + Y(v.y) + ' L' + X(dl - 0.7) + ' ' + Y(0) + ' H' + X(dl + 0.7) + 'Z" fill="url(#' + id + 'wash)" opacity=".55"/>');
-      marks.push({ x: X(v.x + v.w / 2), y: Y(v.y + vt / 2), t: s.ref ? 'Losa volada sobre el acceso' : 'Volado en acceso' });
+      if (v.soffit) o.push('<rect x="' + X(v.x) + '" y="' + Y(v.y + vt * 0.42) + '" width="' + L(v.w) + '" height="' + L(vt * 0.42) + '" fill="' + v.soffit + '"/>');
+      marks.push({ x: X(v.x + v.w / 2), y: Y(v.y + vt / 2), t: s.ref ? (s.slats ? 'Losa volada con plafón como tu fachada' : 'Losa volada sobre el acceso') : 'Volado en acceso' });
+    }
+    // ----- alero superior (remate)
+    (s.alero || []).forEach(function (al, i) {
+      var ay0 = bodyTop - al.t + 0.05;
+      o.push('<rect x="' + X(al.x0 - 0.25) + '" y="' + Y(ay0 + al.t) + '" width="' + L(al.x1 - al.x0 + 0.5) + '" height="' + L(al.t) + '" fill="' + al.c + '"/>');
+      o.push('<rect x="' + X(al.x0 - 0.25) + '" y="' + Y(ay0 + al.t * 0.42) + '" width="' + L(al.x1 - al.x0 + 0.5) + '" height="' + L(al.t * 0.42) + '" fill="' + al.soffit + '"/>');
+      o.push('<rect x="' + X(al.x0) + '" y="' + Y(ay0) + '" width="' + L(al.x1 - al.x0) + '" height="' + L(0.3) + '" fill="url(#' + id + 'shade)"/>');
+      if (!i) marks.push({ x: X(al.x1 - (al.x1 - al.x0) * 0.2), y: Y(ay0 + al.t / 2), t: 'Alero superior como tu fachada' });
+    });
+    // ----- escalones del acceso
+    if (s.steps) {
+      var st2 = s.steps;
+      for (var si = 0; si < st2.n; si++) o.push('<rect x="' + X(st2.x0 - si * 0.25) + '" y="' + Y(0.16 * (st2.n - si)) + '" width="' + L(st2.x1 - st2.x0 + si * 0.5) + '" height="' + L(0.16) + '" fill="' + (si % 2 ? '#C9C6BF' : '#DAD7D0') + '" stroke="#A9A59D" stroke-width=".6"/>');
     }
     // ----- iluminación arquitectónica
     if (s.fx.opts.iluminacion && (night || dusk)) {

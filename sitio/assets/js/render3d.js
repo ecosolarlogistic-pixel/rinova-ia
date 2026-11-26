@@ -165,6 +165,9 @@
         var aw = a.x1 - a.x0 + s.cant;
         box(mAcc, aw, bodyTop - aY, D + PROJ, X0 + a.x0 + aw / 2, aY + (bodyTop - aY) / 2, PROJ / 2, true);
       } else box(mMain, W, bodyTop, D, 0, bodyTop / 2, 0, true);
+      // Composición de la referencia: franjas de acento y volúmenes que sobresalen del paño
+      (s.panels || []).forEach(function (q) { box(mAcc, q.x1 - q.x0, bodyTop, 0.04, X0 + (q.x0 + q.x1) / 2, bodyTop / 2, ZF + 0.02, true); });
+      (s.sal || []).forEach(function (q) { box(mMain, q.x1 - q.x0, bodyTop, q.depth, X0 + (q.x0 + q.x1) / 2, bodyTop / 2, ZF + q.depth / 2, true); });
       if (s.base) { var bwid = (a && a.from === 0 ? a.x0 : W) + 0.08; box(mBase, bwid, s.levels[0].h, D + 0.08, X0 + bwid / 2 - 0.04, s.levels[0].h / 2, 0, true); }
       // losas / impostas
       s.levels.slice(1).forEach(function (lv) {
@@ -186,7 +189,7 @@
 
       // ---- Vanos (frente y fondo)
       function inAcc(op) { return a && op.lvl >= a.from && op.x >= a.x0 - 0.01 && op.x < a.x1 - 0.01; }
-      function zFace(op) { return inAcc(op) ? ZF + PROJ : ZF; }
+      function zFace(op) { return (inAcc(op) ? ZF + PROJ : ZF) + (op.z || 0); }
       function xOf(op) { return X0 + op.x + (inAcc(op) ? s.cant : 0); }
       // Porche remetido de la fachada de referencia: fondo oscuro del acceso bajo la losa volada
       if (s.porch) {
@@ -221,8 +224,9 @@
         }
         // balcón
         if (op.balcony && !back) {
-          var bw2 = op.w + 0.5, bdep = 1.2, yb2 = lv.y;
-          box(mWhite, bw2, 0.2, bdep, x, yb2 + 0.04, z + bdep / 2);
+          var bw2 = op.bx0 != null ? op.bx1 - op.bx0 : op.w + 0.5, bdep = op.bx0 != null && s.volado ? s.volado.depth : 1.2, yb2 = lv.y;
+          if (op.bx0 != null) { x = X0 + (op.bx0 + op.bx1) / 2; yb2 = s.volado ? s.volado.y + s.volado.t - 0.06 : lv.y; }
+          else box(mWhite, bw2, 0.2, bdep, x, yb2 + 0.04, z + bdep / 2);
           if (op.rail === 'herreria') {
             for (var hb = -bw2 / 2; hb <= bw2 / 2 + 0.01; hb += 0.12) bx(mFrame, 0.02, 0.95, 0.02, x + hb, yb2 + 0.62, z + bdep - 0.03);
             bx(mFrame, bw2, 0.04, 0.04, x, yb2 + 1.1, z + bdep - 0.03);
@@ -257,15 +261,34 @@
         for (var cx = ce.x0 + 0.15; cx <= ce.x1 - 0.15; cx += 0.2) bx(mSlat, 0.07, cy1 - cy0, 0.16, X0 + cx + shift, (cy0 + cy1) / 2, cz);
         bx(mSlat, ce.x1 - ce.x0 - 0.2, 0.1, 0.4, X0 + (ce.x0 + ce.x1) / 2 + shift, cy1 + 0.05, cz - 0.12);
       }
+      // ---- Listones de la referencia
+      (s.slats || []).forEach(function (q) {
+        var mS = M({ color: new T.Color(q.c), roughness: 0.65, metalness: 0.2 }), mB = M({ color: new T.Color(q.c).multiplyScalar(0.7), roughness: 0.8 }), zq = ZF + (q.z || 0);
+        box(mB, q.x1 - q.x0, q.y1 - q.y0, 0.04, X0 + (q.x0 + q.x1) / 2, (q.y0 + q.y1) / 2, zq + 0.02);
+        var sp = Math.max(0.09, (q.x1 - q.x0) / Math.max(3, Math.round((q.x1 - q.x0) / 0.11)));
+        for (var sx4 = q.x0 + sp / 2; sx4 < q.x1; sx4 += sp) bx(mS, sp * 0.55, q.y1 - q.y0, 0.07, X0 + sx4, (q.y0 + q.y1) / 2, zq + 0.075);
+      });
+      // ---- Alero superior de la referencia (remate con plafón)
+      (s.alero || []).forEach(function (al) {
+        var zq = ZF + (al.z || 0), w5 = al.x1 - al.x0 + 0.5, cx = X0 + (al.x0 + al.x1) / 2, y5 = bodyTop - al.t + 0.05;
+        box(M({ color: new T.Color(al.c), roughness: 0.7 }), w5, al.t * 0.6, al.depth + 0.25, cx, y5 + al.t * 0.7, zq + al.depth / 2 - 0.1);
+        box(M({ color: new T.Color(al.soffit), roughness: 0.6 }), w5 - 0.04, al.t * 0.4, al.depth + 0.2, cx, y5 + al.t * 0.2, zq + al.depth / 2 - 0.1);
+      });
+      // ---- Escalones del acceso
+      if (s.steps) for (var si = 0; si < s.steps.n; si++) box(mConc, s.steps.x1 - s.steps.x0 + si * 0.5, 0.16 * (s.steps.n - si), 0.35, X0 + (s.steps.x0 + s.steps.x1) / 2, 0.08 * (s.steps.n - si), ZF + (s.steps.z || 0) + 0.18 + si * 0.35);
       // ---- Volado
       if (s.volado) {
-        var v = s.volado, vt = v.t || 0.22;
+        var v = s.volado, vt = v.t || 0.22, vz = ZF + (v.z || 0);
+        if (v.soffit) {
+          box(v.c ? M({ color: new T.Color(v.c), roughness: 0.7 }) : mWhite, v.w, vt * 0.58, v.depth, X0 + v.x + v.w / 2, v.y + vt * 0.71, vz + v.depth / 2);
+          box(M({ color: new T.Color(v.soffit), roughness: 0.6 }), v.w - 0.04, vt * 0.42, v.depth - 0.02, X0 + v.x + v.w / 2, v.y + vt * 0.21, vz + v.depth / 2);
+        } else
         box(v.c ? M({ color: new T.Color(v.c), roughness: 0.7 }) : s.fx.estilo === 'industrial' || s.fx.acento === 'grafito' ? mDark : mWhite, v.w, vt, v.depth, X0 + v.x + v.w / 2, v.y + vt / 2, ZF + v.depth / 2);
         if (v.lights) {
           var mLed = M({ color: 0xffffff, emissive: 0xFFE2AE, emissiveIntensity: night ? 2.2 : dusk ? 1.2 : 0.6 });
           for (var lp = v.x + v.w / 6; lp < v.x + v.w; lp += v.w / 3) {
-            var led = new T.Mesh(track(new T.CylinderGeometry(0.07, 0.07, 0.02, 14)), mLed); led.position.set(X0 + lp, v.y - 0.01, ZF + v.depth * 0.45); root.add(led);
-            if (night || dusk) { var dl = new T.SpotLight(0xffd59a, night ? 6 : 2, v.y + 1, 0.8, 0.7, 1.5); dl.position.set(X0 + lp, v.y - 0.05, ZF + v.depth * 0.45); dl.target.position.set(X0 + lp, 0, ZF + v.depth * 0.45); root.add(dl, dl.target); }
+            var led = new T.Mesh(track(new T.CylinderGeometry(0.07, 0.07, 0.02, 14)), mLed); led.position.set(X0 + lp, v.y - 0.01, vz + v.depth * 0.45); root.add(led);
+            if (night || dusk) { var dl = new T.SpotLight(0xffd59a, night ? 6 : 2, v.y + 1, 0.8, 0.7, 1.5); dl.position.set(X0 + lp, v.y - 0.05, vz + v.depth * 0.45); dl.target.position.set(X0 + lp, 0, vz + v.depth * 0.45); root.add(dl, dl.target); }
           }
         }
       }

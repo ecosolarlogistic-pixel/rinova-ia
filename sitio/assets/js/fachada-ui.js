@@ -61,8 +61,16 @@
     f.on = true; f.estilo = 'referencia';
     if (!f.opts.jardineras) { f.opts.jardineras = true; extra.push('Jardineras al pie de la fachada: suavizan el muro y separan la casa de la banqueta.'); }
     if (!f.opts.iluminacion) { f.opts.iluminacion = true; extra.push('Iluminación arquitectónica cálida para que la fachada luzca de noche.'); }
-    if (!R.losaVolada && !R.porche) { R.losaVolada = true; extra.push('Losa volada sobre el acceso con luminarias empotradas: protege la entrada de la lluvia y la marca.'); }
-    if (p.floors > 1 && R.balcon === 'ninguno') { R.balcon = R.cubierta === 'teja' ? 'herreria' : 'vidrio'; R.balconLado = R.puertaLado; extra.push('Balcón en planta alta sobre el acceso: gana terraza y vista sin cerrar la fachada.'); }
+    var MM = R.composicion === 'modulos' && R.modulos ? R.modulos.map(function (m) { return Object.assign({}, m); }) : null;
+    var hasB = MM && MM.some(function (m) { return m.balcon; }), di = MM ? MM.findIndex(function (m) { return /puerta/.test(m.pb); }) : -1;
+    if (!R.losaVolada && !R.porche && !hasB) { R.losaVolada = true; if (MM && di > -1) MM[di].losa = true; extra.push('Losa volada sobre el acceso con luminarias empotradas: protege la entrada de la lluvia y la marca.'); }
+    if (p.floors > 1 && (R.balcon === 'ninguno' || (MM && !hasB))) {
+      if (R.balcon === 'ninguno') R.balcon = R.cubierta === 'teja' ? 'herreria' : 'vidrio';
+      R.balconLado = R.puertaLado;
+      if (MM && di > -1) { MM[di].balcon = MM[di].losa = true; if (MM[di].pa === 'macizo' || MM[di].pa === 'listones') MM[di].pa = 'ventanal'; }
+      extra.push('Balcón en planta alta sobre el acceso: gana terraza y vista sin cerrar la fachada.');
+    }
+    if (MM) R.modulos = MM;
     if (R.ventanas === 'lisa' && R.cubierta !== 'teja') { R.ventanas = 'cuadricula'; R.travesano = true; extra.push('Ventanales con retícula y travesaño alto: más luz y una fachada más ordenada.'); }
     if (hot && !f.opts.celosia) { f.opts.celosia = true; extra.push('Celosía de parteluces en clima cálido (' + r.city.name + '): baja la ganancia solar y el gasto de aire acondicionado.'); }
     if (p.floors >= 2 && R.cubierta === 'plano' && !f.opts.pergola) { f.opts.pergola = true; extra.push('Pérgola en azotea para convertirla en terraza habitable.'); }
@@ -196,6 +204,80 @@
     var vid = total ? dark / total : 0, floors = proj().floors, lado = ['izq', 'centro', 'der'][side];
     var cancel = dk[3] ? rgb2hex(dk.slice(0, 3).map(function (v) { return v / dk[3]; })) : '#1D2128';
     var porche = !teja && fr[side] > 0.6;
+    // Composición: franjas verticales (macizo, vidrio, opaco) en planta alta y planta baja, losa volada y alero oscuros
+    var comp = (function () {
+      var xa = firstCol(0, 1), xb = firstCol(w - 1, -1); if (xb - xa < w * 0.3) return null;
+      var BW = xb - xa, yt = 0;
+      for (y = 0; y < yb; y++) { var nb2 = 0; for (x = xa; x <= xb; x++) if (!skip[y * w + x] && (isWall(x, y) || isDark(x, y))) nb2++; if (nb2 > BW * 0.5) { yt = y; break; } }
+      var HB = yb - yt; if (HB < h * 0.25) return null;
+      var two = floors > 1, bands = two ? [[yt + HB * 0.58, yb - HB * 0.06], [yt + HB * 0.1, yt + HB * 0.42]] : [[yt + HB * 0.15, yb - HB * 0.06]];
+      // 1) por columna: muro (m) o vano/panel (x); 2) por tramo: vidrio (v) u opaco y parejo (o: puerta o listones)
+      function lab(x, b) {
+        var nw2 = 0, n2 = 0;
+        for (y = Math.round(b[0]); y < Math.round(b[1]); y++) { if (skip[y * w + x]) continue; n2++; if (isWall(x, y)) nw2++; }
+        return n2 < (b[1] - b[0]) * 0.3 || nw2 / n2 > 0.55 ? 'm' : 'x';
+      }
+      function kind(b, i0, i1) {
+        var nd2 = 0, n2 = 0, s1 = 0, s2 = 0;
+        for (x = xa + i0; x < xa + i1; x++) for (y = Math.round(b[0]); y < Math.round(b[1]); y++) { if (skip[y * w + x]) continue; n2++; if (isDark(x, y)) { nd2++; var lq = px(x, y).L; s1 += lq; s2 += lq * lq; } }
+        var sd = nd2 > 1 ? Math.sqrt(Math.max(0, s2 / nd2 - Math.pow(s1 / nd2, 2))) : 99;
+        return n2 && nd2 / n2 > 0.58 && sd < 30 ? 'o' : 'v';
+      }
+      var L2 = bands.map(function (b) { var a = []; for (x = xa; x <= xb; x++) a.push(lab(x, b)); return a; });
+      L2 = L2.map(function (a) { return a.map(function (v, i) { var c = {}; for (var j = Math.max(0, i - 2); j <= Math.min(a.length - 1, i + 2); j++) c[a[j]] = (c[a[j]] || 0) + 1; return (c.m || 0) >= (c.x || 0) ? 'm' : 'x'; }); });
+      var minW = Math.max(2, BW * 0.035), NL = L2[0].length;
+      function runsOf(a) { var r = [], st = 0; for (var i = 1; i <= a.length; i++) if (i === a.length || a[i] !== a[st]) { r.push([st, i, a[st]]); st = i; } return r; }
+      // tramos angostos se absorben en el vecino
+      L2 = L2.map(function (a) { var r = runsOf(a); r.forEach(function (q, k2) { if (q[1] - q[0] < minW && r.length > 1) { var nb3 = r[k2 - 1] || r[k2 + 1]; for (var i = q[0]; i < q[1]; i++) a[i] = nb3[2]; } }); return a; });
+      // Puerta: corrida de columnas opacas y parejas en la parte baja, de ancho de puerta, la más cercana al centro
+      var b0 = bands[0], dr = null, op2 = [];
+      for (x = xa; x <= xb; x++) {
+        var nd3 = 0, n3 = 0, t1 = 0, t2 = 0;
+        for (y = Math.round(b0[0] + (b0[1] - b0[0]) * 0.25); y < Math.round(b0[1]); y++) { if (skip[y * w + x]) continue; n3++; if (isDark(x, y)) { nd3++; var lz = px(x, y).L; t1 += lz; t2 += lz * lz; } }
+        op2.push(n3 && nd3 / n3 > 0.8 && Math.sqrt(Math.max(0, t2 / Math.max(1, nd3) - Math.pow(t1 / Math.max(1, nd3), 2))) < 26);
+      }
+      runsOf(op2).forEach(function (q) { if (!q[2]) return; var fw = (q[1] - q[0]) / BW, c = (q[0] + q[1]) / 2 / BW; if (fw > 0.05 && fw < 0.3 && (!dr || q[1] - q[0] > dr.i1 - dr.i0)) dr = { i0: q[0], i1: q[1], c: c }; });
+      var cuts = [0, NL];
+      if (dr) cuts.push(dr.i0, dr.i1);
+      L2.forEach(function (a) { runsOf(a).forEach(function (q) { cuts.push(q[0]); }); });
+      cuts.sort(function (a, b) { return a - b; });
+      var cc = [0]; cuts.forEach(function (c) { if (c - cc[cc.length - 1] >= minW) cc.push(c); }); if (NL - cc[cc.length - 1] < minW) cc.pop(); cc.push(NL);
+      function maj(a, i0, i1) { var n = 0; for (var i = i0; i < i1; i++) if (a[i] === 'm') n++; return n * 2 >= i1 - i0 ? 'm' : 'x'; }
+      var segs = [];
+      for (var i = 0; i + 1 < cc.length; i++) {
+        var p0 = maj(L2[0], cc[i], cc[i + 1]), p1 = two ? maj(L2[1], cc[i], cc[i + 1]) : 'm';
+        var isDoor = dr && Math.min(dr.i1, cc[i + 1]) - Math.max(dr.i0, cc[i]) > (cc[i + 1] - cc[i]) * 0.6;
+        var sg = { i0: cc[i], i1: cc[i + 1], pb: isDoor ? 'd' : p0 === 'm' ? 'm' : kind(bands[0], cc[i], cc[i + 1]), pa: p1 === 'm' ? 'm' : kind(bands[1], cc[i], cc[i + 1]) };
+        var pr = segs[segs.length - 1]; if (pr && pr.pb === sg.pb && pr.pa === sg.pa) pr.i1 = sg.i1; else segs.push(sg);
+      }
+      if (segs.length < 2 || segs.length > 12) return null;
+      // Losa volada / alero: franja oscura y pareja (plafón) de al menos un cuarto del ancho
+      function darkSpan(y0b, y1b) {
+        var best2 = null;
+        for (y = Math.round(y0b); y < Math.round(y1b); y++) {
+          var run = 0, st = 0;
+          for (x = xa; x <= xb + 1; x++) { var dk2 = x <= xb && !skip[y * w + x] && isDark(x, y); if (dk2) { if (!run) st = x; run++; } else { if (run > BW * 0.25 && (!best2 || run > best2.x1 - best2.x0)) best2 = { x0: st, x1: st + run, y: y }; run = 0; } }
+        }
+        if (!best2) return null;
+        var sum = [0, 0, 0, 0]; for (x = best2.x0; x < best2.x1; x++) { var q = px(x, best2.y); sum[0] += q.R; sum[1] += q.G; sum[2] += q.B; sum[3]++; }
+        best2.c = rgb2hex(sum.slice(0, 3).map(function (v) { return v / sum[3]; })); return best2;
+      }
+      var losa = two ? darkSpan(yt + HB * 0.4, yt + HB * 0.6) : null, alero = darkSpan(Math.max(0, yt - h * 0.02), yt + HB * 0.12);
+      function over(sg, sp) { if (!sp) return false; var a = Math.max(sg.i0 + xa, sp.x0), b = Math.min(sg.i1 + xa, sp.x1); return b - a > (sg.i1 - sg.i0) * 0.5; }
+      // Puerta: la franja opaca de planta baja más cercana al centro y de ancho de puerta
+      var di = -1, dd2 = 1e9;
+      segs.forEach(function (sg, k2) { if (sg.pb === 'd') di = k2; });
+      if (di < 0) segs.forEach(function (sg, k2) { var fw = (sg.i1 - sg.i0) / BW, c = (sg.i0 + sg.i1) / 2 / BW; if (sg.pb === 'o' && fw > 0.05 && fw < 0.32 && Math.abs(c - 0.5) < dd2) { dd2 = Math.abs(c - 0.5); di = k2; } });
+      var T2 = { m: 'macizo', v: 'ventanal', o: 'listones' }, ls = [0, 0, 0, 0];
+      var mods = segs.map(function (sg, k2) {
+        var fw = (sg.i1 - sg.i0) / BW, m = { ancho: Math.round(fw * 1000) / 1000, pb: k2 === di ? (fw > 0.1 ? 'puerta_doble' : 'puerta') : T2[sg.pb], pa: T2[sg.pa] };
+        [[sg.pb, bands[0]], [sg.pa, bands[1]]].forEach(function (bb) { if (bb[0] !== 'o' || !bb[1]) return; for (x = sg.i0 + xa; x < sg.i1 + xa; x++) for (y = Math.round(bb[1][0]); y < Math.round(bb[1][1]); y += 2) if (isDark(x, y)) { var q = px(x, y); ls[0] += q.R; ls[1] += q.G; ls[2] += q.B; ls[3]++; } });
+        if (over(sg, losa)) { m.balcon = true; m.sal = true; }
+        if (over(sg, alero)) m.alero = true;
+        return m;
+      });
+      return { modulos: mods, listones: ls[3] ? rgb2hex(ls.slice(0, 3).map(function (v) { return v / ls[3]; })) : null, plafon: (losa || alero || {}).c || null, puertaDoble: di > -1 && mods[di].pb === 'puerta_doble', door: di };
+    })();
     var ref = {
       muro: rgb2hex(rgb), cancel: cancel, puerta: puerta, porcheColor: puerta, textura: mat, acento: acento, acentoLado: acentoLado, acentoAncho: acentoAncho, acentoDesde: 0,
       ventanas: teja ? 'marco' : vid > 0.06 ? 'cuadricula' : 'lisa', travesano: !teja && vid > 0.06, ventanaAlta: !teja && vid > 0.14,
@@ -203,12 +285,25 @@
       balcon: floors > 1 ? (teja ? 'herreria' : 'vidrio') : 'ninguno', balconLado: lado,
       cubierta: teja ? 'teja' : 'plano', cochera: false
     };
+    // Sólo se usa la composición si la lectura es confiable: se reconoce muro, pocos paneles opacos y sin volumen de acento
+    if (comp) {
+      var fr2 = function (k, b) { return comp.modulos.reduce(function (t, m) { return t + (m[b] === k ? m.ancho : 0); }, 0); };
+      var okC = comp.modulos.length >= 3 && comp.modulos.length <= 10 && Math.max(fr2('macizo', 'pb'), fr2('macizo', 'pa')) > 0.12 && fr2('listones', 'pb') <= 0.3 && fr2('listones', 'pa') <= 0.3 && acentoLado === 'ninguno';
+      if (!okC) comp = null;
+    }
+    if (comp && !teja) {
+      ref.modulos = comp.modulos; ref.composicion = 'modulos'; ref.listones = comp.listones; ref.plafon = comp.plafon;
+      if (comp.door > -1) { ref.puertaDoble = comp.puertaDoble; ref.escalones = porche; }
+      if (comp.modulos.some(function (m) { return m.balcon; })) { ref.losaVolada = true; ref.balcon = 'vidrio'; }
+    }
     return { material: mat, color: ref.muro, teja: teja, vidrio: vid, ratio: canvas.width / canvas.height, pie: Math.round(yb / h * 100) / 100, accesos: fr.concat(ds).map(function (v) { return Math.round(v * 100) / 100; }), ref: FX.normRef(ref) };
   }
   var LADO = { izq: 'a la izquierda', centro: 'al centro', der: 'a la derecha' };
+  var MOD_T = { macizo: 'Muro', ventanal: 'Ventanal', ventana: 'Ventana', puerta: 'Puerta', puerta_doble: 'Puerta doble', listones: 'Listones', cochera: 'Cochera' };
   function refWhy(R, desc) {
     var t = [];
     if (desc) t.push('Lectura de tu referencia: ' + desc);
+    if (R.composicion === 'modulos' && R.modulos) t.push('Composición copiada de tu referencia, de izquierda a derecha: ' + R.modulos.map(function (m) { return (MOD_T[m.pb] || m.pb).toLowerCase() + (m.sal ? ' (saliente)' : ''); }).join(', ') + '. Se conservan sus proporciones y su simetría' + (R.modulos.some(function (m) { return m.balcon; }) ? ', la losa volada con balcón' : '') + (R.modulos.some(function (m) { return m.alero; }) ? ' y el alero superior' : '') + '.');
     t.push('Tu fachada se ajustó a la referencia: muro ' + R.muro.toUpperCase() + ' (' + FX.MATERIALES[R.textura].n.toLowerCase() + '), cancelería ' + R.cancel.toUpperCase() + ' y puerta ' + R.puerta.toUpperCase() + '.');
     t.push('Ventanas ' + ({ cuadricula: 'con retícula de perfiles', lisa: 'lisas', franja: 'en franja', arco: 'en arco', marco: 'con marco' })[R.ventanas] + (R.travesano ? ' y travesaño alto' : '') + (R.ventanaAlta ? ', de piso a techo' : '') + ', como en la referencia.');
     t.push('Acceso ' + LADO[R.puertaLado] + (R.puertaDoble ? ' con puerta doble' : '') + (R.porche ? ', remetido y en color oscuro' : '') + (R.losaVolada ? ', bajo una losa volada con luminarias empotradas' : '') + '.');
@@ -227,11 +322,17 @@
   }
   // Respuesta de RINOVAIA AI → fachada de referencia
   var AI_KEYS = { muro_hex: 'muro', acento_hex: 'acento', cancel_hex: 'cancel', puerta_hex: 'puerta', porche_hex: 'porcheColor', textura: 'textura', ventanas: 'ventanas', travesano: 'travesano', ventana_alta: 'ventanaAlta',
-    puerta_lado: 'puertaLado', puerta_doble: 'puertaDoble', porche: 'porche', losa_volada: 'losaVolada', balcon: 'balcon', balcon_lado: 'balconLado', acento_lado: 'acentoLado', acento_ancho: 'acentoAncho', acento_desde: 'acentoDesde', cubierta: 'cubierta', cochera: 'cochera' };
+    puerta_lado: 'puertaLado', puerta_doble: 'puertaDoble', porche: 'porche', losa_volada: 'losaVolada', balcon: 'balcon', balcon_lado: 'balconLado', acento_lado: 'acentoLado', acento_ancho: 'acentoAncho', acento_desde: 'acentoDesde', cubierta: 'cubierta', cochera: 'cochera', listones_hex: 'listones', plafon_hex: 'plafon', escalones: 'escalones' };
   function refFromAI(base, rep) {
     var R = Object.assign({}, base);
     Object.keys(AI_KEYS).forEach(function (k) { if (rep[k] !== undefined && rep[k] !== null && rep[k] !== '') R[AI_KEYS[k]] = typeof rep[k] === 'string' && /_hex$/.test(k) ? rep[k].trim() : rep[k]; });
     if (rep.acento_hex === '' || rep.acento_lado === 'ninguno') { R.acento = null; R.acentoLado = 'ninguno'; }
+    // Composición leída por la IA (franjas de izquierda a derecha): manda sobre la del navegador
+    if (Array.isArray(rep.modulos) && rep.modulos.length >= 2) {
+      R.modulos = rep.modulos.map(function (m) { return { ancho: m.ancho, pb: m.pb, pa: m.pa, sal: m.saliente, balcon: m.balcon, alero: m.alero, mat: m.acabado }; });
+      R.composicion = 'modulos';
+      if (R.modulos.some(function (m) { return m.balcon; })) { R.losaVolada = true; if (R.balcon === 'ninguno') R.balcon = 'vidrio'; }
+    }
     return FX.normRef(R);
   }
   function handleUp(file, opts) {
@@ -252,7 +353,7 @@
       proj().fx = sg.fx; why = sg.why;
       $('#fxCompare').checked = true;
       commit();
-      if (!opts.quiet) E.toast('Tu fachada se ajustó a la referencia. Desliza para comparar.');
+      if (!opts.quiet) E.toast('Tu fachada se ajustó a la referencia. Compáralas lado a lado.');
       // Con RINOVAIA AI activa, se afina la lectura (estilo, niveles, elementos); si ya viene leída, se usa tal cual
       var ai = opts.ai ? function () { return Promise.resolve({ lectura: opts.ai }); } : window.RinovaIA && window.RinovaIA.readFacade;
       if (!ai) return;
@@ -296,6 +397,7 @@
 
   /* ---------- Corregir la lectura de la referencia ---------- */
   var REF_SEL = [
+    ['composicion', 'Composición', { modulos: 'Como la referencia (franjas)', reticula: 'Módulos iguales' }],
     ['puertaLado', 'Acceso', { izq: 'Izquierda', centro: 'Centro', der: 'Derecha' }],
     ['ventanas', 'Ventanas', { cuadricula: 'Con retícula', lisa: 'Lisas', franja: 'En franja', arco: 'En arco', marco: 'Con marco' }],
     ['balcon', 'Balcón', { vidrio: 'Barandal de cristal', herreria: 'Herrería', ninguno: 'Sin balcón' }],
@@ -304,15 +406,39 @@
     ['cubierta', 'Cubierta', { plano: 'Losa plana', teja: 'Teja' }],
     ['textura', 'Acabado del muro', null]
   ];
-  var REF_COL = [['muro', 'Muro'], ['cancel', 'Cancelería'], ['puerta', 'Puerta'], ['acento', 'Acento'], ['porcheColor', 'Fondo del acceso']];
-  var REF_CHK = [['travesano', 'Travesaño alto'], ['ventanaAlta', 'Ventanas de piso a techo'], ['puertaDoble', 'Puerta doble'], ['porche', 'Acceso remetido'], ['losaVolada', 'Losa volada sobre el acceso'], ['cochera', 'Portón de cochera']];
+  var REF_COL = [['muro', 'Muro'], ['cancel', 'Cancelería'], ['puerta', 'Puerta'], ['acento', 'Acento'], ['porcheColor', 'Fondo del acceso'], ['listones', 'Listones'], ['plafon', 'Plafón de losa y alero']];
+  var REF_CHK = [['travesano', 'Travesaño alto'], ['ventanaAlta', 'Ventanas de piso a techo'], ['puertaDoble', 'Puerta doble'], ['porche', 'Acceso remetido'], ['losaVolada', 'Losa volada sobre el acceso'], ['cochera', 'Portón de cochera'], ['escalones', 'Escalones en el acceso']];
   $('#fxRefG').innerHTML = REF_COL.map(function (c) { return '<div class="field"><label for="fxR-' + c[0] + '">' + c[1] + '</label><input type="color" id="fxR-' + c[0] + '" data-r="' + c[0] + '"></div>'; }).join('') +
     REF_SEL.map(function (c) { var o = c[2] || FX.MATERIALES; return '<div class="field"><label for="fxR-' + c[0] + '">' + c[1] + '</label><select class="input" id="fxR-' + c[0] + '" data-r="' + c[0] + '">' + Object.keys(o).map(function (k) { return '<option value="' + k + '">' + esc(o[k].n || o[k]) + '</option>'; }).join('') + '</select></div>'; }).join('') +
     REF_CHK.map(function (c) { return '<label class="chk"><input type="checkbox" data-r="' + c[0] + '"> ' + c[1] + '</label>'; }).join('');
+  // Franjas de la composición (izquierda → derecha): se pueden corregir una por una
+  var modBox = document.createElement('div'); modBox.className = 'fx-ref-m'; modBox.id = 'fxRefM'; $('#fxRefG').after(modBox);
+  function modSel(i, k, v, list) { return '<select class="input" data-mi="' + i + '" data-mk="' + k + '" aria-label="' + (k === 'pb' ? 'Planta baja' : 'Planta alta') + ' de la franja ' + (i + 1) + '">' + list.map(function (t) { return '<option value="' + t + '"' + (t === v ? ' selected' : '') + '>' + MOD_T[t] + '</option>'; }).join('') + '</select>'; }
   function syncRef() {
     var f = fx(), box = $('#fxRef'); box.hidden = !f.ref; if (!f.ref) return;
     $$('[data-r]', box).forEach(function (el) { var k = el.dataset.r, v = f.ref[k]; if (el.type === 'checkbox') el.checked = !!v; else if (el.type === 'color') el.value = v || (k === 'acento' ? '#2B2F36' : '#888888'); else el.value = v; });
+    var M = f.ref.modulos, two = proj().floors > 1;
+    $('#fxR-composicion').disabled = !M;
+    modBox.hidden = !M || f.ref.composicion !== 'modulos';
+    if (!M || modBox.hidden) { modBox.innerHTML = ''; return; }
+    modBox.innerHTML = '<p class="fx-ref-mh">Franjas de la fachada, de izquierda a derecha</p>' + M.map(function (m, i) {
+      return '<div class="fx-ref-row"><b>' + (i + 1) + '</b><label class="fx-ref-w"><input type="number" class="input" min="3" max="80" step="1" value="' + Math.round(m.ancho * 100) + '" data-mi="' + i + '" data-mk="ancho" aria-label="Ancho de la franja ' + (i + 1) + ' en %"> %</label>' +
+        modSel(i, 'pb', m.pb, Object.keys(MOD_T)) + (two ? modSel(i, 'pa', m.pa, ['macizo', 'ventanal', 'ventana', 'listones']) : '') +
+        '<label class="chk"><input type="checkbox" data-mi="' + i + '" data-mk="sal"' + (m.sal ? ' checked' : '') + '> Saliente</label>' +
+        (two ? '<label class="chk"><input type="checkbox" data-mi="' + i + '" data-mk="balcon"' + (m.balcon ? ' checked' : '') + '> Balcón</label>' : '') +
+        '<label class="chk"><input type="checkbox" data-mi="' + i + '" data-mk="alero"' + (m.alero ? ' checked' : '') + '> Alero</label></div>';
+    }).join('');
   }
+  modBox.addEventListener('change', function (e) {
+    var el = e.target.closest('[data-mi]'); if (!el) return;
+    var f = fx(); if (!f.ref || !f.ref.modulos) return;
+    var i = +el.dataset.mi, k = el.dataset.mk, M = f.ref.modulos.map(function (m) { return Object.assign({}, m); });
+    M[i][k] = el.type === 'checkbox' ? el.checked : k === 'ancho' ? Math.max(3, +el.value || 3) / 100 : el.value;
+    if (k === 'balcon') M[i].losa = el.checked;
+    if (k === 'ancho') { var rest = 1 - M[i].ancho, others = M.reduce(function (t, m, j) { return t + (j === i ? 0 : m.ancho); }, 0) || 1; M.forEach(function (m, j) { if (j !== i) m.ancho = m.ancho / others * rest; }); }
+    f.ref = FX.normRef(Object.assign({}, f.ref, { modulos: M })); f.estilo = 'referencia'; f.on = true;
+    why = refWhy(f.ref); commit();
+  });
   $('#fxRefG').addEventListener('change', function (e) {
     var el = e.target.closest('[data-r]'); if (!el) return;
     var f = fx(); if (!f.ref) return;
