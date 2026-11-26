@@ -250,6 +250,9 @@
         var sg = { i0: cc[i], i1: cc[i + 1], pb: isDoor ? 'd' : p0 === 'm' ? 'm' : kind(bands[0], cc[i], cc[i + 1]), pa: p1 === 'm' ? 'm' : kind(bands[1], cc[i], cc[i + 1]) };
         var pr = segs[segs.length - 1]; if (pr && pr.pb === sg.pb && pr.pa === sg.pa) pr.i1 = sg.i1; else segs.push(sg);
       }
+      // Franjas angostas leídas como vidrio (árboles en el borde, cantos, sombras) son muro: no hay ventanas delgadas
+      segs.forEach(function (sg) { if ((sg.i1 - sg.i0) / BW < 0.08) { if (sg.pb === 'v') sg.pb = 'm'; if (sg.pa === 'v') sg.pa = 'm'; } });
+      segs = segs.reduce(function (acc, sg) { var pr = acc[acc.length - 1]; if (pr && pr.pb === sg.pb && pr.pa === sg.pa) pr.i1 = sg.i1; else acc.push(sg); return acc; }, []);
       if (segs.length < 2 || segs.length > 12) return null;
       // Losa volada / alero: franja oscura y pareja (plafón) de al menos un cuarto del ancho
       function darkSpan(y0b, y1b) {
