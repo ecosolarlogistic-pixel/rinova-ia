@@ -38,7 +38,7 @@
 
   function syncFxForm() {
     var f = fx();
-    $$('#fxStyles button').forEach(function (b) { b.setAttribute('aria-pressed', f.on && b.dataset.v === f.estilo); });
+    $$('#fxStyles button').forEach(function (b) { b.setAttribute('aria-pressed', f.on && b.dataset.v === f.estilo); if (b.dataset.v === 'referencia') b.hidden = !f.ref; });
     $('#fxMat').value = f.material; $('#fxAcc').value = f.acento; $('#fxCan').value = f.cancel;
     $$('#fxOpts input').forEach(function (c) { c.checked = !!f.opts[c.dataset.o]; });
     $$('.fx-hora').forEach(function (g) { $$('button', g).forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.v === f.hora); }); });
@@ -46,7 +46,7 @@
   function touch(mut, msg) { var f = fx(); if (!f.on) { f.on = true; } mut(f); why = []; commit(); if (msg) E.toast(msg); }
   $('#fxStyles').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-v]'); if (!b) return;
-    touch(function (f) { var pr = FX.preset(b.dataset.v); f.estilo = pr.estilo; f.material = pr.material; f.acento = pr.acento; f.cancel = pr.cancel; f.opts = pr.opts; }, 'Estilo ' + FX.ESTILOS[b.dataset.v].n.toLowerCase() + ' aplicado a la fachada');
+    touch(function (f) { var pr = FX.preset(b.dataset.v); if (b.dataset.v === 'referencia' && !f.ref) return; f.estilo = pr.estilo; f.material = pr.material; f.acento = pr.acento; f.cancel = pr.cancel; f.opts = pr.opts; }, 'Estilo ' + FX.ESTILOS[b.dataset.v].n.toLowerCase() + ' aplicado a la fachada');
   });
   $('#fxMat').addEventListener('change', function (e) { touch(function (f) { f.material = e.target.value; }); });
   $('#fxAcc').addEventListener('change', function (e) { touch(function (f) { f.acento = e.target.value; }); });
@@ -55,7 +55,24 @@
   $$('.fx-hora').forEach(function (g) {
     g.addEventListener('click', function (e) { var b = e.target.closest('button[data-v]'); if (!b) return; fx().hora = b.dataset.v; syncFxForm(); E.refresh(); });
   });
+  /* Con una fachada subida, «Mejorar fachada» la conserva y le suma mejoras (no la cambia por un estilo prefijado). */
+  function improveRef() {
+    var p = proj(), r = res(), f = fx(), R = Object.assign({}, f.ref), hot = r.city.lat < 21.5, extra = [];
+    f.on = true; f.estilo = 'referencia';
+    if (!f.opts.jardineras) { f.opts.jardineras = true; extra.push('Jardineras al pie de la fachada: suavizan el muro y separan la casa de la banqueta.'); }
+    if (!f.opts.iluminacion) { f.opts.iluminacion = true; extra.push('Iluminación arquitectónica cálida para que la fachada luzca de noche.'); }
+    if (!R.losaVolada && !R.porche) { R.losaVolada = true; extra.push('Losa volada sobre el acceso con luminarias empotradas: protege la entrada de la lluvia y la marca.'); }
+    if (p.floors > 1 && R.balcon === 'ninguno') { R.balcon = R.cubierta === 'teja' ? 'herreria' : 'vidrio'; R.balconLado = R.puertaLado; extra.push('Balcón en planta alta sobre el acceso: gana terraza y vista sin cerrar la fachada.'); }
+    if (R.ventanas === 'lisa' && R.cubierta !== 'teja') { R.ventanas = 'cuadricula'; R.travesano = true; extra.push('Ventanales con retícula y travesaño alto: más luz y una fachada más ordenada.'); }
+    if (hot && !f.opts.celosia) { f.opts.celosia = true; extra.push('Celosía de parteluces en clima cálido (' + r.city.name + '): baja la ganancia solar y el gasto de aire acondicionado.'); }
+    if (p.floors >= 2 && R.cubierta === 'plano' && !f.opts.pergola) { f.opts.pergola = true; extra.push('Pérgola en azotea para convertirla en terraza habitable.'); }
+    f.ref = FX.normRef(R); f.opts.volado = f.ref.losaVolada; f.opts.balcones = f.ref.balcon !== 'ninguno';
+    why = refWhy(f.ref).concat(extra.length ? extra : ['Tu fachada ya tiene los elementos que se proponen; se conserva tal cual.']);
+    commit();
+    E.toast(extra.length ? 'Tu fachada se mejoró con ' + extra.length + ' cambio' + (extra.length > 1 ? 's' : '') + ' sin perder su estilo' : 'Tu fachada ya tiene las mejoras propuestas');
+  }
   $('#fxAuto').addEventListener('click', function () {
+    if (fx().ref && foto) { improveRef(); return; }
     var sg = FX.suggest(proj(), res()); proj().fx = sg.fx; why = sg.why; commit();
     E.toast('Fachada mejorada: ' + FX.ESTILOS[sg.fx.estilo].n.toLowerCase() + ' con ' + Object.keys(sg.fx.opts).filter(function (k) { return sg.fx.opts[k]; }).length + ' elementos');
   });
@@ -91,44 +108,132 @@
       return page.render({ canvasContext: g, viewport: vp }).promise.then(function () { return c; });
     });
   }
-  /* Lectura en el navegador: color dominante del muro, techo de teja, proporción de vidrio. */
+  /* Lectura en el navegador de la fachada de referencia: color real del muro, de la cancelería y del acceso,
+     lado de la puerta (zona baja más oscura), porche remetido, teja y proporción de vidrio. RINOVAIA AI la afina. */
   function hex2rgb(h) { var n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+  function rgb2hex(c) { return '#' + c.map(function (v) { v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? '0' : '') + v.toString(16); }).join(''); }
   function readFacade(canvas) {
-    var k = Math.min(1, 160 / Math.max(canvas.width, canvas.height)), w = Math.max(8, Math.round(canvas.width * k)), h = Math.max(8, Math.round(canvas.height * k));
+    var k = Math.min(1, 200 / Math.max(canvas.width, canvas.height)), w = Math.max(8, Math.round(canvas.width * k)), h = Math.max(8, Math.round(canvas.height * k));
     var c = document.createElement('canvas'); c.width = w; c.height = h; var g = c.getContext('2d'); g.drawImage(canvas, 0, 0, w, h);
-    var d = g.getImageData(0, 0, w, h).data, bins = {}, dark = 0, tile = 0, total = 0, x, y;
-    for (y = Math.round(h * 0.08); y < h * 0.95; y++) for (x = Math.round(w * 0.06); x < w * 0.94; x++) {
-      var i = (y * w + x) * 4, R = d[i], G = d[i + 1], B = d[i + 2], mx = Math.max(R, G, B), mn = Math.min(R, G, B), L = (mx + mn) / 2, sat = mx - mn;
+    var d = g.getImageData(0, 0, w, h).data, bins = {}, dark = 0, tileTop = 0, tileMid = 0, total = 0, x, y, i;
+    var dk = [0, 0, 0, 0], skip = new Uint8Array(w * h);
+    function px(x, y) { var i = (y * w + x) * 4, R = d[i], G = d[i + 1], B = d[i + 2], mx = Math.max(R, G, B), mn = Math.min(R, G, B); return { R: R, G: G, B: B, L: (mx + mn) / 2, sat: mx - mn }; }
+    // 1.ª pasada: color del muro, cancelería (lo más oscuro), teja (rojo arriba y no a media altura)
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+      var q = px(x, y);
+      if ((q.B > q.R + 18 && q.B > q.G && q.L > 120 && y < h * 0.5) || (q.G > q.R + 12 && q.G > q.B + 8)) { skip[y * w + x] = 1; continue; } // cielo, vegetación
       total++;
-      if (L < 70) { dark++; continue; }
-      if (B > R + 18 && B > G && L > 120 && y < h * 0.4) continue;           // cielo
-      if (G > R + 12 && G > B + 8) continue;                                 // vegetación
-      if (R > 120 && R > G + 40 && G > B && sat > 60 && y < h * 0.45) tile++; // teja
-      var key = (R >> 4) + ',' + (G >> 4) + ',' + (B >> 4);
+      if (q.R > 120 && q.G < q.R * 0.62 && q.G > q.B && q.sat > 60) { if (y < h * 0.3) tileTop++; else if (y > h * 0.45 && y < h * 0.8) tileMid++; }
+      if (q.L < 60) { dark++; dk[0] += q.R; dk[1] += q.G; dk[2] += q.B; dk[3]++; continue; }
+      if (q.L < 110) continue;
+      var key = (q.R >> 4) + ',' + (q.G >> 4) + ',' + (q.B >> 4);
       bins[key] = (bins[key] || 0) + 1;
     }
-    var best = null, bn = 0; Object.keys(bins).forEach(function (kk) { if (bins[kk] > bn) { bn = bins[kk]; best = kk; } });
-    var rgb = best ? best.split(',').map(function (v) { return (+v << 4) + 8; }) : [200, 200, 200];
+    var bn = 0; Object.keys(bins).forEach(function (kk) { if (bins[kk] > bn) bn = bins[kk]; });
+    // color del muro: promedio de los tonos dominantes (los que tienen al menos 30 % del más frecuente)
+    var acc = [0, 0, 0, 0];
+    Object.keys(bins).forEach(function (kk) { if (bins[kk] < bn * 0.3) return; var q = kk.split(','); for (var j = 0; j < 3; j++) acc[j] += ((+q[j] << 4) + 8) * bins[kk]; acc[3] += bins[kk]; });
+    var raw = acc[3] ? acc.slice(0, 3).map(function (v) { return v / acc[3]; }) : [236, 236, 234], rgb = raw.slice();
+    // un muro claro y casi sin color es blanco a la sombra: se neutraliza el tinte azul del cielo y se aclara
+    var lum = (rgb[0] + rgb[1] + rgb[2]) / 3, sat0 = Math.max.apply(null, rgb) - Math.min.apply(null, rgb);
+    if (sat0 < 40 && lum > 170) rgb = [Math.min(246, lum + 30), Math.min(245, lum + 29), Math.min(241, lum + 25)];
     var mat = 'aplanado', md = 1e9;
     ['concreto', 'aplanado', 'piedra', 'ladrillo', 'cantera', 'travertino', 'ocre', 'grafito', 'madera'].forEach(function (m) {
       var q = hex2rgb(FX.MATERIALES[m].c), dd = Math.pow(q[0] - rgb[0], 2) + Math.pow(q[1] - rgb[1], 2) + Math.pow(q[2] - rgb[2], 2);
       if (dd < md) { md = dd; mat = m; }
     });
-    return { material: mat, color: 'rgb(' + rgb.join(',') + ')', teja: total ? tile / total > 0.025 : false, vidrio: total ? dark / total : 0, ratio: canvas.width / canvas.height };
+    if (lum > 190 && sat0 < 40) mat = 'aplanado';
+    if (raw[0] > 110 && raw[1] < raw[0] * 0.72 && raw[2] > raw[1] * 0.75 && raw[2] <= raw[1]) mat = 'ladrillo';
+    var teja = total ? tileTop / total > 0.02 && tileMid < tileTop * 0.5 : false;
+    // 2.ª pasada: lo que es claramente más oscuro que el muro (vanos, puerta, volúmenes de acento)
+    var wl = (raw[0] + raw[1] + raw[2]) / 3;
+    function isDark(x, y) {
+      if (skip[y * w + x]) return false; var q = px(x, y);
+      var dd = Math.sqrt(Math.pow(q.R - raw[0], 2) + Math.pow(q.G - raw[1], 2) + Math.pow(q.B - raw[2], 2));
+      return dd > 70 && q.L < wl - 35;
+    }
+    function isWall(x, y) { var q = px(x, y); return Math.abs(q.R - raw[0]) + Math.abs(q.G - raw[1]) + Math.abs(q.B - raw[2]) < 55; }
+    // Por columna: oscuro arriba y abajo, y de un solo tono (un volumen de acento; un porche o un ventanal mezclan tonos)
+    var low = [], col = [], bld = [], y0 = Math.round(h * 0.15), y1 = Math.round(h * 0.88), ym = Math.round(h * 0.5);
+    for (x = 0; x < w; x++) {
+      var nt = 0, mt = 0, nb = 0, mb = 0, b = 0, s1 = 0, s2 = 0;
+      for (y = y0; y < y1; y++) {
+        if (skip[y * w + x]) continue;
+        var top = y < ym; if (top) mt++; else mb++;
+        if (isDark(x, y)) { if (top) nt++; else nb++; b++; var lq = px(x, y).L; s1 += lq; s2 += lq * lq; } else if (isWall(x, y)) b++;
+      }
+      var l1 = 0, l2 = 0, ln = 0;
+      for (y = ym; y < y1; y++) if (!skip[y * w + x] && isDark(x, y)) { var lv = px(x, y).L; l1 += lv; l2 += lv * lv; ln++; }
+      low.push(mb > (y1 - ym) * 0.4 && ln > 1 ? { f: nb / mb, sd: Math.sqrt(Math.max(0, l2 / ln - Math.pow(l1 / ln, 2))) } : { f: 0, sd: 99 });
+      var nd = nt + nb, sd = nd > 1 ? Math.sqrt(Math.max(0, s2 / nd - Math.pow(s1 / nd, 2))) : 99;
+      col.push(mt > (ym - y0) * 0.4 && mb > (y1 - ym) * 0.4 && sd < 28 ? Math.min(nt / mt, nb / mb) : 0); bld.push(b / (y1 - y0));
+    }
+    // Volumen de acento: franja oscura continua desde un borde del edificio
+    function edgeRun(from, step) { var n = 0, sum = [0, 0, 0, 0]; for (x = from; x >= 0 && x < w; x += step) { if (col[x] < 0.85) break; n++; for (y = y0; y < y1; y++) if (isDark(x, y)) { var q = px(x, y); sum[0] += q.R; sum[1] += q.G; sum[2] += q.B; sum[3]++; } } return { n: n, c: sum[3] ? rgb2hex(sum.slice(0, 3).map(function (v) { return v / sum[3]; })) : null }; }
+    function firstCol(from, step) { for (x = from; x >= 0 && x < w; x += step) if (bld[x] > 0.55) return x; return from; }
+    var aL = edgeRun(firstCol(0, 1), 1), aR = edgeRun(firstCol(w - 1, -1), -1), acento = null, acentoLado = 'ninguno', acentoAncho = 0.35, ax0 = -1, ax1 = -1;
+    var minA = w * 0.12, maxA = w * 0.6;
+    if (aL.n > minA && aL.n < maxA && aL.n >= aR.n) { acento = aL.c; acentoLado = 'izq'; acentoAncho = aL.n / w; ax0 = 0; ax1 = firstCol(0, 1) + aL.n; }
+    else if (aR.n > minA && aR.n < maxA) { acento = aR.c; acentoLado = 'der'; acentoAncho = aR.n / w; ax0 = firstCol(w - 1, -1) - aR.n; ax1 = w; }
+    // Puerta: zona baja (donde los vanos ya terminaron) más oscura, fuera del acento
+    var th = [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]];
+    // pie del edificio: última fila donde todavía se ve muro (abajo empiezan banqueta, pasto o calle)
+    var yb = Math.round(h * 0.95);
+    for (y = h - 1; y > h * 0.5; y--) { var nw = 0; for (x = 0; x < w; x++) if (!skip[y * w + x] && isWall(x, y)) nw++; if (nw > w * 0.12) { yb = y; break; } }
+    for (y = Math.max(0, yb - Math.round(h * 0.09)); y <= yb; y++) for (x = 0; x < w; x++) {
+      if (x >= ax0 && x < ax1) continue; if (skip[y * w + x]) continue;
+      var t = Math.min(2, Math.floor(x / w * 3)); th[t][1]++;
+      if (isDark(x, y)) { var q = px(x, y); th[t][0]++; th[t][2] += q.R; th[t][3] += q.G; th[t][4] += q.B; }
+    }
+    var fr = th.map(function (q) { return q[1] ? q[0] / q[1] : 0; }), side = fr.indexOf(Math.max.apply(null, fr));
+    // Puerta = franja baja oscura y opaca (tono parejo); los ventanales con interior visible varían más de tono
+    var ds = [0, 0, 0], dn = [0, 0, 0];
+    for (x = 0; x < w; x++) { if (x >= ax0 && x < ax1) continue; var t2 = Math.min(2, Math.floor(x / w * 3)); dn[t2]++; if (low[x].f > 0.75 && low[x].sd < 32) ds[t2]++; }
+    ds = ds.map(function (v, j) { return dn[j] ? v / dn[j] : 0; });
+    var dmax = Math.max.apply(null, ds);
+    var frs = fr.slice().sort(function (a, b) { return b - a; });
+    if (dmax > 0.15 && frs[0] - frs[1] < 0.1) side = ds.indexOf(dmax); // pie ambiguo (jardineras, escalones): manda lo opaco
+    var dq = th[side], puerta = dq[0] ? rgb2hex([dq[2] / dq[0], dq[3] / dq[0], dq[4] / dq[0]]) : '#3A3D43';
+    var vid = total ? dark / total : 0, floors = proj().floors, lado = ['izq', 'centro', 'der'][side];
+    var cancel = dk[3] ? rgb2hex(dk.slice(0, 3).map(function (v) { return v / dk[3]; })) : '#1D2128';
+    var porche = !teja && fr[side] > 0.6;
+    var ref = {
+      muro: rgb2hex(rgb), cancel: cancel, puerta: puerta, porcheColor: puerta, textura: mat, acento: acento, acentoLado: acentoLado, acentoAncho: acentoAncho, acentoDesde: 0,
+      ventanas: teja ? 'marco' : vid > 0.06 ? 'cuadricula' : 'lisa', travesano: !teja && vid > 0.06, ventanaAlta: !teja && vid > 0.14,
+      puertaLado: lado, porche: porche, losaVolada: porche && floors > 1,
+      balcon: floors > 1 ? (teja ? 'herreria' : 'vidrio') : 'ninguno', balconLado: lado,
+      cubierta: teja ? 'teja' : 'plano', cochera: false
+    };
+    return { material: mat, color: ref.muro, teja: teja, vidrio: vid, ratio: canvas.width / canvas.height, pie: Math.round(yb / h * 100) / 100, accesos: fr.concat(ds).map(function (v) { return Math.round(v * 100) / 100; }), ref: FX.normRef(ref) };
+  }
+  var LADO = { izq: 'a la izquierda', centro: 'al centro', der: 'a la derecha' };
+  function refWhy(R, desc) {
+    var t = [];
+    if (desc) t.push('Lectura de tu referencia: ' + desc);
+    t.push('Tu fachada se ajustó a la referencia: muro ' + R.muro.toUpperCase() + ' (' + FX.MATERIALES[R.textura].n.toLowerCase() + '), cancelería ' + R.cancel.toUpperCase() + ' y puerta ' + R.puerta.toUpperCase() + '.');
+    t.push('Ventanas ' + ({ cuadricula: 'con retícula de perfiles', lisa: 'lisas', franja: 'en franja', arco: 'en arco', marco: 'con marco' })[R.ventanas] + (R.travesano ? ' y travesaño alto' : '') + (R.ventanaAlta ? ', de piso a techo' : '') + ', como en la referencia.');
+    t.push('Acceso ' + LADO[R.puertaLado] + (R.puertaDoble ? ' con puerta doble' : '') + (R.porche ? ', remetido y en color oscuro' : '') + (R.losaVolada ? ', bajo una losa volada con luminarias empotradas' : '') + '.');
+    if (R.balcon !== 'ninguno') t.push('Balcón ' + (R.balcon === 'vidrio' ? 'con barandal de cristal' : 'de herrería') + ' en planta alta ' + (R.balconLado === 'todos' ? 'en todo el frente' : LADO[R.balconLado]) + '.');
+    if (R.acentoLado !== 'ninguno') t.push('Volumen de acento ' + LADO[R.acentoLado] + ' en ' + R.acento.toUpperCase() + '.');
+    if (R.cubierta === 'teja') t.push('Cubierta de teja como la referencia.');
+    t.push('Las medidas, niveles y crujías son las de tu proyecto; el 3D y el recorrido usan estos mismos colores.');
+    return t;
   }
   function suggestFromPhoto(lec) {
-    var p = proj(), r = res(), sg = FX.suggest(p, r), f = sg.fx, why = [];
-    if (lec.teja) { f = Object.assign(FX.preset(lec.material === 'ocre' || lec.material === 'cantera' ? 'colonial' : 'mediterraneo'), { on: true, hora: sg.fx.hora }); why.push('Se respeta la cubierta de teja de tu fachada: estilo ' + FX.ESTILOS[f.estilo].n.toLowerCase() + '.'); }
-    else if (lec.material === 'ladrillo') { f = Object.assign(FX.preset('industrial'), { on: true, hora: sg.fx.hora }); why.push('Tu fachada es de ladrillo: se conserva y se moderniza con estilo industrial.'); }
-    else why.push('Estilo propuesto: ' + FX.ESTILOS[f.estilo].n.toLowerCase() + ', a partir del tipo de inmueble y el clima de ' + r.city.name + '.');
-    f.material = lec.material;
-    why.push('Material principal detectado en tu fachada: ' + FX.MATERIALES[lec.material].n.toLowerCase() + '. Se conserva como base de la propuesta.');
-    var glass = Math.round(lec.vidrio * 100);
-    if (lec.vidrio < 0.12) why.push('Tu fachada tiene poco vidrio (≈' + glass + ' % oscuro en la imagen): la propuesta abre ventanales para más luz natural.');
-    else if (lec.vidrio > 0.35) why.push('Tu fachada tiene mucho vidrio (≈' + glass + ' %): se agregan celosías para controlar el sol.');
-    if (lec.vidrio > 0.35) f.opts.celosia = true;
-    sg.why.slice(1).forEach(function (t) { why.push(t); });
-    return { fx: f, why: why };
+    var p = proj(), f = Object.assign(FX.preset('referencia'), { on: true, hora: 'dia' });
+    f.ref = lec.ref; f.material = lec.material;
+    f.opts.volado = lec.ref.losaVolada; f.opts.balcones = lec.ref.balcon !== 'ninguno'; f.opts.jardineras = true; f.opts.iluminacion = true;
+    f.opts.celosia = false; f.opts.pergola = false; f.opts.basamento = false;
+    return { fx: f, why: refWhy(f.ref) };
+  }
+  // Respuesta de RINOVAIA AI → fachada de referencia
+  var AI_KEYS = { muro_hex: 'muro', acento_hex: 'acento', cancel_hex: 'cancel', puerta_hex: 'puerta', porche_hex: 'porcheColor', textura: 'textura', ventanas: 'ventanas', travesano: 'travesano', ventana_alta: 'ventanaAlta',
+    puerta_lado: 'puertaLado', puerta_doble: 'puertaDoble', porche: 'porche', losa_volada: 'losaVolada', balcon: 'balcon', balcon_lado: 'balconLado', acento_lado: 'acentoLado', acento_ancho: 'acentoAncho', acento_desde: 'acentoDesde', cubierta: 'cubierta', cochera: 'cochera' };
+  function refFromAI(base, rep) {
+    var R = Object.assign({}, base);
+    Object.keys(AI_KEYS).forEach(function (k) { if (rep[k] !== undefined && rep[k] !== null && rep[k] !== '') R[AI_KEYS[k]] = typeof rep[k] === 'string' && /_hex$/.test(k) ? rep[k].trim() : rep[k]; });
+    if (rep.acento_hex === '' || rep.acento_lado === 'ninguno') { R.acento = null; R.acentoLado = 'ninguno'; }
+    return FX.normRef(R);
   }
   function handleUp(file, opts) {
     if (!file) return; opts = opts || {};
@@ -148,20 +253,23 @@
       proj().fx = sg.fx; why = sg.why;
       $('#fxCompare').checked = true;
       commit();
-      if (!opts.quiet) E.toast('Fachada subida: la propuesta parte de tu fachada. Desliza para comparar.');
+      if (!opts.quiet) E.toast('Tu fachada se ajustó a la referencia. Desliza para comparar.');
       // Con RINOVAIA AI activa, se afina la lectura (estilo, niveles, elementos); si ya viene leída, se usa tal cual
       var ai = opts.ai ? function () { return Promise.resolve({ lectura: opts.ai }); } : window.RinovaIA && window.RinovaIA.readFacade;
       if (!ai) return;
       var payload = isPdf && bufCopy && file.size < 7 * 1024 * 1024 ? { tipo: 'pdf', media_type: 'application/pdf', datos: b64(bufCopy), nombre: file.name } : { tipo: 'imagen', media_type: 'image/jpeg', datos: v.img.split(',')[1], nombre: file.name };
       return ai(payload).then(function (j) {
         var L = j.lectura || j, f = fx();
-        if (FX.ESTILOS[L.estilo_sugerido]) { var pr = FX.preset(L.estilo_sugerido); f.estilo = pr.estilo; f.acento = pr.acento; f.cancel = pr.cancel; f.opts = pr.opts; }
+        // La propuesta sigue siendo "según tu fachada": la IA solo afina colores, vanos, balcón y acceso
+        f.estilo = 'referencia'; f.on = true;
+        if (L.replica) f.ref = refFromAI(f.ref || lec.ref, L.replica);
+        else if (L.material_principal && FX.MATERIALES[L.material_principal]) f.ref = FX.normRef(Object.assign({}, f.ref || lec.ref, { textura: L.material_principal }));
         if (FX.MATERIALES[L.material_principal]) f.material = L.material_principal;
-        if (L.elementos) Object.keys(FX.OPCIONES).forEach(function (k) { if (typeof L.elementos[k] === 'boolean') f.opts[k] = L.elementos[k]; });
-        why = (L.mejoras || []).slice(0, 8);
-        if (L.descripcion) why.unshift('Lectura de tu fachada: ' + L.descripcion);
+        if (L.elementos) ['celosia', 'pergola', 'jardineras', 'basamento', 'iluminacion'].forEach(function (k) { if (typeof L.elementos[k] === 'boolean') f.opts[k] = L.elementos[k]; });
+        f.opts.volado = f.ref.losaVolada; f.opts.balcones = f.ref.balcon !== 'ninguno';
+        why = refWhy(f.ref, L.descripcion).concat((L.mejoras || []).slice(0, 6));
         foto.by = 'RINOVAIA AI'; foto.ai = L; saveFoto(foto);
-        commit(); if (!opts.quiet) E.toast('RINOVAIA AI leyó tu fachada y afinó la propuesta');
+        commit(); if (!opts.quiet) E.toast('RINOVAIA AI leyó la referencia y afinó colores, vanos y balcón');
       }).catch(function () { /* sin IA activa: se queda la lectura del navegador */ });
     }).catch(function () {
       E.toast(isPdf ? 'No se pudo abrir el PDF. Prueba con una foto JPG de la fachada.' : 'No se pudo leer la imagen. Prueba con otra foto en JPG.');
@@ -176,26 +284,59 @@
   $('#fxStage').addEventListener('drop', function (e) { e.preventDefault(); if (e.dataTransfer.files[0]) handleUp(e.dataTransfer.files[0]); });
   function fileInfo() {
     var el = $('#fxFile'); el.hidden = !foto;
-    $('#fxUpBtn').lastChild.textContent = foto ? 'Cambiar fachada subida' : 'Subir fachada (PDF o JPG)';
+    $('#fxUpBtn').lastChild.textContent = foto ? 'Cambiar fachada de referencia' : 'Subir fachada (PDF o JPG)';
     if (!foto) return;
     $('#fxFileThumb').src = foto.thumb || foto.img; $('#fxFileName').textContent = foto.name;
-    $('#fxFileInfo').textContent = foto.tipo + ' · ' + (foto.lectura ? FX.MATERIALES[foto.lectura.material].n + (foto.lectura.teja ? ' · teja' : '') + ' · ' : '') + 'lectura: ' + (foto.by || 'navegador');
+    var R = fx().ref;
+    $('#fxFileInfo').innerHTML = esc(foto.tipo) + ' · ' + (R ? ['muro', 'cancel', 'puerta'].map(function (k) { return '<i class="fx-sw" style="background:' + R[k] + '" title="' + k + ' ' + R[k] + '"></i>'; }).join('') + ' ' : '') + 'lectura: ' + esc(foto.by || 'navegador');
   }
   function originalHtml(p, r, f) {
     if (foto) return '<div class="fx-photo"><img alt="Fachada actual subida: ' + esc(foto.name) + '" src="' + foto.img + '"></div>';
     return F.build({ floors: p.floors, bays: p.bays, style: p.style, mode: 'render', phi: false, lat: r.city.lat, month: p.month, hour: f.hora === 'dia' ? 12 : f.hora === 'tarde' ? 17.5 : 20, palette: p.palette, width: 1200, height: 720, id: 'fxo' });
   }
 
+  /* ---------- Corregir la lectura de la referencia ---------- */
+  var REF_SEL = [
+    ['puertaLado', 'Acceso', { izq: 'Izquierda', centro: 'Centro', der: 'Derecha' }],
+    ['ventanas', 'Ventanas', { cuadricula: 'Con retícula', lisa: 'Lisas', franja: 'En franja', arco: 'En arco', marco: 'Con marco' }],
+    ['balcon', 'Balcón', { vidrio: 'Barandal de cristal', herreria: 'Herrería', ninguno: 'Sin balcón' }],
+    ['balconLado', 'Lado del balcón', { izq: 'Izquierda', centro: 'Centro', der: 'Derecha', todos: 'Todo el frente' }],
+    ['acentoLado', 'Volumen de acento', { ninguno: 'Ninguno', izq: 'Izquierda', der: 'Derecha' }],
+    ['cubierta', 'Cubierta', { plano: 'Losa plana', teja: 'Teja' }],
+    ['textura', 'Acabado del muro', null]
+  ];
+  var REF_COL = [['muro', 'Muro'], ['cancel', 'Cancelería'], ['puerta', 'Puerta'], ['acento', 'Acento'], ['porcheColor', 'Fondo del acceso']];
+  var REF_CHK = [['travesano', 'Travesaño alto'], ['ventanaAlta', 'Ventanas de piso a techo'], ['puertaDoble', 'Puerta doble'], ['porche', 'Acceso remetido'], ['losaVolada', 'Losa volada sobre el acceso'], ['cochera', 'Portón de cochera']];
+  $('#fxRefG').innerHTML = REF_COL.map(function (c) { return '<div class="field"><label for="fxR-' + c[0] + '">' + c[1] + '</label><input type="color" id="fxR-' + c[0] + '" data-r="' + c[0] + '"></div>'; }).join('') +
+    REF_SEL.map(function (c) { var o = c[2] || FX.MATERIALES; return '<div class="field"><label for="fxR-' + c[0] + '">' + c[1] + '</label><select class="input" id="fxR-' + c[0] + '" data-r="' + c[0] + '">' + Object.keys(o).map(function (k) { return '<option value="' + k + '">' + esc(o[k].n || o[k]) + '</option>'; }).join('') + '</select></div>'; }).join('') +
+    REF_CHK.map(function (c) { return '<label class="chk"><input type="checkbox" data-r="' + c[0] + '"> ' + c[1] + '</label>'; }).join('');
+  function syncRef() {
+    var f = fx(), box = $('#fxRef'); box.hidden = !f.ref; if (!f.ref) return;
+    $$('[data-r]', box).forEach(function (el) { var k = el.dataset.r, v = f.ref[k]; if (el.type === 'checkbox') el.checked = !!v; else if (el.type === 'color') el.value = v || (k === 'acento' ? '#2B2F36' : '#888888'); else el.value = v; });
+  }
+  $('#fxRefG').addEventListener('change', function (e) {
+    var el = e.target.closest('[data-r]'); if (!el) return;
+    var f = fx(); if (!f.ref) return;
+    var k = el.dataset.r, R = Object.assign({}, f.ref);
+    R[k] = el.type === 'checkbox' ? el.checked : el.value;
+    if (k === 'acento' && R.acentoLado === 'ninguno') R.acentoLado = 'der';
+    if (k === 'acentoLado' && R.acentoLado !== 'ninguno' && !R.acento) R.acento = '#2B2F36';
+    if (k === 'puertaLado' && f.ref.balconLado === f.ref.puertaLado) R.balconLado = R.puertaLado;
+    f.ref = FX.normRef(R); f.estilo = 'referencia'; f.on = true;
+    f.opts.volado = f.ref.losaVolada; f.opts.balcones = f.ref.balcon !== 'ninguno';
+    why = refWhy(f.ref); commit();
+  });
+
   /* ---------- Render de fachada ---------- */
   function renderFx() {
     if (view !== 'fachada') return;
     var p = proj(), r = res(), f = fx(), on = f.on;
-    syncFxForm(); fileInfo();
-    $('#fxTagB').textContent = foto ? 'Tu fachada actual' : 'Fachada original';
-    $('#fxCompare').parentNode.lastChild.textContent = foto ? ' Comparar con tu fachada' : ' Comparar con la original';
+    syncFxForm(); fileInfo(); syncRef();
+    $('#fxTagB').textContent = foto ? 'Fachada de referencia' : 'Fachada original';
+    $('#fxCompare').parentNode.lastChild.textContent = foto ? ' Comparar con la referencia' : ' Comparar con la original';
     if (!on) {
       $('#fxAfter').innerHTML = originalHtml(p, r, f);
-      $('#fxTagA').textContent = foto ? 'Tu fachada actual' : 'Fachada actual';
+      $('#fxTagA').textContent = foto ? 'Fachada de referencia' : 'Fachada actual';
       $('#fxLegend').innerHTML = '<li class="fx-empty">Pulsa <b>Mejorar fachada</b>, elige un estilo o <b>sube tu fachada</b> en PDF o JPG para generar la propuesta.</li>';
       $('#fxBefore').hidden = true; $('#fxCmp').hidden = true; $('#fxTagB').hidden = true; $('#fxCompare').disabled = true;
       $('#fxWhy').innerHTML = '<li class="muted">Aún no hay mejoras aplicadas.</li>'; $('#fxCost').innerHTML = '<p class="muted" style="margin:0">—</p>';
@@ -310,5 +451,10 @@
       setTimeout(function () { $('#pvTabs').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30);
     });
   });
-  window.RinovaFachadaUI = { show: showPv };
+  window.RinovaFachadaUI = {
+    show: showPv, spec: specNow,
+    hora: function () { return fx().hora; },
+    // Colores que el recorrido virtual toma de la misma fachada que dibujan la propuesta y el 3D
+    facade: function () { var s = specNow(); return { muro: s.M.c, cancel: s.C.c, porton: s.ref ? s.ref.puerta : null }; }
+  };
 })();
