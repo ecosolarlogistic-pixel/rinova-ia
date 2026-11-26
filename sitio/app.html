@@ -41,7 +41,7 @@
 <!-- /App instalable -->
 <link rel="preload" href="assets/fonts/montserrat.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/rinova.css?v=20261212">
+<link rel="stylesheet" href="assets/css/rinova.css?v=20261213">
 <style>.auth-wait body{visibility:hidden}</style>
 <style>
 body{background:var(--mist)}
@@ -390,7 +390,7 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
 .fx-stage.is-cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px;aspect-ratio:auto;background:none;border:0;border-radius:0;overflow:visible}
 .fx-stage.is-cmp .fx-pane{aspect-ratio:5/3;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--navy)}
 .fx-stage.is-cmp .fx-tag-a{right:auto;left:12px}
-@media(max-width:760px){.fx-stage.is-cmp{grid-template-columns:1fr}}
+@media(max-width:760px){.fx-stage.is-cmp{gap:6px}.fx-stage.is-cmp .fx-pane{border-radius:10px}.fx-stage.is-cmp .fx-tag.chip{top:6px;left:6px;font-size:10px;padding:2px 8px;min-height:0;white-space:nowrap;max-width:calc(100% - 12px);overflow:hidden;text-overflow:ellipsis}}
 .fx-tag{position:absolute;top:12px;background:rgba(11,15,23,.78);color:#fff;border-color:rgba(212,175,55,.45);backdrop-filter:blur(6px);font-size:12px}
 .fx-tag-a{right:12px}.fx-tag-b{left:12px}
 .fx-legend{list-style:none;padding:0;margin:12px 0 0;display:flex;flex-wrap:wrap;gap:8px}
@@ -485,6 +485,13 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
 .fx-ref summary small{font-weight:400;color:var(--muted);font-size:12px}
 .fx-ref-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;padding:4px 12px 12px}
 .fx-ref-g .field{margin:0}
+.fx-ref-m{padding:0 12px 12px;display:grid;gap:8px}
+.fx-ref-mh{margin:4px 0 0;font-size:13px;font-weight:600;color:var(--muted)}
+.fx-ref-row{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:10px}
+.fx-ref-row>b{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--navy);color:var(--gold);font-size:12px}
+.fx-ref-row select.input{width:auto;min-width:120px;flex:1 1 120px}
+.fx-ref-w{display:inline-flex;align-items:center;gap:4px;font-size:13px}.fx-ref-w input{width:68px}
+.fx-ref-row .chk{min-height:36px}
 .fx-ref-g input[type=color]{width:100%;height:40px;padding:2px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
 .fx-ref-g .chk{display:flex;gap:8px;align-items:center;font-size:13px;min-height:40px}
 .fx-sw{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid rgba(0,0,0,.25);margin-right:3px;vertical-align:-2px}
@@ -1063,24 +1070,24 @@ dialog.cq-dlg{width:min(980px,calc(100% - 24px));max-height:calc(100dvh - 24px)}
   // RINOVAIA AI: función de Supabase (supabase/functions/rinova-ia). Si no está desplegada, la app usa el análisis por reglas.
   window.RINOVA_IA = { endpoint: 'https://evjoqaphylggvojthezj.supabase.co/functions/v1/rinova-ia', key: 'sb_publishable_ll_SpxeCPe8VEFVVX1KpMg_s6DfoWkX' };
 </script>
-<script src="assets/js/facade.js?v=20261212"></script>
-<script src="assets/js/proyecto.js?v=20261212"></script>
-<script src="assets/js/planos.js?v=20261212"></script>
-<script src="assets/js/fachada.js?v=20261212"></script>
-<script src="assets/js/svg-multiformato.js?v=20261212"></script>
-<script src="assets/js/exportar-plano.js?v=20261212"></script>
-<script src="assets/js/estudio.js?v=20261212"></script>
-<script src="assets/js/render3d.js?v=20261212"></script>
-<script src="assets/js/fachada-ui.js?v=20261212"></script>
-<script src="assets/js/recorrido.js?v=20261212"></script>
-<script src="assets/js/recorrido-ui.js?v=20261212"></script>
-<script src="assets/js/espacios.js?v=20261212"></script>
-<script src="assets/js/lectura-plano.js?v=20261212"></script>
-<script src="assets/js/croquis.js?v=20261212"></script>
-<script src="assets/js/plataforma.js?v=20261212"></script>
+<script src="assets/js/facade.js?v=20261213"></script>
+<script src="assets/js/proyecto.js?v=20261213"></script>
+<script src="assets/js/planos.js?v=20261213"></script>
+<script src="assets/js/fachada.js?v=20261213"></script>
+<script src="assets/js/svg-multiformato.js?v=20261213"></script>
+<script src="assets/js/exportar-plano.js?v=20261213"></script>
+<script src="assets/js/estudio.js?v=20261213"></script>
+<script src="assets/js/render3d.js?v=20261213"></script>
+<script src="assets/js/fachada-ui.js?v=20261213"></script>
+<script src="assets/js/recorrido.js?v=20261213"></script>
+<script src="assets/js/recorrido-ui.js?v=20261213"></script>
+<script src="assets/js/espacios.js?v=20261213"></script>
+<script src="assets/js/lectura-plano.js?v=20261213"></script>
+<script src="assets/js/croquis.js?v=20261213"></script>
+<script src="assets/js/plataforma.js?v=20261213"></script>
 <script src="assets/js/vendor/supabase-2.58.0.min.js?v=20261126"></script>
-<script src="assets/js/sesion.js?v=20261212"></script>
-<script src="assets/js/nube.js?v=20261212"></script>
-<script src="pwa.js?v=20261212" defer></script>
+<script src="assets/js/sesion.js?v=20261213"></script>
+<script src="assets/js/nube.js?v=20261213"></script>
+<script src="pwa.js?v=20261213" defer></script>
 </body>
 </html>

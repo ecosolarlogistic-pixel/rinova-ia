@@ -295,8 +295,29 @@ const ESQUEMA_FACHADA = {
         acento_desde: { type: "integer", description: "0 si el acento baja hasta el suelo, 1 si empieza en la planta alta" },
         cubierta: { type: "string", enum: ["plano", "teja"] },
         cochera: { type: "boolean", description: "true si se ve un portón de cochera" },
+        listones_hex: { type: "string", description: "Color de los paneles de listones / celosías verticales (#RRGGBB) o cadena vacía si no hay" },
+        plafon_hex: { type: "string", description: "Color del plafón (cara inferior) de la losa volada o del alero, p. ej. madera u oscuro (#RRGGBB) o cadena vacía" },
+        escalones: { type: "boolean", description: "true si el acceso tiene escalones al frente" },
+        modulos: {
+          type: "array",
+          description: "Composición de la fachada en franjas verticales de IZQUIERDA a DERECHA (de 3 a 10 franjas), como se ve de frente. Cada cambio de elemento (macizo, ventanal, puerta, panel de listones) o de plano (volumen saliente) es una franja nueva. Respeta la simetría si la hay.",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              ancho: { type: "number", description: "Fracción del ancho total de la fachada (todas suman 1)" },
+              pb: { type: "string", enum: ["macizo", "ventanal", "ventana", "puerta", "puerta_doble", "listones", "cochera"], description: "Lo que hay en esta franja en planta baja. ventanal: vidrio casi de piso a techo; ventana: vano con antepecho; listones: panel de listones o celosía vertical; macizo: muro liso" },
+              pa: { type: "string", enum: ["macizo", "ventanal", "ventana", "listones"], description: "Lo que hay en esta franja en plantas altas (macizo si es de un nivel)" },
+              saliente: { type: "boolean", description: "true si esta franja pertenece a un volumen que sobresale del paño principal" },
+              balcon: { type: "boolean", description: "true si al frente de esta franja corre un balcón o losa volada a la altura del entrepiso" },
+              alero: { type: "boolean", description: "true si arriba de esta franja hay un alero o remate volado" },
+              acabado: { type: "string", enum: ["muro", "acento"], description: "acento si la franja es de otro material o color (el de acento_hex)" },
+            },
+            required: ["ancho", "pb", "pa", "saliente", "balcon", "alero", "acabado"],
+          },
+        },
       },
-      required: ["muro_hex", "acento_hex", "cancel_hex", "puerta_hex", "porche_hex", "textura", "ventanas", "travesano", "ventana_alta", "puerta_lado", "puerta_doble", "porche", "losa_volada", "balcon", "balcon_lado", "acento_lado", "acento_ancho", "acento_desde", "cubierta", "cochera"],
+      required: ["modulos", "listones_hex", "plafon_hex", "escalones", "muro_hex", "acento_hex", "cancel_hex", "puerta_hex", "porche_hex", "textura", "ventanas", "travesano", "ventana_alta", "puerta_lado", "puerta_doble", "porche", "losa_volada", "balcon", "balcon_lado", "acento_lado", "acento_ancho", "acento_desde", "cubierta", "cochera"],
     },
   },
   required: ["descripcion", "niveles", "estilo_actual", "estilo_sugerido", "material_principal", "elementos", "mejoras", "replica"],
@@ -323,6 +344,7 @@ async function leerFachada(archivo: { tipo: string; media_type: string; datos: s
           text: `Esta es la fachada de referencia (${archivo.nombre ?? "sin nombre"}), en foto, render o plano: el cliente quiere que la fachada de su proyecto se vea igual.
 Describe en una frase lo que ves (niveles, material, cubierta, vanos). Indica su estilo y el material principal más parecido.
 En "replica" describe la fachada TAL COMO SE VE para reproducirla: colores reales en #RRGGBB (corrige la luz cálida del atardecer y las sombras: un muro blanco es blanco), tipo de ventanas, travesaño, lado y tipo de la puerta, porche remetido, losa volada, balcón y su lado, volumen de acento y cubierta. Los lados se dicen mirando la fachada de frente.
+Lo más importante es "modulos": la composición de izquierda a derecha con anchos proporcionales a lo que se ve (mide con cuidado), qué hay en planta baja y en planta alta de cada franja, qué franjas forman un volumen saliente, dónde corre el balcón o la losa volada y dónde hay alero. Con eso se reproduce la composición, la simetría y las proporciones de la referencia, no sólo sus colores.
 En "elementos" marca lo que tiene la referencia. En "mejoras" da de 3 a 6 frases cortas sobre cómo adaptar esa fachada al proyecto, cada una con su porqué (clima, luz, privacidad, mantenimiento o valor).`,
         },
       ],

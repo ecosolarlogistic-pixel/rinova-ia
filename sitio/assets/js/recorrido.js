@@ -1068,11 +1068,19 @@
       if (F.volado) {
         var v = F.volado, vt = v.t || 0.22, vy = v.y * scl(0), mv = v.c ? mat(v.c, 0.7) : M.white || mat('#F1F0EC');
         K.box(g, v.w, vt, v.depth, mv, v.x + fdx + v.w / 2, vy, fz + v.depth / 2 - 0.12);
+        if (v.soffit) K.box(g, v.w - 0.04, vt * 0.42, v.depth + 0.01, mat(v.soffit, 0.6), v.x + fdx + v.w / 2, vy - 0.005, fz + v.depth / 2 - 0.12);
         if (v.lights) for (var lp = v.x + fdx + v.w / 6; lp < v.x + fdx + v.w; lp += v.w / 3) K.box(g, 0.14, 0.015, 0.14, M.led, lp, vy - 0.012, fz + v.depth * 0.45 - 0.12, { noShadow: true });
       }
+      // Paneles de listones y alero superior de la composición de la referencia
+      (F.slats || []).forEach(function (q) { if (q.lvl < model.length) wallPanels(q.x0 + fdx, q.x1 + fdx, q.lvl, q.lvl, mat(q.c, 0.65)); });
+      (F.alero || []).forEach(function (al) {
+        var Lt2 = model[top], ya = Lt2.base + Lt2.H + 0.15 - al.t;
+        K.box(g, al.x1 - al.x0 + 0.5, al.t * 0.6, al.depth, mat(al.c, 0.7), (al.x0 + al.x1) / 2 + fdx, ya + al.t * 0.4, fz + al.depth / 2 - 0.12);
+        K.box(g, al.x1 - al.x0 + 0.46, al.t * 0.4, al.depth - 0.02, mat(al.soffit, 0.6), (al.x0 + al.x1) / 2 + fdx, ya, fz + al.depth / 2 - 0.12);
+      });
       F.ops.forEach(function (o) {
         if (!o.balcony || !o.lvl || o.lvl >= model.length) return;
-        var Lk = model[o.lvl], bw2 = o.w + 0.5, bd = 1.2, x = o.x + o.w / 2, yb = Lk.base, z0 = fz - 0.12, v2 = F.volado;
+        var Lk = model[o.lvl], bw2 = o.bx0 != null ? o.bx1 - o.bx0 : o.w + 0.5, bd = 1.2, x = o.bx0 != null ? (o.bx0 + o.bx1) / 2 + fdx : o.x + o.w / 2, yb = Lk.base, z0 = fz - 0.12, v2 = F.volado;
         // sobre la losa volada del acceso, el balcón usa esa losa como piso
         if (o.lvl === 1 && v2 && x > v2.x + fdx && x < v2.x + fdx + v2.w) { bd = Math.min(bd, v2.depth); yb = Math.max(yb, v2.y * scl(0) + (v2.t || 0.22)); }
         else K.box(g, bw2, 0.2, bd, M.white || mat('#F1F0EC'), x, yb - 0.18, z0 + bd / 2);
