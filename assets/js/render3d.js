@@ -103,15 +103,15 @@
       var mMain = M({ map: track(matTexture(T, s.M)), roughness: 0.88 });
       var mAcc = M({ map: track(matTexture(T, s.A)), roughness: 0.8 });
       var mBase = M({ map: track(matTexture(T, { c: '#A69882', c2: '#857861', tex: 'piedra' })), roughness: 0.95 });
-      var mWhite = M({ color: 0xE9EAEC, roughness: 0.7 });
+      var mWhite = M({ color: new T.Color(s.slabC || '#E9EAEC'), roughness: 0.7 });
       var mFrame = M({ color: new T.Color(s.C.c), roughness: 0.45, metalness: s.fx.cancel === 'madera' ? 0 : 0.6 });
       var mGlass = night ? M({ color: 0x3a2a14, emissive: 0xF2B65C, emissiveIntensity: 0.9, roughness: 0.2 })
-        : M({ color: 0x1b2635, roughness: 0.04, metalness: 0.92, envMapIntensity: 1.25 });
+        : M({ color: s.ref ? 0x9fb4c6 : 0x1b2635, roughness: s.ref ? 0.08 : 0.04, metalness: s.ref ? 0.35 : 0.92, envMapIntensity: 1.25 });
       var mRail = track(new T.MeshPhysicalMaterial({ color: 0xcfe3ef, roughness: 0.05, metalness: 0, transparent: true, opacity: 0.32 }));
       var wood = s.fx.acento === 'madera' || s.fx.estilo === 'tropical';
       var mSlat = M({ color: wood ? 0x8A5A36 : s.fx.cancel === 'bronce' ? 0xA8894E : 0x2B3038, roughness: 0.7, metalness: wood ? 0 : 0.5 });
       var mDark = M({ color: 0x262B33, roughness: 0.6 });
-      var mDoor = M({ color: s.fx.cancel === 'madera' || wood ? 0x7A5032 : 0x2A3140, roughness: 0.55 });
+      var mDoor = M({ color: new T.Color(s.doorC || (s.fx.cancel === 'madera' || wood ? '#7A5032' : '#2A3140')), roughness: 0.55 });
       var mGrass = M({ color: night ? 0x1a2a1e : 0x5d8a4c, roughness: 1 });
       var mConc = M({ color: night ? 0x3a3f47 : 0xC7CBD0, roughness: 0.95 });
       var mAsph = M({ color: night ? 0x15181d : 0x4a4f57, roughness: 1 });
@@ -160,7 +160,8 @@
       var a = s.accent, aY = a ? s.levels[a.from].y : 0, PROJ = 0.35;
       if (a) {
         if (aY > 0) box(mMain, W, aY, D, 0, aY / 2, 0, true);
-        box(mMain, a.x0, bodyTop - aY, D, X0 + a.x0 / 2, aY + (bodyTop - aY) / 2, 0, true);
+        if (a.x0 > 0.01) box(mMain, a.x0, bodyTop - aY, D, X0 + a.x0 / 2, aY + (bodyTop - aY) / 2, 0, true);
+        if (a.x1 < W - 0.01) box(mMain, W - a.x1, bodyTop - aY, D, X0 + (a.x1 + W) / 2, aY + (bodyTop - aY) / 2, 0, true);
         var aw = a.x1 - a.x0 + s.cant;
         box(mAcc, aw, bodyTop - aY, D + PROJ, X0 + a.x0 + aw / 2, aY + (bodyTop - aY) / 2, PROJ / 2, true);
       } else box(mMain, W, bodyTop, D, 0, bodyTop / 2, 0, true);
@@ -184,8 +185,14 @@
       }
 
       // ---- Vanos (frente y fondo)
-      function zFace(op) { return (a && op.lvl >= a.from && op.x >= a.x0 - 0.01) ? ZF + PROJ : ZF; }
-      function xOf(op) { return X0 + op.x + (a && op.lvl >= a.from && op.x >= a.x0 - 0.01 ? s.cant : 0); }
+      function inAcc(op) { return a && op.lvl >= a.from && op.x >= a.x0 - 0.01 && op.x < a.x1 - 0.01; }
+      function zFace(op) { return inAcc(op) ? ZF + PROJ : ZF; }
+      function xOf(op) { return X0 + op.x + (inAcc(op) ? s.cant : 0); }
+      // Porche remetido de la fachada de referencia: fondo oscuro del acceso bajo la losa volada
+      if (s.porch) {
+        var pc = s.porch, ph = s.volado ? s.volado.y : pc.h;
+        box(M({ color: new T.Color(pc.c), roughness: 0.75 }), pc.x1 - pc.x0, ph, 0.03, X0 + (pc.x0 + pc.x1) / 2, ph / 2, ZF + 0.015);
+      }
       function opening(op, back) {
         var lv = s.levels[op.lvl], y0 = lv.y + op.y, z = back ? -ZF : zFace(op), dir = back ? -1 : 1, x = xOf(op) + op.w / 2, fr = 0.06;
         if (back && (op.kind === 'garage' || op.kind === 'roll' || op.kind === 'door')) { op = Object.assign({}, op, { kind: 'win', y: 0.5, h: Math.max(0.8, op.h - 0.5) }); y0 = lv.y + 0.5; }
@@ -207,16 +214,22 @@
         } else {
           box(mFrame, op.w, op.h, 0.1, x, y0 + op.h / 2, z + dir * 0.01);
           box(gm, op.w - 2 * fr, op.h - 2 * fr, 0.04, x, y0 + op.h / 2, z + dir * 0.05);
-          var nv = op.grid ? Math.max(2, Math.round(op.w / 0.6)) : op.strip ? Math.max(2, Math.round(op.w / 1.6)) : op.w > 1.6 ? 2 : 1;
+          var nv = op.grid ? Math.max(2, Math.round(op.w / 0.6)) : op.mull ? Math.max(2, Math.round(op.w / 0.95)) : op.strip ? Math.max(2, Math.round(op.w / 1.6)) : op.dbl ? 2 : op.w > 1.6 ? 2 : 1;
           for (var m = 1; m < nv; m++) bx(mFrame, fr * 0.8, op.h, 0.07, xOf(op) + op.w * m / nv, y0 + op.h / 2, z + dir * 0.06);
           if (op.grid) for (var n = 1; n < 3; n++) bx(mFrame, op.w, fr * 0.8, 0.07, x, y0 + op.h * n / 3, z + dir * 0.06);
+          if (op.transom) bx(mFrame, op.w, fr * 1.2, 0.07, x, y0 + op.h * 0.78, z + dir * 0.06);
         }
         // balcón
         if (op.balcony && !back) {
           var bw2 = op.w + 0.5, bdep = 1.2, yb2 = lv.y;
           box(mWhite, bw2, 0.2, bdep, x, yb2 + 0.04, z + bdep / 2);
-          bx(mRail, bw2, 1.0, 0.03, x, yb2 + 0.64, z + bdep - 0.03, false); bx(mRail, 0.03, 1.0, bdep, x - bw2 / 2, yb2 + 0.64, z + bdep / 2, false); bx(mRail, 0.03, 1.0, bdep, x + bw2 / 2, yb2 + 0.64, z + bdep / 2, false);
-          bx(mFrame, bw2, 0.05, 0.05, x, yb2 + 1.14, z + bdep - 0.03);
+          if (op.rail === 'herreria') {
+            for (var hb = -bw2 / 2; hb <= bw2 / 2 + 0.01; hb += 0.12) bx(mFrame, 0.02, 0.95, 0.02, x + hb, yb2 + 0.62, z + bdep - 0.03);
+            bx(mFrame, bw2, 0.04, 0.04, x, yb2 + 1.1, z + bdep - 0.03);
+          } else {
+            bx(mRail, bw2, 1.0, 0.03, x, yb2 + 0.64, z + bdep - 0.03, false); bx(mRail, 0.03, 1.0, bdep, x - bw2 / 2, yb2 + 0.64, z + bdep / 2, false); bx(mRail, 0.03, 1.0, bdep, x + bw2 / 2, yb2 + 0.64, z + bdep / 2, false);
+            bx(mFrame, bw2, 0.05, 0.05, x, yb2 + 1.14, z + bdep - 0.03);
+          }
         }
         if (op.frame && op.lvl > 0 && !back) {
           var hw = op.w + 0.6; box(mAcc, hw, 0.14, 0.6, x, y0 - 0.02, z + 0.3);
@@ -245,7 +258,17 @@
         bx(mSlat, ce.x1 - ce.x0 - 0.2, 0.1, 0.4, X0 + (ce.x0 + ce.x1) / 2 + shift, cy1 + 0.05, cz - 0.12);
       }
       // ---- Volado
-      if (s.volado) { var v = s.volado; box(s.fx.estilo === 'industrial' || s.fx.acento === 'grafito' ? mDark : mWhite, v.w, 0.22, v.depth, X0 + v.x + v.w / 2, v.y + 0.11, ZF + v.depth / 2); }
+      if (s.volado) {
+        var v = s.volado, vt = v.t || 0.22;
+        box(v.c ? M({ color: new T.Color(v.c), roughness: 0.7 }) : s.fx.estilo === 'industrial' || s.fx.acento === 'grafito' ? mDark : mWhite, v.w, vt, v.depth, X0 + v.x + v.w / 2, v.y + vt / 2, ZF + v.depth / 2);
+        if (v.lights) {
+          var mLed = M({ color: 0xffffff, emissive: 0xFFE2AE, emissiveIntensity: night ? 2.2 : dusk ? 1.2 : 0.6 });
+          for (var lp = v.x + v.w / 6; lp < v.x + v.w; lp += v.w / 3) {
+            var led = new T.Mesh(track(new T.CylinderGeometry(0.07, 0.07, 0.02, 14)), mLed); led.position.set(X0 + lp, v.y - 0.01, ZF + v.depth * 0.45); root.add(led);
+            if (night || dusk) { var dl = new T.SpotLight(0xffd59a, night ? 6 : 2, v.y + 1, 0.8, 0.7, 1.5); dl.position.set(X0 + lp, v.y - 0.05, ZF + v.depth * 0.45); dl.target.position.set(X0 + lp, 0, ZF + v.depth * 0.45); root.add(dl, dl.target); }
+          }
+        }
+      }
       // ---- Pérgola
       if (s.pergola) {
         var pg = s.pergola, py = bodyTop + pg.h, mP = wood ? mSlat : mDark, pd = D * 0.55, pz = ZF - pd / 2 - 0.4;
